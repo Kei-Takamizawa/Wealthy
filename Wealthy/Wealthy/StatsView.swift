@@ -10,6 +10,7 @@ import SwiftData
 import Charts
 
 struct StatsView: View {
+    @EnvironmentObject var lm: LanguageManager
     @Query var expenses: [Expense]
     
     // 月切り替え用（前後2年分を用意）
@@ -37,7 +38,7 @@ struct StatsView: View {
                 
                 VStack(spacing: 0) {
                     // タイトルエリア
-                    Text("Analysis")
+                    Text(lm.t(.analysis))
                         .font(.headline)
                         .foregroundStyle(.white)
                         .padding(.top)
@@ -70,6 +71,7 @@ struct StatsView: View {
 
 // ■ 月ごとのグラフを表示するビュー
 struct MonthlyGraphView: View {
+    @EnvironmentObject var lm: LanguageManager
     let month: Date
     let expenses: [Expense]
     
@@ -106,7 +108,7 @@ struct MonthlyGraphView: View {
                     .font(.title3)
                     .foregroundStyle(.gray)
                 
-                Text("¥\(totalAmount)")
+                Text(lm.currencySymbol + "\(totalAmount)")
                     .font(.system(size: 42, weight: .heavy, design: .rounded))
                     .foregroundStyle(.orange)
                     .contentTransition(.numericText())
@@ -122,7 +124,7 @@ struct MonthlyGraphView: View {
                         .font(.system(size: 50))
                         .foregroundStyle(.gray.opacity(0.5))
                 } description: {
-                    Text("データがありません")
+                    Text(lm.t(.noData))
                         .foregroundStyle(.gray)
                 }
                 Spacer()

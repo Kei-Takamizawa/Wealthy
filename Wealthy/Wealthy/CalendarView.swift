@@ -9,6 +9,7 @@ import SwiftUI
 import SwiftData
 
 struct CalendarView: View {
+    @EnvironmentObject var lm: LanguageManager
     @Query var expenses: [Expense]
     @State private var selectedDate = Date()
     
@@ -33,10 +34,10 @@ struct CalendarView: View {
                     
                     if dailyExpenses.isEmpty {
                         ContentUnavailableView {
-                            Text("No Expenses")
+                            Text(lm.t(.noExpenses))
                                 .foregroundStyle(.gray)
                         } description: {
-                            Text("この日の支出はありません")
+                            Text(lm.t(.noExpensesDesc))
                                 .foregroundStyle(.gray)
                         }
                     } else {
