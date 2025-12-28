@@ -11,6 +11,7 @@ import SwiftData
 struct CategoriesView: View {
     @Environment(\.modelContext) var modelContext
     @Environment(\.dismiss) var dismiss
+    @EnvironmentObject var lm: LanguageManager
     @Query var categories: [Category]
     
     @State private var showAddSheet = false
@@ -34,7 +35,7 @@ struct CategoriesView: View {
                                             .foregroundStyle(.white)
                                             .font(.caption)
                                     )
-                                Text(category.name)
+                                Text(lm.translateCategory(name: category.name))
                                     .font(.headline)
                                     .foregroundStyle(.white)
                             }
@@ -48,7 +49,7 @@ struct CategoriesView: View {
                     .scrollContentBackground(.hidden)
                 }
             }
-            .navigationTitle("カテゴリ設定")
+            .navigationTitle(lm.t(.categorySettings))
             .navigationBarTitleDisplayMode(.inline)
             .toolbarColorScheme(.dark, for: .navigationBar)
             .toolbar {
@@ -56,7 +57,7 @@ struct CategoriesView: View {
                     Button { showAddSheet = true } label: { Image(systemName: "plus") }
                 }
                 ToolbarItem(placement: .topBarLeading) {
-                    Button("閉じる") { dismiss() }
+                    Button(lm.t(.close)) { dismiss() }
                 }
             }
             .sheet(isPresented: $showAddSheet) {
@@ -70,6 +71,7 @@ struct CategoriesView: View {
 struct AddCategoryForm: View {
     @Environment(\.modelContext) var modelContext
     @Environment(\.dismiss) var dismiss
+    @EnvironmentObject var lm: LanguageManager
     
     @State private var name = ""
     @State private var selectedIcon = "cart.fill"
@@ -82,11 +84,11 @@ struct AddCategoryForm: View {
     var body: some View {
         NavigationStack {
             Form {
-                Section("基本情報") {
-                    TextField("カテゴリ名 (例: 食費)", text: $name)
+                Section(lm.t(.basicInfo)) {
+                    TextField(lm.t(.categoryName), text: $name)
                 }
                 
-                Section("アイコン") {
+                Section(lm.t(.icon)) {
                     LazyVGrid(columns: [GridItem(.adaptive(minimum: 40))], spacing: 10) {
                         ForEach(icons, id: \.self) { icon in
                             Image(systemName: icon)
@@ -100,7 +102,9 @@ struct AddCategoryForm: View {
                     .padding(.vertical)
                 }
                 
-                Section("カラー") {
+
+                
+                Section(lm.t(.color)) {
                     HStack {
                         ForEach(colors, id: \.self) { hex in
                             Circle().fill(Color(hex: hex)).frame(width: 30, height: 30)
@@ -110,11 +114,11 @@ struct AddCategoryForm: View {
                     }
                 }
             }
-            .navigationTitle("新規カテゴリ")
+            .navigationTitle(lm.t(.newCategory))
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("キャンセル") { dismiss() } }
+                ToolbarItem(placement: .cancellationAction) { Button(lm.t(.cancel)) { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("保存") {
+                    Button(lm.t(.save)) {
                         let newCat = Category(name: name, icon: selectedIcon, colorHex: selectedColor)
                         modelContext.insert(newCat)
                         dismiss()

@@ -99,10 +99,15 @@ struct DashboardView: View {
                             ForEach(sortedExpenses) { expense in
                                 Button { expenseToEdit = expense } label: {
                                     HStack {
-                                        if let cat = categories.first(where: { $0.name == expense.categoryName }) {
-                                            Image(systemName: cat.icon).foregroundStyle(Color(hex: cat.colorHex)).frame(width: 30)
-                                        } else {
-                                            Image(systemName: "questionmark.circle").frame(width: 30).foregroundStyle(.gray)
+                                        // カテゴリとアイコン
+                                        HStack {
+                                            let category = categories.first(where: { $0.name == expense.categoryName })
+                                            Image(systemName: category?.icon ?? "questionmark.circle")
+                                                .foregroundStyle(Color(hex: category?.colorHex ?? "808080"))
+                                                .frame(width: 30)
+                                            Text(lm.translateCategory(name: expense.categoryName ?? lm.t(.unclassified)))
+                                                .font(.caption)
+                                                .foregroundStyle(.gray)
                                         }
                                         VStack(alignment: .leading) {
                                             Text(expense.title).font(.body.bold()).foregroundStyle(.white)

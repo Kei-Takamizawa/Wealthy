@@ -11,6 +11,7 @@ import SwiftData
 struct DepositView: View {
     @Environment(\.modelContext) var modelContext
     @Environment(\.dismiss) var dismiss
+    @EnvironmentObject var lm: LanguageManager
     
     @Query var assets: [Asset]
     @Query var categories: [Category]
@@ -27,8 +28,8 @@ struct DepositView: View {
                 Color.black.ignoresSafeArea()
                 
                 Form {
-                    Section("入金情報") {
-                        TextField("タイトル (例: お小遣い, 臨時収入)", text: $title)
+                    Section(lm.t(.depositInfo)) {
+                        TextField(lm.t(.depositTitle) + " (e.g. Allowance)", text: $title)
                         
                         HStack {
                             Text("¥").foregroundStyle(.gray)
@@ -39,39 +40,39 @@ struct DepositView: View {
                         }
                     }
                     
-                    Section("詳細") {
+                    Section(lm.t(.details)) {
                         // 日付
-                        DatePicker("日付", selection: $date, displayedComponents: .date)
+                        DatePicker(lm.t(.dateLabel), selection: $date, displayedComponents: .date)
                         
                         // 入金先財布
-                        Picker("入金先", selection: $selectedAsset) {
-                            Text("選択してください").tag(nil as Asset?)
+                        Picker(lm.t(.wallet), selection: $selectedAsset) {
+                            Text(lm.t(.selectWallet)).tag(nil as Asset?)
                             ForEach(assets) { asset in
                                 Text(asset.name).tag(asset as Asset?)
                             }
                         }
                         
                         // カテゴリ（既存のものから選択）
-                        Picker("カテゴリ", selection: $selectedCategoryName) {
-                            Text("未分類").tag("未分類")
+                        Picker(lm.t(.category), selection: $selectedCategoryName) {
+                            Text(lm.translateCategory(name: "未分類")).tag("未分類")
                             // 収入っぽいカテゴリがあればそれを選べるようにする
                             ForEach(categories) { cat in
-                                Text(cat.name).tag(cat.name)
+                                Text(lm.translateCategory(name: cat.name)).tag(cat.name)
                             }
                         }
                     }
                 }
                 .scrollContentBackground(.hidden)
             }
-            .navigationTitle("資金の追加")
+            .navigationTitle(lm.t(.depositTitle))
             .navigationBarTitleDisplayMode(.inline)
             .toolbarColorScheme(.dark, for: .navigationBar)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("キャンセル") { dismiss() }
+                    Button(lm.t(.cancel)) { dismiss() }
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("追加") {
+                    Button(lm.t(.add)) {
                         saveDeposit()
                     }
                     .disabled(amount == 0 || selectedAsset == nil)

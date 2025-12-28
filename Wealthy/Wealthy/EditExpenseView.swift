@@ -12,6 +12,7 @@ import UIKit
 struct EditExpenseView: View {
     @Environment(\.dismiss) var dismiss
     @Environment(\.modelContext) var modelContext
+    @EnvironmentObject var lm: LanguageManager
     @Bindable var expense: Expense
     
     // ■ 修正1: カテゴリ一覧と財布一覧を取得するコードを追加
@@ -43,13 +44,13 @@ struct EditExpenseView: View {
                         VStack(spacing: 20) {
                             
                             // 店名
-                            InputGroup(label: "SHOP NAME", icon: "building.2.fill") {
-                                TextField("店名を入力", text: $expense.title)
+                            InputGroup(label: lm.t(.shopName), icon: "building.2.fill") {
+                                TextField(lm.t(.shopName), text: $expense.title)
                                     .foregroundStyle(.white)
                             }
                             
                             // 金額
-                            InputGroup(label: "AMOUNT", icon: "yen.circle.fill") {
+                            InputGroup(label: lm.t(.amount), icon: "yen.circle.fill") {
                                 TextField("0", value: $expense.amount, format: .number)
                                     .keyboardType(.numberPad)
                                     .foregroundStyle(.white)
@@ -57,7 +58,7 @@ struct EditExpenseView: View {
                             }
                             
                             // ■ カテゴリ選択（エラー対策のため構造を整理）
-                            InputGroup(label: "CATEGORY", icon: "tag.fill") {
+                            InputGroup(label: lm.t(.category), icon: "tag.fill") {
                                 Menu {
                                     // 選択肢一覧
                                     ForEach(categories) { cat in
@@ -68,7 +69,8 @@ struct EditExpenseView: View {
                                                 if expense.categoryName == cat.name {
                                                     Image(systemName: "checkmark")
                                                 }
-                                                Text(cat.name)
+                                                // カテゴリ名を翻訳
+                                                Text(lm.translateCategory(name: cat.name))
                                                 Image(systemName: cat.icon)
                                             }
                                         }
@@ -77,12 +79,13 @@ struct EditExpenseView: View {
                                     // 選択中の表示
                                     HStack {
                                         if let cat = categories.first(where: { $0.name == expense.categoryName }) {
-                                            Text(cat.name).foregroundStyle(.white).bold()
+                                            // カテゴリ名を翻訳
+                                            Text(lm.translateCategory(name: cat.name)).foregroundStyle(.white).bold()
                                             Spacer()
                                             // 修正: AssetViewのエラー回避のため、ここでは色は白かグレーにする
                                             Image(systemName: cat.icon).foregroundStyle(.gray)
                                         } else {
-                                            Text(expense.categoryName ?? "未分類").foregroundStyle(.white).bold()
+                                            Text(expense.categoryName ?? lm.t(.unclassified)).foregroundStyle(.white).bold()
                                             Spacer()
                                         }
                                         Image(systemName: "chevron.up.chevron.down").foregroundStyle(.gray)
@@ -91,7 +94,7 @@ struct EditExpenseView: View {
                             }
                             
                             // 財布選択
-                            InputGroup(label: "WALLET", icon: "creditcard.fill") {
+                            InputGroup(label: lm.t(.wallet), icon: "creditcard.fill") {
                                 Menu {
                                     ForEach(assets) { asset in
                                         Button {
@@ -107,7 +110,7 @@ struct EditExpenseView: View {
                                     }
                                 } label: {
                                     HStack {
-                                        Text(expense.assetName ?? "未選択")
+                                        Text(expense.assetName ?? lm.t(.unselected))
                                             .foregroundStyle(.white)
                                             .bold()
                                         Spacer()
@@ -118,7 +121,7 @@ struct EditExpenseView: View {
                             }
                             
                             // 日付
-                            InputGroup(label: "DATE", icon: "calendar") {
+                            InputGroup(label: lm.t(.date), icon: "calendar") {
                                 DatePicker("", selection: $expense.date, displayedComponents: .date)
                                     .labelsHidden()
                                     .colorInvert()
@@ -129,12 +132,12 @@ struct EditExpenseView: View {
                     .padding(.vertical)
                 }
             }
-            .navigationTitle("EDIT")
+            .navigationTitle(lm.t(.editTitle))
             .navigationBarTitleDisplayMode(.inline)
             .toolbarColorScheme(.dark, for: .navigationBar)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button("DONE") {
+                    Button(lm.t(.done)) {
                         updateAssetBalance()
                         dismiss()
                     }
@@ -176,7 +179,7 @@ struct EditExpenseView: View {
                         VStack(spacing: 10) {
                             Image(systemName: "photo")
                                 .font(.largeTitle)
-                            Text("Loading...")
+                            Text(lm.t(.loading))
                                 .font(.caption)
                         }
                         .frame(height: 150)
@@ -185,7 +188,7 @@ struct EditExpenseView: View {
                     
                     HStack {
                         Image(systemName: "magnifyingglass")
-                        Text("タップして拡大")
+                        Text(lm.t(.tapToExpand))
                     }
                     .font(.caption)
                     .foregroundStyle(.orange)

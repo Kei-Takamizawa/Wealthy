@@ -11,6 +11,7 @@ import SwiftData
 struct RecurringSettingsView: View {
     @Environment(\.modelContext) var modelContext
     @Environment(\.dismiss) var dismiss
+    @EnvironmentObject var lm: LanguageManager
     
     @Query var recurringItems: [RecurringItem]
     @Query var assets: [Asset]
@@ -24,9 +25,9 @@ struct RecurringSettingsView: View {
                 
                 if recurringItems.isEmpty {
                     ContentUnavailableView {
-                        Label("No Recurring Items", systemImage: "clock.arrow.circlepath")
+                        Label(lm.t(.noRecurringItems), systemImage: "clock.arrow.circlepath")
                     } description: {
-                        Text("毎月の固定給やサブスクを登録しよう")
+                        Text(lm.t(.recurringDesc))
                     }
                     .foregroundStyle(.gray)
                 } else {
@@ -65,7 +66,7 @@ struct RecurringSettingsView: View {
                     .scrollContentBackground(.hidden)
                 }
             }
-            .navigationTitle("固定収支の設定")
+            .navigationTitle(lm.t(.recurringSettings))
             .navigationBarTitleDisplayMode(.inline)
             .toolbarColorScheme(.dark, for: .navigationBar)
             .toolbar {
@@ -73,7 +74,7 @@ struct RecurringSettingsView: View {
                     Button { showAddSheet = true } label: { Image(systemName: "plus") }
                 }
                 ToolbarItem(placement: .topBarLeading) {
-                    Button("閉じる") { dismiss() }
+                    Button(lm.t(.close)) { dismiss() }
                 }
             }
             .sheet(isPresented: $showAddSheet) {
@@ -87,6 +88,7 @@ struct RecurringSettingsView: View {
 struct AddRecurringForm: View {
     @Environment(\.modelContext) var modelContext
     @Environment(\.dismiss) var dismiss
+    @EnvironmentObject var lm: LanguageManager
     var assets: [Asset]
     
     @State private var title = ""
@@ -98,22 +100,22 @@ struct AddRecurringForm: View {
     var body: some View {
         NavigationStack {
             Form {
-                Section("基本情報") {
-                    TextField("タイトル (例: 給料, 家賃)", text: $title)
-                    TextField("金額", value: $amount, format: .number)
+                Section(lm.t(.basicInfo)) {
+                    TextField(lm.t(.shopName), text: $title)
+                    TextField(lm.t(.amount), value: $amount, format: .number)
                         .keyboardType(.numberPad)
                     
-                    Picker("タイプ", selection: $isIncome) {
-                        Text("支出 (支払)").tag(false)
-                        Text("収入 (入金)").tag(true)
+                    Picker(lm.t(.type), selection: $isIncome) {
+                        Text(lm.t(.expense)).tag(false)
+                        Text(lm.t(.income)).tag(true)
                     }
                     .pickerStyle(.segmented)
                 }
                 
                 Section("スケジュール") {
-                    Picker("毎月の日付", selection: $day) {
+                    Picker(lm.t(.monthlyDate), selection: $day) {
                         ForEach(1...31, id: \.self) { d in
-                            Text("\(d)日").tag(d)
+                            Text("\(d)").tag(d)
                         }
                     }
                     
@@ -124,11 +126,11 @@ struct AddRecurringForm: View {
                     }
                 }
             }
-            .navigationTitle("新規ルール作成")
+            .navigationTitle(lm.t(.newRule))
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("キャンセル") { dismiss() } }
+                ToolbarItem(placement: .cancellationAction) { Button(lm.t(.cancel)) { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("保存") {
+                    Button(lm.t(.save)) {
                         let newItem = RecurringItem(title: title, amount: amount, dayOfMonth: day, isIncome: isIncome, assetName: selectedAsset)
                         modelContext.insert(newItem)
                         dismiss()
