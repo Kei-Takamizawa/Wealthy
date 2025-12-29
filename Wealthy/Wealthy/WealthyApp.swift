@@ -18,6 +18,12 @@ struct WealthyApp: App {
             ContentView()
                 // これで全画面から languageManager を呼べるようになります
                 .environmentObject(languageManager)
+                .task {
+                    // 既にインストール済みの場合のみ、アプリ起動時にモデルロードを開始
+                    if LocalLLMService.shared.isModelInstalled {
+                        await LocalLLMService.shared.loadModel()
+                    }
+                }
         }
         .modelContainer(for: [Expense.self, Asset.self, RecurringItem.self, Category.self])
     }

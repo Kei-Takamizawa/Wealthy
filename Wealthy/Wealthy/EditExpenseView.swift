@@ -14,6 +14,7 @@ struct EditExpenseView: View {
     @Environment(\.modelContext) var modelContext
     @EnvironmentObject var lm: LanguageManager
     @Bindable var expense: Expense
+    var isNewEntry: Bool = false // Default false (for existing items)
     
     // ■ 修正1: カテゴリ一覧と財布一覧を取得するコードを追加
     @Query var assets: [Asset]
@@ -136,9 +137,24 @@ struct EditExpenseView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbarColorScheme(.dark, for: .navigationBar)
             .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    if isNewEntry {
+                        Button(lm.t(.cancel)) {
+                            // キャンセル時は削除
+                            modelContext.delete(expense)
+                            dismiss()
+                        }
+                        .foregroundStyle(.red)
+                    }
+                }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button(lm.t(.done)) {
-                        updateAssetBalance()
+                        // 金額0の場合は保存せず削除
+                        if expense.amount == 0 {
+                            modelContext.delete(expense)
+                        } else {
+                            updateAssetBalance()
+                        }
                         dismiss()
                     }
                     .foregroundStyle(.orange)

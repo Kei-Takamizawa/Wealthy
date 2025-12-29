@@ -16,46 +16,58 @@ class ReceiptScanner {
         let frame: CGRect
     }
     
-    static func scan(image: UIImage, completion: @escaping (String, Int) -> Void) {
-        let request = VNRecognizeTextRequest { (request, error) in
-            guard let observations = request.results as? [VNRecognizedTextObservation] else {
-                DispatchQueue.main.async { completion("未分類", 0) }
+    struct ReceiptScanResult {
+        let rawText: String
+        let legacyTitle: String
+        let legacyAmount: Int
+    }
+
+    static func scan(image: UIImage) async -> ReceiptScanResult {
+        return await withCheckedContinuation { continuation in
+            let request = VNRecognizeTextRequest { (request, error) in
+                guard let observations = request.results as? [VNRecognizedTextObservation] else {
+                    continuation.resume(returning: ReceiptScanResult(rawText: "", legacyTitle: "未分類", legacyAmount: 0))
+                    return
+                }
+                
+                var elements: [ScannedElement] = []
+                var allTextLines: [String] = []
+                var titleCandidates: [String] = []
+                
+                for observation in observations {
+                    guard let candidate = observation.topCandidates(1).first else { continue }
+                    let box = observation.boundingBox
+                    elements.append(ScannedElement(text: candidate.string, frame: box))
+                    allTextLines.append(candidate.string)
+                    
+                    if box.origin.y > 0.6 {
+                        titleCandidates.append(candidate.string)
+                    }
+                }
+                
+                // 旧ロジックによる計算
+                let fallbackAmount = findTotalAmount(elements: elements)
+                let fallbackTitle = extractTitle(from: titleCandidates)
+                let fullText = allTextLines.joined(separator: "\n")
+                
+                let result = ReceiptScanResult(rawText: fullText, legacyTitle: fallbackTitle, legacyAmount: fallbackAmount)
+                continuation.resume(returning: result)
+            }
+            
+            request.recognitionLanguages = ["ja-JP", "en-US"]
+            request.recognitionLevel = .accurate
+            request.usesLanguageCorrection = true
+            
+            guard let cgImage = image.cgImage else {
+                continuation.resume(returning: ReceiptScanResult(rawText: "", legacyTitle: "Error", legacyAmount: 0))
                 return
             }
             
-            var elements: [ScannedElement] = []
-            var titleCandidates: [String] = []
+            let handler = VNImageRequestHandler(cgImage: cgImage, options: [:])
             
-            for observation in observations {
-                guard let candidate = observation.topCandidates(1).first else { continue }
-                let box = observation.boundingBox
-                elements.append(ScannedElement(text: candidate.string, frame: box))
-                
-                // Y座標が0.7以上（上の方）にあるものを店名候補とする
-                if box.origin.y > 0.6 {
-                    titleCandidates.append(candidate.string)
-                }
+            DispatchQueue.global(qos: .userInitiated).async {
+                try? handler.perform([request])
             }
-            
-            // 金額解析
-            let amount = findTotalAmount(elements: elements)
-            // 店名解析
-            let title = extractTitle(from: titleCandidates)
-            
-            DispatchQueue.main.async {
-                completion(title, amount)
-            }
-        }
-        
-        request.recognitionLanguages = ["ja-JP", "en-US"]
-        request.recognitionLevel = .accurate
-        request.usesLanguageCorrection = true
-        
-        guard let cgImage = image.cgImage else { return }
-        let handler = VNImageRequestHandler(cgImage: cgImage, options: [:])
-        
-        DispatchQueue.global(qos: .userInitiated).async {
-            try? handler.perform([request])
         }
     }
     

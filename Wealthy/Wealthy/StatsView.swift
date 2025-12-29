@@ -46,9 +46,13 @@ struct StatsView: View {
                     // スワイプ可能なグラフエリア
                     TabView(selection: $selectedMonthIndex) {
                         ForEach(0..<months.count, id: \.self) { index in
+                            let currentExpenses = filterExpenses(for: months[index])
+                            let prevExpenses = index > 0 ? filterExpenses(for: months[index - 1]) : []
+                            
                             MonthlyGraphView(
                                 month: months[index],
-                                expenses: filterExpenses(for: months[index])
+                                expenses: currentExpenses,
+                                prevExpenses: prevExpenses
                             )
                             .tag(index)
                         }
@@ -74,26 +78,30 @@ struct MonthlyGraphView: View {
     @EnvironmentObject var lm: LanguageManager
     let month: Date
     let expenses: [Expense]
+    let prevExpenses: [Expense] // 先月のデータ
     
-    // その月の合計
-    var totalAmount: Int {
-        expenses.reduce(0) { $0 + $1.amount }
+    // その月の合計（支出のみ）
+    var totalExpense: Int {
+        expenses.filter { !$0.isIncome }.reduce(0) { $0 + $1.amount }
     }
     
-    // 日ごとの集計データを作る
+    // 先月の合計（支出のみ）
+    var prevTotalExpense: Int {
+        prevExpenses.filter { !$0.isIncome }.reduce(0) { $0 + $1.amount }
+    }
+    
+    // 日ごとの集計データ（支出のみ）
     var dailyData: [(day: Int, amount: Int)] {
         let calendar = Calendar.current
-        // その月の日数（28~31）を取得
         guard let range = calendar.range(of: .day, in: .month, for: month) else { return [] }
         
         var data: [(Int, Int)] = []
+        let expenseItems = expenses.filter { !$0.isIncome } // 支出のみにフィルタリング
         
         for day in range {
-            // その日の支出を合計する
-            let sum = expenses
+            let sum = expenseItems
                 .filter { calendar.component(.day, from: $0.date) == day }
                 .reduce(0) { $0 + $1.amount }
-            
             data.append((day, sum))
         }
         return data
@@ -102,34 +110,51 @@ struct MonthlyGraphView: View {
     var body: some View {
         VStack(spacing: 20) {
             
-            // 1. ヘッダー情報（月と合計）
-            VStack(spacing: 5) {
-                Text(month.formatted(.dateTime.year().month(.wide))) // "2025年 12月"
+            // 1. ヘッダー情報（月、支出合計、先月比）
+            VStack(spacing: 10) {
+                Text(month.formatted(.dateTime.year().month(.wide)))
                     .font(.title3)
                     .foregroundStyle(.gray)
                 
-                Text(lm.currencySymbol + "\(totalAmount)")
+                // 支出合計
+                Text(lm.currencySymbol + "\(totalExpense)")
                     .font(.system(size: 42, weight: .heavy, design: .rounded))
-                    .foregroundStyle(.orange)
+                    .foregroundStyle(.red)
                     .contentTransition(.numericText())
+                
+                // 先月比
+                if prevExpenses.isEmpty {
+                   Text("-")
+                       .font(.caption)
+                       .foregroundStyle(.gray)
+                } else {
+                    let diff = totalExpense - prevTotalExpense
+                    let sign = diff >= 0 ? "+" : ""
+                    // "先月比: +¥1000"
+                    HStack(spacing: 4) {
+                        Text("vs Last Month:") // 簡易ローカライズ対応が必要なら lm.t 追加推奨だが、今回は直書き
+                            .font(.caption)
+                            .foregroundStyle(.gray)
+                        Text("\(sign)\(lm.currencySymbol)\(diff)")
+                            .font(.caption).bold()
+                            .foregroundStyle(diff > 0 ? .red : (diff < 0 ? .green : .gray)) // 支出増＝赤（悪い）、支出減＝緑（良い）
+                    }
+                }
             }
             .padding(.top, 20)
             
             // 2. 棒グラフ
-            if expenses.isEmpty {
-                // データがない時
+            if expenses.filter({ !$0.isIncome }).isEmpty {
                 Spacer()
                 ContentUnavailableView {
                     Image(systemName: "chart.bar.xaxis")
                         .font(.system(size: 50))
                         .foregroundStyle(.gray.opacity(0.5))
                 } description: {
-                    Text(lm.t(.noData))
-                        .foregroundStyle(.gray)
+                    Text(lm.t(.noData)).foregroundStyle(.gray)
                 }
                 Spacer()
             } else {
-                // グラフ描画
                 Chart {
                     ForEach(dailyData, id: \.day) { item in
                         BarMark(
@@ -139,20 +164,9 @@ struct MonthlyGraphView: View {
                         .foregroundStyle(LinearGradient(colors: [.orange, .red], startPoint: .bottom, endPoint: .top))
                         .cornerRadius(4)
                     }
-                    
-                    // 平均ライン（オプション）
-                    if !expenses.isEmpty {
-                        let average = totalAmount / dailyData.count
-                        RuleMark(y: .value("Average", average))
-                            .lineStyle(StrokeStyle(lineWidth: 1, dash: [5]))
-                            .foregroundStyle(.gray.opacity(0.5))
-                            .annotation(position: .leading, alignment: .bottom) {
-                                Text("Avg")
-                                    .font(.caption2)
-                                    .foregroundStyle(.gray)
-                            }
-                    }
                 }
+                // 横軸：1〜31（または月末）で固定
+                .chartXScale(domain: 1...31)
                 .chartXAxis {
                     AxisMarks(values: .stride(by: 5)) { value in
                         AxisGridLine().foregroundStyle(.gray.opacity(0.2))
@@ -174,7 +188,6 @@ struct MonthlyGraphView: View {
                 .cornerRadius(20)
                 .padding(.horizontal)
             }
-            
             Spacer()
         }
     }

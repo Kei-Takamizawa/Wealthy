@@ -16,7 +16,12 @@ struct ContentView: View {
     @Query private var recurringItems: [RecurringItem]
     @Query private var categories: [Category] // New
     
-    @State private var processedMessage: String? = nil
+    @AppStorage("hasSelectedLanguage") private var hasSelectedLanguage = false
+    @AppStorage("hasShownAIDownloadAlert") private var hasShownAIDownloadAlert = false
+    
+    @State private var showLanguageAlert = false
+    @State private var showAIDownloadAlert = false
+    @State private var processedMessage: String?
     
     var body: some View {
         TabView {
@@ -34,13 +39,56 @@ struct ContentView: View {
         }
         .accentColor(.orange)
         .onAppear {
-            setupInitialData() // 初期データ作成
-            checkRecurringItems() // 定期処理チェック
+            setupInitialData() 
+            checkRecurringItems()
+            
+            // 初回起動時のフロー
+            if !hasSelectedLanguage {
+                showLanguageAlert = true
+            } else if !hasShownAIDownloadAlert {
+                // 言語は選択済みだがAIはまだの場合（アプデ後など）
+                showAIDownloadAlert = true
+            }
+        }
+        // 言語選択アラート
+        .alert(lm.t(.languageAlertTitle), isPresented: $showLanguageAlert) {
+            Button("日本語") {
+                lm.currentLanguage = .japanese
+                completeLanguageSelection()
+            }
+            Button("English") {
+                lm.currentLanguage = .english
+                completeLanguageSelection()
+            }
+        } message: {
+            Text(lm.t(.languageAlertMessage))
+        }
+        // AIダウンロードアラート
+        .alert(lm.t(.aiDownloadAlertTitle), isPresented: $showAIDownloadAlert) {
+            Button(lm.t(.download), role: .none) {
+                hasShownAIDownloadAlert = true
+                Task { await LocalLLMService.shared.loadModel() }
+            }
+            Button(lm.t(.notNow), role: .cancel) {
+                hasShownAIDownloadAlert = true
+            }
+        } message: {
+            Text(lm.t(.aiDownloadAlertMessage))
         }
         .alert("固定収支を反映しました", isPresented: Binding(get: { processedMessage != nil }, set: { _ in processedMessage = nil })) {
             Button("OK", role: .cancel) { }
         } message: {
             Text(processedMessage ?? "")
+        }
+    }
+    
+    private func completeLanguageSelection() {
+        hasSelectedLanguage = true
+        // 言語選択後にAIアラートを出す
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+            if !hasShownAIDownloadAlert {
+                showAIDownloadAlert = true
+            }
         }
     }
     

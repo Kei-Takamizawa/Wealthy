@@ -14,8 +14,6 @@ struct AssetsView: View {
     @Query var assets: [Asset]
     
     @State private var showingAddAsset = false
-    @State private var showingRecurringSettings = false
-    @State private var showingCategorySettings = false
     @State private var assetToEdit: Asset?
     
     var body: some View {
@@ -24,37 +22,6 @@ struct AssetsView: View {
                 Color.black.ignoresSafeArea()
                 
                 List {
-                    // 言語設定
-                    Section("LANGUAGE") {
-                        Picker("Select Language", selection: $lm.currentLanguage) {
-                            ForEach(AppLanguage.allCases) { lang in
-                                Text(lang.rawValue).tag(lang)
-                            }
-                        }
-                        .pickerStyle(.menu)
-                        .listRowBackground(Color(white: 0.1))
-                        .foregroundStyle(.white)
-                    }
-                    
-                    // 設定メニュー
-                    Section(lm.t(.settings)) {
-                        Button { showingRecurringSettings = true } label: {
-                            HStack {
-                                Image(systemName: "repeat.circle.fill").foregroundStyle(.orange).font(.title2)
-                                Text(lm.t(.recurring)).font(.headline).foregroundStyle(.white)
-                                Spacer(); Image(systemName: "chevron.right").foregroundStyle(.gray)
-                            }
-                        }
-                        Button { showingCategorySettings = true } label: {
-                            HStack {
-                                Image(systemName: "tag.fill").foregroundStyle(.orange).font(.title2)
-                                Text(lm.t(.category)).font(.headline).foregroundStyle(.white)
-                                Spacer(); Image(systemName: "chevron.right").foregroundStyle(.gray)
-                            }
-                        }
-                    }
-                    .listRowBackground(Color(white: 0.1))
-                    
                     // 資産リスト
                     Section(lm.t(.wallets)) {
                         ForEach(assets) { asset in
@@ -92,8 +59,6 @@ struct AssetsView: View {
             .toolbarColorScheme(.dark, for: .navigationBar)
             .sheet(isPresented: $showingAddAsset) { AddAssetView() }
             .sheet(item: $assetToEdit) { asset in EditAssetView(asset: asset) }
-            .sheet(isPresented: $showingRecurringSettings) { RecurringSettingsView() }
-            .sheet(isPresented: $showingCategorySettings) { CategoriesView() }
         }
     }
 }
