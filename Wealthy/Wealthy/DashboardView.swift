@@ -56,6 +56,7 @@ struct DashboardView: View {
                 EditExpenseView(expense: expense, isNewEntry: isNewEditingEntry) 
             }
             .sheet(isPresented: $showSettings) { AdvancedSettingsView() }
+            .sheet(isPresented: $showChat) { ChatView() }
             // ... (rest of modifiers)
 
     
@@ -130,12 +131,13 @@ struct DashboardView: View {
     @State private var currentScanResult: ReceiptScanner.ReceiptScanResult?
     @State private var tempImageFilename: String?
     @State private var showSettings = false
+    @State private var showChat = false
     
     // AI処理
     private func processWithAI(result: ReceiptScanner.ReceiptScanResult, filename: String?) async {
         do {
             let catNames = categories.map { $0.name }
-            let jsonString = try await LocalLLMService.shared.generateResponse(prompt: result.rawText, categories: catNames)
+            let jsonString = try await LocalLLMService.shared.extractReceiptData(prompt: result.rawText, categories: catNames)
             
             if let data = jsonString.data(using: .utf8),
                let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
@@ -281,6 +283,10 @@ struct DashboardView: View {
                 modelContext.insert(newExpense)
                 isNewEditingEntry = true
                 expenseToEdit = newExpense
+            }
+            // Butler Button
+            ActionButton(icon: "bubble.left.and.bubble.right.fill", label: lm.t(.aiButler), color: .purple) {
+                showChat = true
             }
         }
         .padding(.horizontal)

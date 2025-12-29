@@ -39,6 +39,9 @@ enum L10n: String {
     case manualInput, aiModelManagement, languageSettings, languageAlertTitle, languageAlertMessage
     case aiDownloadAlertTitle, aiDownloadAlertMessage, download, notNow, installed, uninstalled
     case deleteModel, modelDescription, downloading, aiReady, modelDeleted, modelInstall
+    
+    // AI Butler Keys
+    case aiButler, aiButlerWelcome, askAnything
 }
 
 final class LanguageManager: ObservableObject {
@@ -113,7 +116,12 @@ final class LanguageManager: ObservableObject {
             .downloading: "ダウンロード中",
             .aiReady: "準備完了",
             .modelDeleted: "モデル削除済",
-            .modelInstall: "モデルインストール"
+            .modelInstall: "モデルインストール",
+            
+            // Butler
+            .aiButler: "AI執事",
+            .aiButlerWelcome: "こんにちは。私はあなたの家計執事です。資産や支出について何かお手伝いできることはありますか？",
+            .askAnything: "何でも聞いてください..."
         ],
         .english: [
             .home: "Home", .totalAssets: "Total Assets", .scan: "SCAN", .deposit: "DEPOSIT", .history: "Recent Activity",
@@ -150,7 +158,12 @@ final class LanguageManager: ObservableObject {
             .downloading: "Downloading",
             .aiReady: "Ready",
             .modelDeleted: "Model Deleted",
-            .modelInstall: "Model Install"
+            .modelInstall: "Model Install",
+            
+            // Butler
+            .aiButler: "AI Butler",
+            .aiButlerWelcome: "Hello. I am your financial butler. How can I help you regarding your assets or expenses?",
+            .askAnything: "Ask anything..."
         ]
     ]
     

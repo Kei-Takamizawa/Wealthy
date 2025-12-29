@@ -68,48 +68,121 @@ class LocalLLMService {
         self.modelContainer = nil
     }
     
-    @MainActor
-    func generateResponse(prompt: String, categories: [String]) async throws -> String {
-        guard let container = modelContainer else {
-            throw NSError(domain: "LocalLLMService", code: 1, userInfo: [NSLocalizedDescriptionKey: "Model not loaded"])
+    // チャット用メッセージ構造体
+    struct ChatMessage: Identifiable, Equatable {
+        let id = UUID()
+        let role: MessageRole
+        let content: String
+        
+        enum MessageRole {
+            case user, assistant, system
         }
-        return try await generateInternal(container: container, prompt: prompt, categories: categories)
     }
 
     @MainActor
-    private func generateInternal(container: ModelContainer, prompt: String, categories: [String]) async throws -> String {
-        self.isThinking = true
-        defer { self.isThinking = false }
+    func extractReceiptData(prompt: String, categories: [String]) async throws -> String {
+        guard let container = modelContainer else {
+            throw NSError(domain: "LocalLLMService", code: 1, userInfo: [NSLocalizedDescriptionKey: "Model not loaded"])
+        }
         
         let categoryListString = categories.map { "\"\($0)\"" }.joined(separator: ", ")
         
-        // レシート解析用の厳格なシステムプロンプト (日付追加)
+        // 1. System Prompt: Role & Constraints for Receipt
         let systemPrompt = """
-        You are a receipt scanner assistant. Extract "Shop Name", "Total Amount", and "Date" from the OCR text.
-        Also classify the receipt into one of these categories: [\(categoryListString)].
-        Output JSON ONLY. Format: {"shopName": "Store Name", "amount": 1000, "category": "CategoryName", "date": "YYYY-MM-DD"}
-        If amount is unknown, set to 0. If category is unclear, choose "Others". If date is unknown, use null.
-        NO markdown, NO explanations.
+        You are a Receipt Information Extractor. Your job is to extract specific data from receipt OCR text and output strict JSON.
+        
+        TARGET DATA:
+        - "shopName": The name of the store (often at the top).
+        - "amount": The total paid amount (look for "TOTAL", "合計", "支払", or the largest logical number).
+        - "category": Choose the best fit from this list: [\(categoryListString)]. If unsure, use "未分類".
+        - "date": The transaction date in "YYYY-MM-DD" format.
+        
+        RULES:
+        - Output ONLY valid JSON.
+        - DO NOT return Markdown (no ```json).
+        - DO NOT explain your reasoning.
+        - If multiple candidates exist for Shop Name, pick the most prominent text at the header.
+        - If amount is ambiguous, prefer the number following "Total" or "合計".
         """
         
+        // 2. One-Shot Example
+        let exampleInput = """
+        RECEIPT
+        Store ABC
+        2023-10-25 14:30
+        Item A   1000
+        Item B    500
+        Total    1500
+        """
+        let exampleOutput = "{\"shopName\": \"Store ABC\", \"amount\": 1500, \"category\": \"食費\", \"date\": \"2023-10-25\"}"
+        
+        // 3. Final Prompt Construction
         let formattedPrompt = """
         <|begin_of_text|><|start_header_id|>system<|end_header_id|>
         
         \(systemPrompt)<|eot_id|><|start_header_id|>user<|end_header_id|>
         
+        Example Input:
+        \(exampleInput)
+        
+        Example Output:
+        \(exampleOutput)
+        
+        Actual Input:
         \(prompt)<|eot_id|><|start_header_id|>assistant<|end_header_id|>
         
         """
         
-        // fullOutput removed
+        return try await generate(container: container, formattedPrompt: formattedPrompt, temperature: 0.1)
+    }
+    
+    @MainActor
+    func chat(history: [ChatMessage], context: String) async throws -> String {
+        guard let container = modelContainer else {
+            throw NSError(domain: "LocalLLMService", code: 1, userInfo: [NSLocalizedDescriptionKey: "Model not loaded"])
+        }
+        
+        // システムプロンプト + コンテキスト (Butler Role)
+        let systemPrompt = """
+        You are a helpful and intelligent financial butler for the user.
+        Your name is "Wealthy Butler".
+        You have access to the user's financial summary provided below.
+        
+        FINANCIAL CONTEXT:
+        \(context)
+        
+        RULES:
+        - Be polite, professional, yet friendly.
+        - Analyze the data provided in the context to answer questions.
+        - If asked about future advice, give constructive and prudent financial advice based on the data.
+        - If the user speaks Japanese, reply in Japanese.
+        - Keep answers concise unless asked for details.
+        """
+        
+        var fullPrompt = "<|begin_of_text|><|start_header_id|>system<|end_header_id|>\n\n\(systemPrompt)<|eot_id|>"
+        
+        for msg in history {
+            let roleStr = msg.role == .user ? "user" : "assistant"
+            fullPrompt += "<|start_header_id|>\(roleStr)<|end_header_id|>\n\n\(msg.content)<|eot_id|>"
+        }
+        
+        fullPrompt += "<|start_header_id|>assistant<|end_header_id|>\n\n"
+        
+        return try await generate(container: container, formattedPrompt: fullPrompt, temperature: 0.7)
+    }
+
+    @MainActor
+    private func generate(container: ModelContainer, formattedPrompt: String, temperature: Float) async throws -> String {
+        self.isThinking = true
+        defer { self.isThinking = false }
         
         let result: GenerateResult = try await container.perform { (context: ModelContext) -> GenerateResult in
             let userInput = UserInput(prompt: formattedPrompt)
             let input = try await context.processor.prepare(input: userInput)
             
             var params = GenerateParameters()
-            params.temperature = 0.1
-            params.maxTokens = 512
+            params.temperature = temperature
+            params.maxTokens = 1024 // Increased for chat
             
             let eosTokenId = context.tokenizer.eosTokenId
             
@@ -118,14 +191,9 @@ class LocalLLMService {
                 parameters: params,
                 context: context
             ) { (tokens: [Int]) -> GenerateDisposition in
-                
-                let text = context.tokenizer.decode(tokens: tokens)
-                // fullOutput accumulation removed
-                
                 if let eosId = eosTokenId, tokens.contains(eosId) { return .stop }
-                if tokens.contains(128009) { return .stop }
-                if tokens.contains(128001) { return .stop }
-                
+                if tokens.contains(128009) { return .stop } // <|eot_id|>
+                if tokens.contains(128001) { return .stop } // <|end_of_text|>
                 return .more
             }
         }
