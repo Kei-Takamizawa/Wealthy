@@ -1,6 +1,6 @@
 //
 //  StatsView.swift
-//  家計簿
+//  Wealthy
 //
 //  Created by Harrison on 12/26/25.
 //
@@ -12,92 +12,124 @@ import Charts
 struct StatsView: View {
     @EnvironmentObject var lm: LanguageManager
     @Query var expenses: [Expense]
+    @Query var categories: [Category] // For colors/icons
     
-    // 月切り替え用（前後2年分を用意）
+    // Month Switching
     @State private var selectedMonthIndex: Int = 24
     let months: [Date]
+    
+    // Chart Type
+    enum ChartType: String, CaseIterable, Identifiable {
+        case bar = "Daily"
+        case pie = "Category"
+        var id: String { self.rawValue }
+    }
+    @State private var chartType: ChartType = .bar
     
     init() {
         var tempMonths: [Date] = []
         let calendar = Calendar.current
         let currentMonth = Date()
-        // 過去24ヶ月 〜 未来24ヶ月
         for i in -24...24 {
             if let date = calendar.date(byAdding: .month, value: i, to: currentMonth) {
                 tempMonths.append(date)
             }
         }
         self.months = tempMonths
-        _selectedMonthIndex = State(initialValue: 24) // 初期値は「今月」
+        _selectedMonthIndex = State(initialValue: 24)
     }
     
     var body: some View {
         NavigationStack {
             ZStack {
-                Color.black.ignoresSafeArea()
+                // Modern Dark Background
+                LinearGradient(colors: [Color.black, Color(white: 0.05)], startPoint: .top, endPoint: .bottom)
+                    .ignoresSafeArea()
                 
-                VStack(spacing: 0) {
-                    // タイトルエリア
-                    Text(lm.t(.analysis))
-                        .font(.headline)
-                        .foregroundStyle(.white)
-                        .padding(.top)
+                VStack(spacing: 20) {
+                    // Header Area
+                    VStack(spacing: 12) {
+                        Text(lm.t(.analysis))
+                            .font(.headline)
+                            .foregroundStyle(.white)
+                        
+                        // Chart Type Picker
+                        Picker("Type", selection: $chartType) {
+                            ForEach(ChartType.allCases) { type in
+                                Text(type.rawValue).tag(type)
+                            }
+                        }
+                        .pickerStyle(.segmented)
+                        .padding(.horizontal, 40)
+                    }
+                    .padding(.top)
                     
-                    // スワイプ可能なグラフエリア
+                    // Main Chart Area (Swipeable)
                     TabView(selection: $selectedMonthIndex) {
                         ForEach(0..<months.count, id: \.self) { index in
                             let currentExpenses = filterExpenses(for: months[index])
-                            let prevExpenses = index > 0 ? filterExpenses(for: months[index - 1]) : []
                             
-                            MonthlyGraphView(
-                                month: months[index],
-                                expenses: currentExpenses,
-                                prevExpenses: prevExpenses
-                            )
+                            VStack {
+                                monthHeader(for: months[index], expenses: currentExpenses)
+                                
+                                if chartType == .bar {
+                                    ModernBarChart(month: months[index], expenses: currentExpenses, lm: lm)
+                                        .transition(.opacity.combined(with: .move(edge: .leading)))
+                                } else {
+                                    ModernPieChart(expenses: currentExpenses, categories: categories, lm: lm)
+                                        .transition(.opacity.combined(with: .move(edge: .trailing)))
+                                }
+                            }
                             .tag(index)
+                            .padding(.horizontal)
                         }
                     }
-                    .tabViewStyle(.page(indexDisplayMode: .never)) // ドットを消す
+                    .tabViewStyle(.page(indexDisplayMode: .never))
+                    .animation(.spring, value: chartType) // Animate switcher
+                    
+                    Spacer()
                 }
             }
             .navigationBarHidden(true)
         }
     }
     
-    // 指定した月のデータだけ抽出する
     private func filterExpenses(for date: Date) -> [Expense] {
         let calendar = Calendar.current
         return expenses.filter {
             calendar.isDate($0.date, equalTo: date, toGranularity: .month)
         }
     }
+    
+    private func monthHeader(for date: Date, expenses: [Expense]) -> some View {
+        let totalExpense = expenses.filter { !$0.isIncome }.reduce(0) { $0 + $1.amount }
+        
+        return VStack(spacing: 5) {
+            Text(date.formatted(.dateTime.year().month(.wide)))
+                .font(.title3)
+                .foregroundStyle(.gray)
+            
+            Text(lm.currencySymbol + "\(totalExpense)")
+                .font(.system(size: 40, weight: .bold, design: .rounded))
+                .foregroundStyle(.white)
+                .contentTransition(.numericText())
+        }
+        .padding(.top, 10)
+    }
 }
 
-// ■ 月ごとのグラフを表示するビュー
-struct MonthlyGraphView: View {
-    @EnvironmentObject var lm: LanguageManager
+// MARK: - Modern Bar Chart
+struct ModernBarChart: View {
     let month: Date
     let expenses: [Expense]
-    let prevExpenses: [Expense] // 先月のデータ
+    let lm: LanguageManager
     
-    // その月の合計（支出のみ）
-    var totalExpense: Int {
-        expenses.filter { !$0.isIncome }.reduce(0) { $0 + $1.amount }
-    }
-    
-    // 先月の合計（支出のみ）
-    var prevTotalExpense: Int {
-        prevExpenses.filter { !$0.isIncome }.reduce(0) { $0 + $1.amount }
-    }
-    
-    // 日ごとの集計データ（支出のみ）
     var dailyData: [(day: Int, amount: Int)] {
         let calendar = Calendar.current
         guard let range = calendar.range(of: .day, in: .month, for: month) else { return [] }
+        let expenseItems = expenses.filter { !$0.isIncome }
         
         var data: [(Int, Int)] = []
-        let expenseItems = expenses.filter { !$0.isIncome } // 支出のみにフィルタリング
-        
         for day in range {
             let sum = expenseItems
                 .filter { calendar.component(.day, from: $0.date) == day }
@@ -108,87 +140,101 @@ struct MonthlyGraphView: View {
     }
     
     var body: some View {
-        VStack(spacing: 20) {
-            
-            // 1. ヘッダー情報（月、支出合計、先月比）
-            VStack(spacing: 10) {
-                Text(month.formatted(.dateTime.year().month(.wide)))
-                    .font(.title3)
-                    .foregroundStyle(.gray)
-                
-                // 支出合計
-                Text(lm.currencySymbol + "\(totalExpense)")
-                    .font(.system(size: 42, weight: .heavy, design: .rounded))
-                    .foregroundStyle(.red)
-                    .contentTransition(.numericText())
-                
-                // 先月比
-                if prevExpenses.isEmpty {
-                   Text("-")
-                       .font(.caption)
-                       .foregroundStyle(.gray)
-                } else {
-                    let diff = totalExpense - prevTotalExpense
-                    let sign = diff >= 0 ? "+" : ""
-                    // "先月比: +¥1000"
-                    HStack(spacing: 4) {
-                        Text("vs Last Month:") // 簡易ローカライズ対応が必要なら lm.t 追加推奨だが、今回は直書き
-                            .font(.caption)
-                            .foregroundStyle(.gray)
-                        Text("\(sign)\(lm.currencySymbol)\(diff)")
-                            .font(.caption).bold()
-                            .foregroundStyle(diff > 0 ? .red : (diff < 0 ? .green : .gray)) // 支出増＝赤（悪い）、支出減＝緑（良い）
-                    }
-                }
+        Chart {
+            ForEach(dailyData, id: \.day) { item in
+                BarMark(
+                    x: .value("Day", item.day),
+                    y: .value("Amount", item.amount)
+                )
+                .foregroundStyle(
+                    LinearGradient(
+                        colors: [.orange, .red],
+                        startPoint: .bottom,
+                        endPoint: .top
+                    )
+                )
+                .cornerRadius(6)
             }
-            .padding(.top, 20)
-            
-            // 2. 棒グラフ
-            if expenses.filter({ !$0.isIncome }).isEmpty {
-                Spacer()
-                ContentUnavailableView {
-                    Image(systemName: "chart.bar.xaxis")
-                        .font(.system(size: 50))
-                        .foregroundStyle(.gray.opacity(0.5))
-                } description: {
-                    Text(lm.t(.noData)).foregroundStyle(.gray)
-                }
-                Spacer()
+        }
+        .chartXScale(domain: 1...31)
+        .chartYAxis {
+            AxisMarks(position: .leading) { value in
+                AxisGridLine().foregroundStyle(.gray.opacity(0.1))
+                AxisValueLabel().foregroundStyle(.gray.opacity(0.6))
+            }
+        }
+        .chartXAxis {
+            AxisMarks(values: .stride(by: 5)) { value in
+                AxisGridLine().foregroundStyle(.gray.opacity(0.1))
+                AxisValueLabel().foregroundStyle(.gray.opacity(0.6))
+            }
+        }
+        .frame(height: 300)
+        .padding()
+        .background(RoundedRectangle(cornerRadius: 24).fill(Color.white.opacity(0.05)))
+    }
+}
+
+// MARK: - Modern Pie Chart
+struct ModernPieChart: View {
+    let expenses: [Expense]
+    let categories: [Category]
+    let lm: LanguageManager
+    
+    struct PieData: Identifiable {
+        let id = UUID()
+        let category: String
+        let amount: Int
+        let color: String
+    }
+    
+    var data: [PieData] {
+        let expenseItems = expenses.filter { !$0.isIncome }
+        let grouped = Dictionary(grouping: expenseItems, by: { $0.categoryName ?? "Unknown" })
+        
+        return grouped.map { (key, value) in
+            let total = value.reduce(0) { $0 + $1.amount }
+            // Find color
+            let catColor = categories.first(where: { $0.name == key })?.colorHex ?? "808080"
+            return PieData(category: key, amount: total, color: catColor)
+        }.sorted { $0.amount > $1.amount }
+    }
+    
+    var body: some View {
+        VStack {
+            if data.isEmpty {
+                ContentUnavailableView(label: {
+                    Label(lm.t(.noData), systemImage: "chart.pie")
+                })
             } else {
-                Chart {
-                    ForEach(dailyData, id: \.day) { item in
-                        BarMark(
-                            x: .value("Day", item.day),
-                            y: .value("Amount", item.amount)
-                        )
-                        .foregroundStyle(LinearGradient(colors: [.orange, .red], startPoint: .bottom, endPoint: .top))
-                        .cornerRadius(4)
-                    }
+                Chart(data) { item in
+                    SectorMark(
+                        angle: .value("Amount", item.amount),
+                        innerRadius: .ratio(0.6), // Donut style
+                        angularInset: 2.0
+                    )
+                    .foregroundStyle(Color(hex: item.color))
+                    .cornerRadius(5)
                 }
-                // 横軸：1〜31（または月末）で固定
-                .chartXScale(domain: 1...31)
-                .chartXAxis {
-                    AxisMarks(values: .stride(by: 5)) { value in
-                        AxisGridLine().foregroundStyle(.gray.opacity(0.2))
-                        AxisTick().foregroundStyle(.gray)
-                        if let intValue = value.as(Int.self) {
-                            AxisValueLabel("\(intValue)").foregroundStyle(.gray)
+                .frame(height: 300)
+                .padding()
+                
+                // Legend
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 12) {
+                        ForEach(data) { item in
+                            HStack {
+                                Circle().fill(Color(hex: item.color)).frame(width: 12, height: 12)
+                                Text(lm.translateCategory(name: item.category)).foregroundStyle(.white)
+                                Spacer()
+                                Text(lm.currencySymbol + "\(item.amount)").bold().foregroundStyle(.gray)
+                            }
                         }
                     }
+                    .padding()
                 }
-                .chartYAxis {
-                    AxisMarks { value in
-                        AxisGridLine().foregroundStyle(.gray.opacity(0.2))
-                        AxisValueLabel().foregroundStyle(.gray)
-                    }
-                }
-                .frame(height: 350)
-                .padding()
-                .background(Color(white: 0.1))
-                .cornerRadius(20)
-                .padding(.horizontal)
             }
-            Spacer()
         }
+        .background(RoundedRectangle(cornerRadius: 24).fill(Color.white.opacity(0.05)))
     }
 }

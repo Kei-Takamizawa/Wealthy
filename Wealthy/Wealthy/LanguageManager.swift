@@ -42,6 +42,16 @@ enum L10n: String {
     
     // AI Butler Keys
     case aiButler, aiButlerWelcome, askAnything
+    
+    // Backup Keys
+    case dataManagement, backup, restore, backupDesc, backupSuccess, restoreSuccess, error
+    
+    // Category Customization
+    case emoji, customColor, selectFromPalette
+    
+    // Ticker & UI
+    case tickerLanguage, tickerJP, tickerEN
+    case currentStatus, availableForDownload, installedModels, noInstalledModels, active, select, install, uninstallSwipeTip
 }
 
 final class LanguageManager: ObservableObject {
@@ -105,10 +115,10 @@ final class LanguageManager: ObservableObject {
             .languageSettings: "言語設定",
             .languageAlertTitle: "言語を選択 / Select Language",
             .languageAlertMessage: "アプリの言語を選択してください。\nPlease select your preferred language.\n(後で設定から変更できます / You can change this later in Settings)",
-            .aiDownloadAlertTitle: "AIモデルをダウンロード",
-            .aiDownloadAlertMessage: "レシート解析の精度を上げるために、高性能なAIモデルをダウンロードしますか？（約2GB・Wi-Fi推奨）\n設定画面からいつでもダウンロードや削除が可能です。",
-            .download: "ダウンロード",
-            .notNow: "今はしない",
+            .aiDownloadAlertTitle: "AIモデルのダウンロード",
+            .aiDownloadAlertMessage: "レシート解析にはAIモデルが必要です。\n設定画面から好みのモデルをダウンロードしてください。",
+            .download: "設定へ移動",
+            .notNow: "キャンセル",
             .installed: "インストール済み",
             .uninstalled: "未インストール",
             .deleteModel: "モデルを削除",
@@ -121,7 +131,34 @@ final class LanguageManager: ObservableObject {
             // Butler
             .aiButler: "AI執事",
             .aiButlerWelcome: "こんにちは。私はあなたの家計執事です。資産や支出について何かお手伝いできることはありますか？",
-            .askAnything: "何でも聞いてください..."
+            .askAnything: "何でも聞いてください...",
+            
+            // Backup
+            .dataManagement: "データ管理",
+            .backup: "バックアップ作成",
+            .restore: "バックアップから復元",
+            .backupDesc: "アプリの全データをファイルに保存します。",
+            .backupSuccess: "バックアップを作成しました。",
+            .restoreSuccess: "復元が完了しました。",
+            .error: "エラー",
+            
+            // Category Customization
+            .emoji: "絵文字",
+            .customColor: "カスタムカラー",
+            .selectFromPalette: "パレットから選択",
+            
+            // Ticker Settings
+            .tickerLanguage: "ホームティッカー言語",
+            .tickerJP: "日本語",
+            .tickerEN: "英語",
+            .currentStatus: "現在の状態",
+            .availableForDownload: "ダウンロード可能",
+            .installedModels: "インストール済みモデル",
+            .noInstalledModels: "インストール済みのモデルはありません",
+            .active: "使用中",
+            .select: "選択",
+            .install: "インストール",
+            .uninstallSwipeTip: "ヒント: リストを左にスワイプして削除"
         ],
         .english: [
             .home: "Home", .totalAssets: "Total Assets", .scan: "SCAN", .deposit: "DEPOSIT", .history: "Recent Activity",
@@ -148,9 +185,9 @@ final class LanguageManager: ObservableObject {
             .languageAlertTitle: "Select Language",
             .languageAlertMessage: "Please select your preferred language.\n(You can change this later in Settings)",
             .aiDownloadAlertTitle: "Download AI Model",
-            .aiDownloadAlertMessage: "Do you want to download the high-performance AI model for better receipt scanning? (~2GB, Wi-Fi recommended)\nYou can download or delete it later in Settings.",
-            .download: "Download",
-            .notNow: "Not Now",
+            .aiDownloadAlertMessage: "AI Model is required for receipt scanning.\nPlease download a model from Settings.",
+            .download: "Go to Settings",
+            .notNow: "Cancel",
             .installed: "Installed",
             .uninstalled: "Not Installed",
             .deleteModel: "Delete Model",
@@ -163,7 +200,34 @@ final class LanguageManager: ObservableObject {
             // Butler
             .aiButler: "AI Butler",
             .aiButlerWelcome: "Hello. I am your financial butler. How can I help you regarding your assets or expenses?",
-            .askAnything: "Ask anything..."
+            .askAnything: "Ask anything...",
+            
+            // Backup
+            .dataManagement: "Data Management",
+            .backup: "Backup Data",
+            .restore: "Restore Data",
+            .backupDesc: "Save all app data to a file.",
+            .backupSuccess: "Backup created successfully.",
+            .restoreSuccess: "Restore completed successfully.",
+            .error: "Error",
+            
+            // Category Customization
+            .emoji: "Emoji",
+            .customColor: "Custom Color",
+            .selectFromPalette: "Select from Palette",
+            
+            // Ticker Settings
+            .tickerLanguage: "Home Ticker Language",
+            .tickerJP: "Japanese",
+            .tickerEN: "English",
+            .currentStatus: "Current Activity",
+            .availableForDownload: "Available for Download",
+            .installedModels: "Installed Models",
+            .noInstalledModels: "No installed models",
+            .active: "Active",
+            .select: "Select",
+            .install: "Install",
+            .uninstallSwipeTip: "Tip: Swipe left on an installed model to uninstall it."
         ]
     ]
     

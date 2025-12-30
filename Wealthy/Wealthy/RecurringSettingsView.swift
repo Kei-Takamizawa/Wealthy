@@ -73,9 +73,7 @@ struct RecurringSettingsView: View {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button { showAddSheet = true } label: { Image(systemName: "plus") }
                 }
-                ToolbarItem(placement: .topBarLeading) {
-                    Button(lm.t(.close)) { dismiss() }
-                }
+
             }
             .sheet(isPresented: $showAddSheet) {
                 AddRecurringForm(assets: assets)

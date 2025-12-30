@@ -7,6 +7,7 @@
 
 import SwiftUI
 import SwiftData
+import UniformTypeIdentifiers
 
 struct DashboardView: View {
     // ■ 言語マネージャーを受け取る
@@ -42,6 +43,43 @@ struct DashboardView: View {
                 Color.black.ignoresSafeArea()
                 
                 VStack(spacing: 20) {
+                    // AI Ticker
+                    // AI Ticker
+                    if !aiAdviceText.isEmpty {
+                        AITickerView(text: aiAdviceText, onTapSparkle: {
+                            generateDailyAdvice(forceRefresh: true)
+                        }, onFinish: {
+                             // Hide after one run
+                             withAnimation {
+                                 aiAdviceText = ""
+                             }
+                        })
+                        .padding(.horizontal)
+                        .padding(.top, 10)
+                        .transition(.move(edge: .top).combined(with: .opacity))
+                    } else {
+                        // Show just sparkle button if hidden? or just empty space?
+                        // User said "Initially nothing". "When sparkles button tapped..."
+                        // Wait, if hidden, how to tap sparkles?
+                        // I should show the Sparkles Button regardless?
+                        // "Trigger AI content generation only when the 'sparkles' icon is tapped."
+                        // If Ticker is hidden, we need a trigger button.
+                        HStack {
+                            Button(action: {
+                                generateDailyAdvice(forceRefresh: true)
+                            }) {
+                                Image(systemName: "sparkles")
+                                    .foregroundStyle(.yellow)
+                                    .padding(12)
+                                    .background(Color(white: 0.12))
+                                    .clipShape(Circle())
+                            }
+                            Spacer()
+                        }
+                        .padding(.horizontal)
+                        .padding(.top, 10)
+                    }
+                        
                     headerView
                     actionButtonsView
                     walletListView
@@ -57,6 +95,9 @@ struct DashboardView: View {
             }
             .sheet(isPresented: $showSettings) { AdvancedSettingsView() }
             .sheet(isPresented: $showChat) { ChatView() }
+            .onAppear {
+                // Initial load removed as per request
+            }
             // ... (rest of modifiers)
 
     
@@ -105,7 +146,7 @@ struct DashboardView: View {
                             .background(Color(white: 0.2))
                             .cornerRadius(20)
                         }
-                    } else if LocalLLMService.shared.isThinking {
+                    } else if isScanningReceipt {
                         ZStack {
                             Color.black.opacity(0.6).ignoresSafeArea()
                             VStack(spacing: 20) {
@@ -130,11 +171,20 @@ struct DashboardView: View {
     // 一時保持用
     @State private var currentScanResult: ReceiptScanner.ReceiptScanResult?
     @State private var tempImageFilename: String?
+
     @State private var showSettings = false
     @State private var showChat = false
     
+    // Ticker State
+    @State private var aiAdviceText: String = "" // Initially hidden
+    @State private var isAdviceLoading = false
+    @State private var isScanningReceipt = false
+    
     // AI処理
     private func processWithAI(result: ReceiptScanner.ReceiptScanResult, filename: String?) async {
+        isScanningReceipt = true
+        defer { isScanningReceipt = false }
+        
         do {
             let catNames = categories.map { $0.name }
             let jsonString = try await LocalLLMService.shared.extractReceiptData(prompt: result.rawText, categories: catNames)
@@ -252,6 +302,48 @@ struct DashboardView: View {
     private func predictCategory(title: String) -> String { return "未分類" }
     private func deleteExpense(offsets: IndexSet) { withAnimation { offsets.map { sortedExpenses[$0] }.forEach(modelContext.delete) } }
     private func saveImageToDocuments(image: UIImage) -> String? { return nil }
+    
+    // AI Advice Generation
+    private func generateDailyAdvice(forceRefresh: Bool = false) {
+        // Prevent multiple calls
+        guard LocalLLMService.shared.isModelInstalled, !isAdviceLoading else {
+            return
+        }
+        
+        isAdviceLoading = true
+        
+        // Silent update: Don't change text to "Loading..."
+        // unless it's the very first load and empty? 
+        // User wants: Loop existing text if not tapped. Update on tap.
+        // If empty, maybe show default "Wealthy Butler" until loaded.
+        
+        Task {
+            // Build Context (Brief)
+            let context = FinancialDataSummary.generate(
+                assets: assets,
+                expenses: expenses,
+                categories: categories,
+                languageManager: lm
+            )
+            
+            do {
+                let advice = try await LocalLLMService.shared.generateAdvice(context: context)
+                
+                await MainActor.run {
+                    self.aiAdviceText = advice.replacingOccurrences(of: "\"", with: "")
+                    self.isAdviceLoading = false
+                }
+            } catch {
+                await MainActor.run {
+                    // unexpected error, keep old text or set default
+                    if self.aiAdviceText == "Wealthy Butler" || self.aiAdviceText.isEmpty {
+                         self.aiAdviceText = "Wealthy Butler"
+                    }
+                    self.isAdviceLoading = false
+                }
+            }
+        }
+    }
 
     // MARK: - Subviews
     
@@ -382,8 +474,16 @@ struct DashboardView: View {
 
 struct AdvancedSettingsView: View {
     @Environment(\.dismiss) var dismiss
+    @Environment(\.modelContext) var modelContext
     @EnvironmentObject var lm: LanguageManager
     @State private var isProcessing = false // Feedback state
+    
+    // Backup State
+    @State private var showFileExporter = false
+    @State private var showFileImporter = false
+    @State private var backupDocument: BackupDocument?
+    @State private var alertMessage = ""
+    @State private var showAlert = false
     
     var body: some View {
         NavigationStack {
@@ -410,42 +510,34 @@ struct AdvancedSettingsView: View {
                     }
                 }
                 
+                // データ管理 (バックアップ)
+                Section(header: Text(lm.t(.dataManagement)), footer: Text(lm.t(.backupDesc))) {
+                    Button {
+                        createBackup()
+                    } label: {
+                        Label(lm.t(.backup), systemImage: "square.and.arrow.up")
+                    }
+                    
+                    Button {
+                        showFileImporter = true
+                    } label: {
+                        Label(lm.t(.restore), systemImage: "square.and.arrow.down")
+                    }
+                }
+                
                 Section(header: Text(lm.t(.aiModelManagement)), footer: Text(lm.t(.modelDescription))) {
-                    if isProcessing {
+                    NavigationLink(destination: ModelSettingsView()) {
                         HStack {
-                            ProgressView()
-                            Text("Processing...") // Simple feedback
-                        }
-                    } else if LocalLLMService.shared.isModelInstalled {
-                        HStack {
-                            Image(systemName: "checkmark.circle.fill").foregroundStyle(.green)
-                            Text(lm.t(.installed))
-                        }
-                        Button(role: .destructive) {
-                            isProcessing = true
-                            // Simulate async delay for feedback
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-                                LocalLLMService.shared.deleteModel()
-                                isProcessing = false
+                            VStack(alignment: .leading) {
+                                Text(LocalLLMService.shared.currentModel.name)
+                                    .font(.headline)
+                                Text(LocalLLMService.shared.loadStatus)
+                                    .font(.caption)
+                                    .foregroundStyle(.gray)
                             }
-                        } label: {
-                            Text(lm.t(.deleteModel))
-                        }
-                    } else {
-                        VStack(alignment: .leading) {
-                            Text(lm.t(.uninstalled)).foregroundStyle(.gray)
-                            if LocalLLMService.shared.downloadProgress > 0 && LocalLLMService.shared.downloadProgress < 1.0 {
-                                ProgressView(value: LocalLLMService.shared.downloadProgress) {
-                                    Text("\(lm.t(.downloading)): \(Int(LocalLLMService.shared.downloadProgress * 100))%")
-                                }
-                            } else {
-                                Button("\(lm.t(.download)) (~2GB)") {
-                                    isProcessing = true
-                                    Task {
-                                        await LocalLLMService.shared.loadModel()
-                                        isProcessing = false
-                                    }
-                                }
+                            Spacer()
+                            if LocalLLMService.shared.isModelInstalled {
+                                Image(systemName: "checkmark.circle.fill").foregroundStyle(.green)
                             }
                         }
                     }
@@ -457,6 +549,48 @@ struct AdvancedSettingsView: View {
                     Button(lm.t(.close)) { dismiss() }
                 }
             }
+            // Modifiers for Backup
+            .fileExporter(isPresented: $showFileExporter, document: backupDocument, contentType: .json, defaultFilename: "Wealthy_Backup") { result in
+                switch result {
+                case .success(_):
+                    alertMessage = lm.t(.backupSuccess)
+                    showAlert = true
+                case .failure(let error):
+                    alertMessage = "\(lm.t(.error)): \(error.localizedDescription)"
+                    showAlert = true
+                }
+            }
+            .fileImporter(isPresented: $showFileImporter, allowedContentTypes: [.json]) { result in
+                switch result {
+                case .success(let url):
+                    do {
+                        try BackupManager.shared.restoreBackup(from: url, context: modelContext)
+                        alertMessage = lm.t(.restoreSuccess)
+                        showAlert = true
+                    } catch {
+                        alertMessage = "\(lm.t(.error)): \(error.localizedDescription)"
+                        showAlert = true
+                    }
+                case .failure(let error):
+                    alertMessage = "\(lm.t(.error)): \(error.localizedDescription)"
+                    showAlert = true
+                }
+            }
+            .alert(isPresented: $showAlert) {
+                Alert(title: Text(alertMessage))
+            }
+        }
+    }
+    
+    private func createBackup() {
+        do {
+            let url = try BackupManager.shared.createBackupURL(context: modelContext)
+            let json = try String(contentsOf: url, encoding: .utf8)
+            backupDocument = BackupDocument(text: json)
+            showFileExporter = true
+        } catch {
+            alertMessage = "\(lm.t(.error)): \(error.localizedDescription)"
+            showAlert = true
         }
     }
 }

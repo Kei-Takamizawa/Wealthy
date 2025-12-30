@@ -25,6 +25,6 @@ struct WealthyApp: App {
                     }
                 }
         }
-        .modelContainer(for: [Expense.self, Asset.self, RecurringItem.self, Category.self])
+        .modelContainer(for: [Expense.self, Asset.self, RecurringItem.self, Category.self, ChatMessageModel.self])
     }
 }

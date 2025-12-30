@@ -21,21 +21,26 @@ struct ContentView: View {
     
     @State private var showLanguageAlert = false
     @State private var showAIDownloadAlert = false
+    @State private var selection = 0
     @State private var processedMessage: String?
     
     var body: some View {
-        TabView {
+        TabView(selection: $selection) {
             DashboardView()
                 .tabItem { Label(lm.t(.home), systemImage: "house.fill") }
+                .tag(0)
             
             CalendarView()
                 .tabItem { Label(lm.t(.calendar), systemImage: "calendar") }
+                .tag(1)
             
             StatsView()
                 .tabItem { Label(lm.t(.analysis), systemImage: "chart.bar.xaxis") }
+                .tag(2)
             
             AssetsView()
                 .tabItem { Label(lm.t(.wallets), systemImage: "creditcard.fill") }
+                .tag(3)
         }
         .accentColor(.orange)
         .onAppear {
@@ -53,24 +58,33 @@ struct ContentView: View {
         // 言語選択アラート
         .alert(lm.t(.languageAlertTitle), isPresented: $showLanguageAlert) {
             Button("日本語") {
-                lm.currentLanguage = .japanese
-                completeLanguageSelection()
+                completeLanguageSelection(language: .japanese)
             }
             Button("English") {
                 lm.currentLanguage = .english
-                completeLanguageSelection()
+                completeLanguageSelection(language: .english)
             }
         } message: {
             Text(lm.t(.languageAlertMessage))
         }
         // AIダウンロードアラート
         .alert(lm.t(.aiDownloadAlertTitle), isPresented: $showAIDownloadAlert) {
-            Button(lm.t(.download), role: .none) {
-                hasShownAIDownloadAlert = true
-                Task { await LocalLLMService.shared.loadModel() }
+            Button(lm.t(.download)) {
+                // Navigate to Model Settings view
+                // We can do this by setting selection of the TabView to 'Settings'
+                // and then somehow navigating deep? Or just opening settings tab is enough.
+                // Checking ContentView tabs:
+                // 0: Home/Dashboard
+                // 1: Calendar
+                // 2: Analysis
+                // 3: Wallets
+                // 4: Settings (Placeholder added above)
+                selection = 4 // Assuming Settings is tab 4 (0-indexed 5th tab)
+                showAIDownloadAlert = false // Dismiss the alert after action
             }
             Button(lm.t(.notNow), role: .cancel) {
-                hasShownAIDownloadAlert = true
+                hasShownAIDownloadAlert = true // Still mark as shown if user cancels
+                showAIDownloadAlert = false // Dismiss the alert
             }
         } message: {
             Text(lm.t(.aiDownloadAlertMessage))
@@ -82,14 +96,21 @@ struct ContentView: View {
         }
     }
     
-    private func completeLanguageSelection() {
-        hasSelectedLanguage = true
-        // 言語選択後にAIアラートを出す
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-            if !hasShownAIDownloadAlert {
-                showAIDownloadAlert = true
-            }
+    private func completeLanguageSelection(language: AppLanguage) {
+        lm.currentLanguage = language
+        
+        // Initial Model & Ticker Suggestion
+        if language == .japanese {
+             LocalLLMService.shared.currentModelId = "gemma"
+             LocalLLMService.shared.setTickerLanguage("日本語")
+        } else {
+             LocalLLMService.shared.currentModelId = "llama"
+             LocalLLMService.shared.setTickerLanguage("English")
         }
+        
+        hasSelectedLanguage = true // Keep this to mark language as selected
+        showLanguageAlert = false
+        showAIDownloadAlert = true
     }
     
     private func setupInitialData() {

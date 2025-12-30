@@ -18,9 +18,22 @@
 		84BE02D62EFFDCA6000C29F9 /* Wealthy.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Wealthy.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		844873CD2F035D0100E280FB /* Exceptions for "Wealthy" folder in "Wealthy" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 84BE02D52EFFDCA6000C29F9 /* Wealthy */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		84BE02D82EFFDCA6000C29F9 /* Wealthy */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				844873CD2F035D0100E280FB /* Exceptions for "Wealthy" folder in "Wealthy" target */,
+			);
 			path = Wealthy;
 			sourceTree = "<group>";
 		};
@@ -288,6 +301,7 @@
 				DEVELOPMENT_TEAM = 8M8WLS24AG;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Wealthy/Info.plist;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.finance";
 				INFOPLIST_KEY_NSCameraUsageDescription = Scan;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -325,6 +339,7 @@
 				DEVELOPMENT_TEAM = 8M8WLS24AG;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Wealthy/Info.plist;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.finance";
 				INFOPLIST_KEY_NSCameraUsageDescription = Scan;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
