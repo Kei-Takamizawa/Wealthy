@@ -1,6 +1,6 @@
 # [Wealthy] 
 
-![Version](https://img.shields.io/badge/version-1.0.0-blue.svg?style=flat-square)
+![Version](https://img.shields.io/badge/version-1.2.0-blue.svg?style=flat-square)
 ![Platform](https://img.shields.io/badge/platform-iOS%20%7C%20iPadOS-lightgrey.svg?style=flat-square)
 ![Privacy](https://img.shields.io/badge/Privacy-100%25%20Local-green.svg?style=flat-square)
 
@@ -44,13 +44,11 @@ All data is stored 100% locally on your device. Zero risk of data leaks.
 * **Refined UI**: A clean interface designed to eliminate the hassle of daily logging.
     * 日々の記録から「面倒」を排除するために設計された、洗練されたインターフェース。
 
----
+### 🚀 Elevate with Private AI
+**プライバシー重視のAI機能**
 
-## 🚀 Roadmap / 今後の計画
-
-* **Local AI Integration** (Coming Soon)
-    * **On-device AI**: We plan to implement a local AI to analyze your spending habits without sending data to the cloud.
-    * **ローカルAIの実装**: データをクラウドに送信することなく、端末内で支出傾向を分析・アドバイスするAIを搭載予定です。
+* **On-device AI**: On-device AI analyzes spending and advises without sending data to cloud.
+    * データをクラウドに送信することなく、端末内で支出傾向を分析・アドバイスするAIを搭載。
 
 ---
 
