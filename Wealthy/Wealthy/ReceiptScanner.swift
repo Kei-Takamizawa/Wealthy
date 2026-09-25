@@ -22,53 +22,89 @@ class ReceiptScanner {
         let legacyAmount: Int
     }
 
+    // 画像を文字認識し、家計簿で使う文字列・店名・金額を返します。
     static func scan(image: UIImage) async -> ReceiptScanResult {
+        // 非同期の呼び出し元へ、読み取り完了時に結果を一度だけ返します。
         return await withCheckedContinuation { continuation in
-            let request = VNRecognizeTextRequest { (request, error) in
-                guard let observations = request.results as? [VNRecognizedTextObservation] else {
-                    continuation.resume(returning: ReceiptScanResult(rawText: "", legacyTitle: "未分類", legacyAmount: 0))
-                    return
-                }
-                
-                var elements: [ScannedElement] = []
-                var allTextLines: [String] = []
-                var titleCandidates: [String] = []
-                
-                for observation in observations {
-                    guard let candidate = observation.topCandidates(1).first else { continue }
-                    let box = observation.boundingBox
-                    elements.append(ScannedElement(text: candidate.string, frame: box))
-                    allTextLines.append(candidate.string)
-                    
-                    if box.origin.y > 0.6 {
-                        titleCandidates.append(candidate.string)
-                    }
-                }
-                
-                // 旧ロジックによる計算
-                let fallbackAmount = findTotalAmount(elements: elements)
-                let fallbackTitle = extractTitle(from: titleCandidates)
-                let fullText = allTextLines.joined(separator: "\n")
-                
-                let result = ReceiptScanResult(rawText: fullText, legacyTitle: fallbackTitle, legacyAmount: fallbackAmount)
-                continuation.resume(returning: result)
-            }
-            
-            request.recognitionLanguages = ["ja-JP", "en-US"]
-            request.recognitionLevel = .accurate
-            request.usesLanguageCorrection = true
-            
+            // 文字認識に必要な画像データを取り出し、取得できなければ終了します。
             guard let cgImage = image.cgImage else {
+                // 画像を取得できない場合も、待機中の処理へ失敗結果を返します。
                 continuation.resume(returning: ReceiptScanResult(rawText: "", legacyTitle: "Error", legacyAmount: 0))
+                // 画像がないため、これ以上の処理を行いません。
                 return
+            // 画像取得に失敗した場合の処理を閉じます。
             }
-            
-            let handler = VNImageRequestHandler(cgImage: cgImage, options: [:])
-            
+            // 時間のかかる文字認識を、画面表示とは別の処理で実行します。
             DispatchQueue.global(qos: .userInitiated).async {
-                try? handler.perform([request])
+                // 文字認識の設定と実行を、同じ処理内で行うための要求を作ります。
+                let request = VNRecognizeTextRequest()
+                // 日本語と英語のレシートを読み取れるようにします。
+                request.recognitionLanguages = ["ja-JP", "en-US"]
+                // 速度よりも認識精度を優先します。
+                request.recognitionLevel = .accurate
+                // 認識した単語を言語情報で補正します。
+                request.usesLanguageCorrection = true
+                // 取り出した画像を文字認識の入力に設定します。
+                let handler = VNImageRequestHandler(cgImage: cgImage, options: [:])
+                // 文字認識中の失敗を捕捉し、呼び出し元の待機を必ず終えます。
+                do {
+                    // 設定した要求を実行し、完了するまでこの処理内で待ちます。
+                    try handler.perform([request])
+                // Visionがエラーを返した場合の処理を始めます。
+                } catch {
+                    // 失敗結果を一度だけ返し、呼び出し元が待ち続けないようにします。
+                    continuation.resume(returning: ReceiptScanResult(rawText: "", legacyTitle: "Error", legacyAmount: 0))
+                    // 失敗時は認識結果を調べずに終了します。
+                    return
+                // エラー時の処理を閉じます。
+                }
+                // 認識結果がない場合は、空の結果を返します。
+                guard let observations = request.results else {
+                    // 認識できた文字がないことを示す既存の結果を返します。
+                    continuation.resume(returning: ReceiptScanResult(rawText: "", legacyTitle: "未分類", legacyAmount: 0))
+                    // 認識結果がないため、残りの集計を行いません。
+                    return
+                // 認識結果がない場合の処理を閉じます。
+                }
+                // 認識した文字とその位置を保存する配列を用意します。
+                var elements: [ScannedElement] = []
+                // 認識した全文を保存する配列を用意します。
+                var allTextLines: [String] = []
+                // レシート上部にある店名候補を保存する配列を用意します。
+                var titleCandidates: [String] = []
+                // 認識された文字のまとまりを一つずつ調べます。
+                for observation in observations {
+                    // 最も確からしい文字列がなければ、このまとまりを飛ばします。
+                    guard let candidate = observation.topCandidates(1).first else { continue }
+                    // 文字列が画像内のどこにあるかを取得します。
+                    let box = observation.boundingBox
+                    // 金額の判定に使う文字列と位置を保存します。
+                    elements.append(ScannedElement(text: candidate.string, frame: box))
+                    // 全文表示に使う文字列を保存します。
+                    allTextLines.append(candidate.string)
+                    // 画像上部の文字列だけを店名候補にします。
+                    if box.origin.y > 0.6 {
+                        // 店名候補の配列へ文字列を追加します。
+                        titleCandidates.append(candidate.string)
+                    // 店名候補の判定を閉じます。
+                    }
+                // 文字列を一つずつ調べる処理を閉じます。
+                }
+                // 既存のルールで合計金額を推定します。
+                let fallbackAmount = findTotalAmount(elements: elements)
+                // 既存のルールで店名を推定します。
+                let fallbackTitle = extractTitle(from: titleCandidates)
+                // すべての文字列を改行でつなぎ、全文を作ります。
+                let fullText = allTextLines.joined(separator: "\n")
+                // 呼び出し元へ返す結果を一つにまとめます。
+                let result = ReceiptScanResult(rawText: fullText, legacyTitle: fallbackTitle, legacyAmount: fallbackAmount)
+                // 認識結果を一度だけ返して、呼び出し元の待機を終えます。
+                continuation.resume(returning: result)
+            // 画面表示とは別に実行する処理を閉じます。
             }
+        // 非同期の結果を待つ処理を閉じます。
         }
+    // レシート読み取り関数を閉じます。
     }
     
     private static func findTotalAmount(elements: [ScannedElement]) -> Int {

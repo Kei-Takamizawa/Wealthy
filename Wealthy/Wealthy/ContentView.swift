@@ -21,6 +21,8 @@ struct ContentView: View {
     
     @State private var showLanguageAlert = false
     @State private var showAIDownloadAlert = false
+    // AIモデル管理画面を表示するかどうかを記録します。
+    @State private var showModelSettings = false
     @State private var selection = 0
     @State private var processedMessage: String?
     
@@ -43,6 +45,16 @@ struct ContentView: View {
                 .tag(3)
         }
         .accentColor(.orange)
+        // 初回案内でダウンロードを選んだとき、既存のモデル管理画面を表示します。
+        .sheet(isPresented: $showModelSettings) {
+            // モデル管理画面に見出しを表示できるようにします。
+            NavigationStack {
+                // アプリに元からあるAIモデル管理画面を開きます。
+                ModelSettingsView()
+            // ナビゲーション画面の範囲を閉じます。
+            }
+        // シート表示の範囲を閉じます。
+        }
         .onAppear {
             setupInitialData() 
             checkRecurringItems()
@@ -70,17 +82,10 @@ struct ContentView: View {
         // AIダウンロードアラート
         .alert(lm.t(.aiDownloadAlertTitle), isPresented: $showAIDownloadAlert) {
             Button(lm.t(.download)) {
-                // Navigate to Model Settings view
-                // We can do this by setting selection of the TabView to 'Settings'
-                // and then somehow navigating deep? Or just opening settings tab is enough.
-                // Checking ContentView tabs:
-                // 0: Home/Dashboard
-                // 1: Calendar
-                // 2: Analysis
-                // 3: Wallets
-                // 4: Settings (Placeholder added above)
-                selection = 4 // Assuming Settings is tab 4 (0-indexed 5th tab)
-                showAIDownloadAlert = false // Dismiss the alert after action
+                // 存在しない5番目のタブではなく、AIモデル管理画面を開きます。
+                showModelSettings = true
+                // 初回案内を閉じます。
+                showAIDownloadAlert = false
             }
             Button(lm.t(.notNow), role: .cancel) {
                 hasShownAIDownloadAlert = true // Still mark as shown if user cancels
