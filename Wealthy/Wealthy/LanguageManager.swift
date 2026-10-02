@@ -203,7 +203,7 @@ final class LanguageManager: ObservableObject {
             // restoreの表示文言を対応づけます。
             .restore: "バックアップから復元",
             // backupDescの表示文言を対応づけます。
-            .backupDesc: "アプリの全データをファイルに保存します。",
+            .backupDesc: "記録を保存し、レシート画像を含めるか選べます。チャット履歴は含まれません。",
             // backupSuccessの表示文言を対応づけます。
             .backupSuccess: "バックアップを作成しました。",
             // restoreSuccessの表示文言を対応づけます。
@@ -282,7 +282,7 @@ final class LanguageManager: ObservableObject {
             // restoreの表示文言を対応づけます。
             .restore: "Restore Data",
             // backupDescの表示文言を対応づけます。
-            .backupDesc: "Save all app data to a file.",
+            .backupDesc: "Save your records, optionally with receipt images. Chat history is excluded.",
             // backupSuccessの表示文言を対応づけます。
             .backupSuccess: "Backup created successfully.",
             // restoreSuccessの表示文言を対応づけます。

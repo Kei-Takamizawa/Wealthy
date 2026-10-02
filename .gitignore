@@ -63,3 +63,9 @@ fastlane/report.xml
 fastlane/Preview.html
 fastlane/screenshots/**/*.png
 fastlane/test_output
+
+# Local receipt evaluation inputs may contain personal information.
+ReceiptExample/
+
+# Python verification caches.
+__pycache__/

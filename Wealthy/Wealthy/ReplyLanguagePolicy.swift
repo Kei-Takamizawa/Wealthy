@@ -44,8 +44,15 @@ struct ReplyLanguagePolicy {
 
     /// Only reject a clearly different language in substantial prose; ambiguous short answers pass.
     static func clearlyConflicts(_ response: String, with expectedIdentifier: String) -> Bool {
-        // Code, URLs and quotations are content, not evidence of the explanation's language.
-        let prose = proseForLanguageDetection(response)
+        // Ignore embedded quotations when an explanation exists, but inspect a response made of dialogue.
+        var prose = proseForLanguageDetection(response)
+        let surroundingLetters = prose.unicodeScalars.filter { CharacterSet.letters.contains($0) }
+        let hasJapaneseSurrounding = surroundingLetters.contains {
+            (0x3040...0x30FF).contains($0.value) || (0x3400...0x9FFF).contains($0.value)
+        }
+        if surroundingLetters.count < 12 || (expectedIdentifier == "ja" && !hasJapaneseSurrounding) {
+            prose = proseForLanguageDetection(response, excludingQuotations: false)
+        }
         let letters = prose.unicodeScalars.filter { CharacterSet.letters.contains($0) }
         guard letters.count >= 12 else { return false }
         let recognizer = NLLanguageRecognizer()
@@ -75,16 +82,20 @@ struct ReplyLanguagePolicy {
             // Short balance answers are still prose; a list of brand names is not.
             let shortSentence = words.count >= 4 && functionCount >= 2 && markerCount >= 2
             let longerSentence = words.count >= 8 && functionCount >= 3 && markerCount >= 1
-            return (shortSentence || longerSentence) && japaneseRatio < 0.35
+            let imperativeVerbs: Set<String> = ["start", "record", "review", "save", "set", "try", "pause", "track", "skip", "keep", "check"]
+            let imperativeSentence = words.count >= 5 && functionCount >= 1 && words.contains(where: imperativeVerbs.contains)
+            return (shortSentence || longerSentence || imperativeSentence) && japaneseRatio < 0.35
         }
         guard letters.count >= 24, words.count >= 8 else { return false }
         // For other scripts/languages, require a sentence and many lowercase words or non-Latin letters.
         return prose.rangeOfCharacter(from: CharacterSet(charactersIn: ".!?。！？")) != nil && japaneseRatio < 0.35
     }
 
-    private static func proseForLanguageDetection(_ text: String) -> String {
+    private static func proseForLanguageDetection(_ text: String, excludingQuotations: Bool = true) -> String {
         var prose = text.replacingOccurrences(of: "(?s)```.*?```", with: " ", options: .regularExpression)
-        for pattern in ["`[^`]*`", "https?://\\S+", "\"[^\"\\n]*\"", "“[^”]*”", "「[^」]*」", "『[^』]*』", "(?m)^\\s*(?:import\\s|(?:let|var)\\s+\\w+\\s*=|(?:func|class|struct|enum)\\s|return\\s|print\\().*$"] {
+        var patterns = ["`[^`]*`", "https?://\\S+", "(?m)^\\s*(?:import\\s|(?:let|var)\\s+\\w+\\s*=|(?:func|class|struct|enum)\\s|return\\s|print\\().*$"]
+        if excludingQuotations { patterns += ["\"[^\"\\n]*\"", "“[^”]*”", "「[^」]*」", "『[^』]*』"] }
+        for pattern in patterns {
             prose = prose.replacingOccurrences(of: pattern, with: " ", options: .regularExpression)
         }
         return prose

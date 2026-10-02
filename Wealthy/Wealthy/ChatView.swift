@@ -66,7 +66,7 @@ struct ChatView: View {
                                     .padding(.top)
                                 
                                 // 配列などの各要素について同じ表示を作ります。
-                                ForEach(messages, id: \.id) { msg in
+                                ForEach(messages.filter { !ChatRetentionPolicy.isExpired($0.timestamp, at: Date()) }, id: \.id) { msg in
                                     // `MessageBubble` を呼び出し、括弧内の値を使って処理します。
                                     MessageBubble(message: msg)
                                 // 繰り返し表示の範囲をここで閉じます。
@@ -188,6 +188,7 @@ struct ChatView: View {
             }
         // 画面遷移の範囲をここで閉じます。
         }
+        .onAppear(perform: purgeExpiredMessages)
     // 画面構成の範囲をここで閉じます。
     }
     
@@ -232,7 +233,10 @@ struct ChatView: View {
         // OR: Just trust `messages` will update eventually, but for the API call we need instant history.
         
         // `existingHistory`を変更できない値として作り、右辺の結果を保存します。
-        let existingHistory = messages.map {
+        let now = Date()
+        let existingHistory = messages.filter {
+            $0.id != userMsg.id && !ChatRetentionPolicy.isExpired($0.timestamp, at: now)
+        }.map {
              // 保存済みメッセージの役割と本文をAIへ渡す形式に変換します。
              LocalLLMService.ChatMessage(role: $0.role, content: $0.content)
         // 開いていた画面部品や処理の範囲を閉じます。
@@ -313,6 +317,16 @@ struct ChatView: View {
         // withAnimationの範囲をここで閉じます。
         }
     // 関数の範囲をここで閉じます。
+    }
+
+    private func purgeExpiredMessages() {
+        let now = Date()
+        var didDelete = false
+        for message in messages where ChatRetentionPolicy.isExpired(message.timestamp, at: now) {
+            modelContext.delete(message)
+            didDelete = true
+        }
+        if didDelete { try? modelContext.save() }
     }
 // 構造体の範囲をここで閉じます。
 }

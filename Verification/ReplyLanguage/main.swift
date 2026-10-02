@@ -46,6 +46,12 @@ if !japaneseInstruction.contains("必ず日本語") { failures.append("Japanese 
 let englishInstruction = ReplyLanguagePolicy.instruction(for: "en")
 if !englishInstruction.contains("Write the entire answer in English") { failures.append("English instruction does not require English.") }
 let outputCases: [(response: String, expected: String, conflict: Bool)] = [
+    ("My little wallet sighed, “We’re short—try skipping one optional expense this month.”", "ja", true),
+    ("The wallet sighed as bills piled high—pause that optional expense and track every sip of coffee.", "ja", true),
+    ("Start recording your first expense today.", "ja", true),
+    ("\"Your balance is 20,000 yen.\"", "ja", true),
+    ("「今月の支出は二万円です。食費の記録を見直してみましょう。」", "en", true),
+    ("\"Apple, Microsoft, NVIDIA, Amazon, Google, Meta, Tesla\"", "ja", false),
     ("Your balance is 20,000 yen.", "ja", true),
     ("Your balance is 20,000 yen.", "en", false),
     ("Your total spending this month is 20,000 yen. You can review your food expenses to understand where your money went.", "ja", true),

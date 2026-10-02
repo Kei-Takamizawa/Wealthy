@@ -12,6 +12,17 @@ import SwiftData
 
 // AIに渡す家計の要約を作る型を定義します。
 struct FinancialDataSummary {
+    static func moneyTipContext(assets: [Asset], expenses: [Expense], now: Date = Date()) -> MoneyTipContext {
+        let monthly = expenses.filter { Calendar.current.isDate($0.date, equalTo: now, toGranularity: .month) }
+        let income = monthly.filter(\.isIncome)
+        let spending = monthly.filter { !$0.isIncome }
+        return MoneyTipContext(
+            assetsBalance: assets.reduce(0) { $0 + $1.balance }, walletCount: assets.count,
+            monthlyIncome: income.reduce(0) { $0 + $1.amount }, monthlySpending: spending.reduce(0) { $0 + $1.amount },
+            incomeRecordCount: income.count, expenseRecordCount: spending.count
+        )
+    }
+
     /// Generates a concise summary of the user's financial situation for the AI context.
     // 渡された情報から文字列やAIの回答を生成する入口を定義します。
     static func generate(assets: [Asset], expenses: [Expense], categories: [Category], languageManager: LanguageManager) -> String {

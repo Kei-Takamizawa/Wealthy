@@ -20,6 +20,8 @@ struct WealthyApp: App {
     @StateObject private var languageManager = LanguageManager.shared
     @State private var service = LocalLLMService.shared
     @Environment(\.scenePhase) private var scenePhase
+    @AppStorage("hasSelectedLanguage") private var hasSelectedLanguage = false
+    @State private var showLanguageSelection = false
 
     // アプリが表示する画面の構成を返す入口を定義します。
     var body: some Scene {
@@ -33,10 +35,25 @@ struct WealthyApp: App {
                     AppleIntelligenceUnavailableView(service: service)
                 }
             }
+                .overlay(alignment: .topLeading) {
+                    ChatRetentionObserver()
+                        .frame(width: 0, height: 0)
+                }
+                .alert(languageManager.currentLanguage == .japanese ? "言語を選択 / Select Language" : "Select Language", isPresented: $showLanguageSelection) {
+                    Button("English") { selectLanguage(.english) }
+                    Button("日本語") { selectLanguage(.japanese) }
+                } message: {
+                    Text(languageManager.currentLanguage == .japanese
+                         ? "アプリの言語を選択してください。後で設定から変更できます。"
+                         : "Choose the app language. You can change it later in Settings.")
+                }
                 // これで全画面から languageManager を呼べるようになります
                 // 言語管理オブジェクトを下位の全画面へ渡します。
                 .environmentObject(languageManager)
                 .task { service.refreshAvailability() }
+                .task {
+                    if !hasSelectedLanguage { showLanguageSelection = true }
+                }
                 .onChange(of: scenePhase) { _, phase in
                     if phase == .active { service.refreshAvailability() }
                 }
@@ -47,6 +64,56 @@ struct WealthyApp: App {
     // ここまでの処理またはデータ定義を閉じます。
     }
 // ここまでの処理またはデータ定義を閉じます。
+}
+
+private extension WealthyApp {
+    func selectLanguage(_ language: AppLanguage) {
+        languageManager.currentLanguage = language
+        hasSelectedLanguage = true
+        showLanguageSelection = false
+    }
+}
+
+@MainActor
+private struct ChatRetentionObserver: View {
+    @Environment(\.modelContext) private var modelContext
+    @Environment(\.scenePhase) private var scenePhase
+    @Query private var messages: [ChatMessageModel]
+
+    private var nextExpiry: Date? {
+        messages.map { $0.timestamp.addingTimeInterval(ChatRetentionPolicy.lifetime) }.min()
+    }
+
+    var body: some View {
+        Color.clear
+            .task(id: nextExpiry) { await maintainRetention() }
+            .onChange(of: scenePhase) { _, phase in
+                if phase == .active { purgeExpiredMessages() }
+            }
+    }
+
+    private func purgeExpiredMessages() {
+        let now = Date()
+        var didDelete = false
+        for message in messages where ChatRetentionPolicy.isExpired(message.timestamp, at: now) {
+            modelContext.delete(message)
+            didDelete = true
+        }
+        if didDelete { try? modelContext.save() }
+    }
+
+    private func maintainRetention() async {
+        while !Task.isCancelled {
+            purgeExpiredMessages()
+            let now = Date()
+            let delay = nextExpiry.map { max(1, $0.timeIntervalSince(now)) } ?? 300
+            do {
+                try await Task.sleep(for: .seconds(delay))
+            } catch {
+                return
+            }
+        }
+    }
 }
 
 private struct AppleIntelligenceUnavailableView: View {

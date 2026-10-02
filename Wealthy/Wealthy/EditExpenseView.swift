@@ -24,6 +24,7 @@ struct EditExpenseView: View {
     @Bindable var expense: Expense
     // isNewEntryという値または計算結果を定義します。
     var isNewEntry: Bool = false // Default false (for existing items)
+    var receiptDateUsesCapture: Bool = false
     
     // ■ 修正1: カテゴリ一覧と財布一覧を取得するコードを追加
     // 保存済みの財布を取得し、選択肢や残高更新に使います。
@@ -238,6 +239,14 @@ struct EditExpenseView: View {
                                     // 表示色を反転して暗い背景でも見やすくします。
                                     .colorInvert()
                             // この画面部品または処理の範囲をここで閉じます。
+                            }
+                            if isNewEntry && expense.imageFilename != nil && receiptDateUsesCapture {
+                                Text(lm.currentLanguage == .japanese
+                                     ? "印字日付を読み取れなかったため、撮影日を仮入力しました。必要に応じて修正してください。"
+                                     : "No printed date was recognized. The scan date is filled in; adjust it if needed.")
+                                    .font(.footnote)
+                                    .foregroundStyle(.orange)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
                             }
                         // ここで「縦並びレイアウト」の範囲を閉じます。
                         }

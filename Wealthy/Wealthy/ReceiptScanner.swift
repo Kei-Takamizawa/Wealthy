@@ -16,6 +16,12 @@ class ReceiptScanner {
     struct ReceiptScanResult {
         // OCRが行ごとに並べた全文を保持します。
         let rawText: String
+        // OCR開始前に確定した画像の撮影日時を保持します。
+        let capturedAt: Date
+        // 印字日付が読める場合はその日付、それ以外は撮影日時を使います。
+        let receiptDate: Date
+        // 日付をレシートから読み取れたか、撮影日時を使ったかを区別します。
+        let dateWasPrinted: Bool
         // 従来の呼び出し元へ返す店名候補を保持します。
         let legacyTitle: String
         // 従来の呼び出し元へ返す合計金額候補を保持します。
@@ -24,13 +30,13 @@ class ReceiptScanner {
     }
 
     // 画像を一度だけOCRに通し、全文と互換用の店名・金額を返します。
-    static func scan(image: UIImage) async -> ReceiptScanResult {
+    static func scan(image: UIImage, capturedAt: Date = Date()) async -> ReceiptScanResult {
         // 非同期の呼び出し元へ処理完了時に結果を返す継続を作ります。
         return await withCheckedContinuation { continuation in
             // Visionが必要とするCGImageを取得し、取得できなければ既存の失敗結果を返します。
             guard let cgImage = image.cgImage else {
                 // 画像データを取得できない場合はErrorを返して待機を終えます。
-                continuation.resume(returning: ReceiptScanResult(rawText: "", legacyTitle: "Error", legacyAmount: 0))
+                continuation.resume(returning: ReceiptScanResult(rawText: "", capturedAt: capturedAt, receiptDate: capturedAt, dateWasPrinted: false, legacyTitle: "Error", legacyAmount: 0))
                 // 画像を使えないためOCR処理を開始せずに終了します。
                 return
             // CGImage取得の条件分岐を閉じます。
@@ -58,7 +64,7 @@ class ReceiptScanner {
                 // OCR要求が失敗した場合の処理を開始します。
                 } catch {
                     // 失敗結果を一度返して呼び出し元の待機を終えます。
-                    continuation.resume(returning: ReceiptScanResult(rawText: "", legacyTitle: "Error", legacyAmount: 0))
+                    continuation.resume(returning: ReceiptScanResult(rawText: "", capturedAt: capturedAt, receiptDate: capturedAt, dateWasPrinted: false, legacyTitle: "Error", legacyAmount: 0))
                     // OCR結果を利用できないため後続の処理を行いません。
                     return
                 // OCR要求のエラー処理を閉じます。
@@ -66,7 +72,7 @@ class ReceiptScanner {
                 // Visionから結果配列を取得し、存在しなければ既存の未分類結果を返します。
                 guard let observations = request.results else {
                     // 認識結果がないことを示す未分類結果を返します。
-                    continuation.resume(returning: ReceiptScanResult(rawText: "", legacyTitle: "未分類", legacyAmount: 0))
+                    continuation.resume(returning: ReceiptScanResult(rawText: "", capturedAt: capturedAt, receiptDate: capturedAt, dateWasPrinted: false, legacyTitle: "未分類", legacyAmount: 0))
                     // 文字列がないため以降の組み立てを行いません。
                     return
                 // OCR結果取得の条件分岐を閉じます。
@@ -88,7 +94,10 @@ class ReceiptScanner {
                 // 共通パーサーで認識要素から互換用の店名を取得します。
                 let fallbackTitle = ReceiptTextParser.title(elements: elements)
                 // 全文・店名・金額を従来の返却形式にまとめます。
-                let result = ReceiptScanResult(rawText: fullText, legacyTitle: fallbackTitle, legacyAmount: fallbackAmount)
+                // AIが印字日付を変更しないよう、純粋な日付パーサーの結果を保存します。
+                let printedDate = ReceiptTextParser.printedDate(in: fullText)
+                // 撮影日付をOCR開始前の日時から引き継ぎます。
+                let result = ReceiptScanResult(rawText: fullText, capturedAt: capturedAt, receiptDate: printedDate ?? capturedAt, dateWasPrinted: printedDate != nil, legacyTitle: fallbackTitle, legacyAmount: fallbackAmount)
                 // 正常結果を一度返して呼び出し元の待機を終えます。
                 continuation.resume(returning: result)
             // バックグラウンドで実行するOCR処理を閉じます。

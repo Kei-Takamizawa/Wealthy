@@ -73,6 +73,8 @@ enum ReceiptTextParser {
                 foundTotalLabel = true
                 // ラベルより右の文脈を確認し、別の観測にある負号も見落とさないようにします。
                 let amountText = row[index...].map(\.text).joined(separator: " ")
+                // ドルやユーロなどの外貨を円として扱わず、金額を未確定にします。
+                if rowText.range(of: #"[$€£]|\b(?:USD|EUR|GBP|AUD|CAD|CNY|KRW)\b"#, options: [.regularExpression, .caseInsensitive]) != nil { hasAmbiguousTotal = true; continue }
                 // マイナスの合計を正の支出として登録しないよう、読み取れない金額として扱います。
                 if normalized(amountText).range(of: #"[-−]\s*[¥￥]?\s*[0-9]"#, options: .regularExpression) != nil {
                     // 負数を見つけたため、他の合計候補だけで金額を確定しないようにします。
@@ -133,6 +135,90 @@ enum ReceiptTextParser {
     // 店名の解析を閉じます。
     }
 
+    // レシートの印字日付だけを読み、広告や返品期限より前にある購入日の候補を優先します。
+    static func printedDate(in original: String) -> Date? {
+        let text = normalized(original)
+        let japaneseLetters = text.filter { $0.unicodeScalars.contains { (0x3040...0x30FF).contains($0.value) || (0x4E00...0x9FFF).contains($0.value) } }.count
+        // 英語OCRの一文字だけが漢字に誤認されても、日付の月日順を変えません。
+        let japaneseContext = japaneseLetters >= 2 && Double(japaneseLetters) / Double(max(1, text.count)) > 0.1
+        let patterns: [(String, String)] = [
+            (#"(?<![0-9])([0-9]{4})\s*(?:年|[/.-])\s*([0-9]{1,2})\s*(?:月|[/.-])\s*([0-9]{1,2})(?:日)?(?![0-9])"#, "ymd"),
+            (#"(令和|平成|昭和|[RHS])\s*(元|[0-9]{1,2})\s*(?:年|[/.-])\s*([0-9]{1,2})\s*(?:月|[/.-])\s*([0-9]{1,2})(?:日)?(?![0-9])"#, "era"),
+            (#"(?<![0-9])([0-9]{1,2})[/.-]([0-9]{1,2})[/.-]([0-9]{4})(?![0-9])"#, "mdy"),
+            (#"(?<![0-9RHS])([0-9]{1,2})[/.-]([0-9]{1,2})[/.-]([0-9]{2})(?![0-9])"#, japaneseContext ? "shortymd" : "shortmdy"),
+            (#"\b(Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)\s+([0-9]{1,2}),?\s+([0-9]{4})\b"#, "monthname")
+        ]
+        var candidates: [(Int, Date)] = []
+        for (pattern, kind) in patterns {
+            guard let regex = try? NSRegularExpression(pattern: pattern, options: .caseInsensitive) else { continue }
+            for match in regex.matches(in: text, range: NSRange(text.startIndex..., in: text)) {
+                let groups = (1..<match.numberOfRanges).map { index in Range(match.range(at: index), in: text).map { String(text[$0]) } ?? "" }
+                var year = 0
+                var month = 0
+                var day = 0
+                var eraBounds: (Int, Int, Int, Int, Int, Int)?
+                switch kind {
+                case "ymd":
+                    year = Int(groups[0]) ?? 0
+                    month = Int(groups[1]) ?? 0
+                    day = Int(groups[2]) ?? 0
+                case "mdy":
+                    year = Int(groups[2]) ?? 0
+                    month = Int(groups[0]) ?? 0
+                    day = Int(groups[1]) ?? 0
+                case "shortymd":
+                    year = expandedYear(Int(groups[0]) ?? -1)
+                    month = Int(groups[1]) ?? 0
+                    day = Int(groups[2]) ?? 0
+                case "shortmdy":
+                    year = expandedYear(Int(groups[2]) ?? -1)
+                    month = Int(groups[0]) ?? 0
+                    day = Int(groups[1]) ?? 0
+                case "era":
+                    let eraYear = groups[1] == "元" ? 1 : Int(groups[1]) ?? 0
+                    guard eraYear > 0 else { continue }
+                    let era = groups[0].uppercased()
+                    let offset = ["令和": 2018, "R": 2018, "平成": 1988, "H": 1988, "昭和": 1925, "S": 1925][era] ?? 0
+                    year = offset + eraYear
+                    month = Int(groups[2]) ?? 0
+                    day = Int(groups[3]) ?? 0
+                    if offset == 2018 { eraBounds = (2019, 5, 1, 9999, 12, 31) }
+                    if offset == 1988 { eraBounds = (1989, 1, 8, 2019, 4, 30) }
+                    if offset == 1925 { eraBounds = (1926, 12, 25, 1989, 1, 7) }
+                default:
+                    let months = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"]
+                    month = (months.firstIndex(of: String(groups[0].lowercased().prefix(3))) ?? -1) + 1
+                    day = Int(groups[1]) ?? 0
+                    year = Int(groups[2]) ?? 0
+                }
+                guard let date = validatedDate(year: year, month: month, day: day) else { continue }
+                if let bounds = eraBounds {
+                    guard let first = validatedDate(year: bounds.0, month: bounds.1, day: bounds.2), let last = validatedDate(year: bounds.3, month: bounds.4, day: bounds.5), date >= first, date <= last else { continue }
+                }
+                let prefix = String(text[..<(Range(match.range, in: text)?.lowerBound ?? text.startIndex)].suffix(30)).uppercased()
+                if ["返品期限", "有効期限", "応募期間", "EXPIRES", "EXPIRY", "VALID UNTIL"].contains(where: { prefix.contains($0) }) { continue }
+                candidates.append((match.range.location, date))
+            }
+        }
+        return candidates.sorted { $0.0 < $1.0 }.first?.1
+    }
+
+    // 二桁年は00〜69を2000年代、70〜99を1900年代とする明示的な変換です。
+    private static func expandedYear(_ year: Int) -> Int {
+        guard (0...99).contains(year) else { return 0 }
+        return year < 70 ? 2000 + year : 1900 + year
+    }
+
+    // Calendarの自動繰り上げを許さず、うるう日を含め実在する日付だけを返します。
+    private static func validatedDate(year: Int, month: Int, day: Int) -> Date? {
+        guard (1...9999).contains(year), (1...12).contains(month), (1...31).contains(day) else { return nil }
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = .current
+        guard let date = calendar.date(from: DateComponents(year: year, month: month, day: day)) else { return nil }
+        let roundTrip = calendar.dateComponents([.year, .month, .day], from: date)
+        return roundTrip.year == year && roundTrip.month == month && roundTrip.day == day ? date : nil
+    }
+
     // 全角英数字を半角にそろえ、全角空白や改行も普通の空白にします。
     private static func normalized(_ text: String) -> String {
         // 幅の違いだけをそろえ、O→0などの推測による数字置換は行いません。
@@ -149,7 +235,9 @@ enum ReceiptTextParser {
         // 小計や数量の合計など、別の意味のラベルを先に除外します。
         guard !isExcludedAmountLine(text) else { return false }
         // 日本語の主要な合計ラベルを確認します。
-        if ["合計", "お支払", "支払金額", "請求金額"].contains(where: { compact.contains($0) }) { return true }
+        if compact.contains("合計") { return true }
+        // 広告の「アプリでのお支払い」など、文中の支払い語を合計ラベルにしません。
+        if ["お支払", "支払金額", "請求金額"].contains(where: { compact.hasPrefix($0) }) { return true }
         // 英語では単語としてTOTALまたはGRAND TOTALが現れる場合だけ認めます。
         return normalized(text).range(of: #"\b(?:GRAND\s+)?TOTAL\b"#, options: [.regularExpression, .caseInsensitive]) != nil
     // 合計ラベルの判定を閉じます。
@@ -160,7 +248,7 @@ enum ReceiptTextParser {
         // 空白と文字幅を統一し、語間に空白がある場合にも対応します。
         let compact = normalized(text).replacingOccurrences(of: " ", with: "").uppercased()
         // 「税込合計」を除外しないよう、「税」という一文字だけの禁止は使いません。
-        let excluded = ["小計", "SUBTOTAL", "SUB-TOTAL", "税額", "消費税", "内税", "外税", "合計点", "合計数", "点数", "数量", "預", "釣", "値引", "割引", "ポイント", "電話", "TEL", "FAX", "番号", "日時", "日付", "CHANGE", "TENDER", "CASHRECEIVED", "TAX"]
+        let excluded = ["小計", "SUBTOTAL", "SUB-TOTAL", "本体合計", "税合計", "税額", "消費税", "内税", "外税", "合計点", "合計数", "点数", "数量", "預", "釣", "値引", "割引", "ポイント", "電話", "TEL", "FAX", "番号", "日時", "日付", "CHANGE", "TENDER", "CASHRECEIVED", "TAX"]
         // 一つでも除外語があれば、この行から金額を選びません。
         return excluded.contains { compact.contains($0) }
     // 金額以外の行の判定を閉じます。

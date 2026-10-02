@@ -8,6 +8,7 @@ import tempfile
 
 ROOT = Path(__file__).resolve().parents[1]
 PARSER = ROOT / 'Wealthy/Wealthy/ReceiptTextParser.swift'
+CATEGORY = ROOT / 'Wealthy/Wealthy/ReceiptCategoryPolicy.swift'
 SCANNER = ROOT / 'Wealthy/Wealthy/ReceiptScanner.swift'
 FIXTURES = ROOT / 'Verification/ReceiptOCR/main.swift'
 
@@ -30,7 +31,7 @@ def main():
         executable = temporary / 'receipt-parser-regression'
         cache = temporary / 'module-cache'
         run(['xcrun', 'swiftc', '-module-cache-path', str(cache), str(PARSER),
-             str(FIXTURES), '-o', str(executable)], 'receipt fixture compilation')
+             str(CATEGORY), str(FIXTURES), '-o', str(executable)], 'receipt fixture compilation')
         run([str(executable)], 'receipt parser regression')
         sdk = run(['xcrun', '--sdk', 'iphonesimulator', '--show-sdk-path'], 'iOS SDK lookup')
         run(['xcrun', 'swiftc', '-sdk', sdk, '-target', 'arm64-apple-ios26.0-simulator',

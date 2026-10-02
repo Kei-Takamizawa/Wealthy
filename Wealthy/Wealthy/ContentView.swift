@@ -24,11 +24,6 @@ struct ContentView: View {
     // SwiftDataからカテゴリを読み、変更を画面に反映します。
     @Query private var categories: [Category] // New
     
-    // 括弧内のキーを使い、設定値を端末内に保存・読み出しします。
-    @AppStorage("hasSelectedLanguage") private var hasSelectedLanguage = false
-    
-    // `showLanguageAlert`を画面の状態として保持し、変更時に表示を更新します。
-    @State private var showLanguageAlert = false
     // 選択中のタブ番号を画面の状態として保持し、変更時に表示を更新します。
     @State private var selection = 0
     // `processedMessage`を画面の状態として保持し、変更時に表示を更新します。
@@ -75,38 +70,7 @@ struct ContentView: View {
             setupInitialData() 
             // `checkRecurringItems` を呼び出し、括弧内の値を使って処理します。
             checkRecurringItems()
-            
-            // 初回起動時のフロー
-            // 最初の言語が未選択の場合、言語選択の案内を出します。
-            if !hasSelectedLanguage {
-                // `showLanguageAlert`をオンにし、対応する状態を更新します。
-                showLanguageAlert = true
-            // 開いていた画面部品や処理の範囲を閉じます。
-            }
         // 画面表示時の処理の範囲をここで閉じます。
-        }
-        // 言語選択アラート
-        // 条件に応じて確認メッセージを表示します。
-        .alert(lm.t(.languageAlertTitle), isPresented: $showLanguageAlert) {
-            // タップで処理を実行するボタンを配置します。
-            Button("English") {
-                // `lm.currentLanguage`へ `.english` の結果を代入します。
-                lm.currentLanguage = .english
-                // `completeLanguageSelection` を呼び出し、括弧内の値を使って処理します。
-                completeLanguageSelection(language: .english)
-            // ボタンの処理の範囲をここで閉じます。
-            }
-            // 英語以外を希望する利用者が日本語を選ぶボタンを表示します。
-            Button("日本語") {
-                // 選択した日本語をアプリ設定へ保存します。
-                completeLanguageSelection(language: .japanese)
-            // 日本語ボタンの処理範囲を閉じます。
-            }
-        // 確認画面の範囲をここで閉じます。
-        } message: {
-            // 文字列を画面に表示します。
-            Text(lm.t(.languageAlertMessage))
-        // } message:の範囲をここで閉じます。
         }
         // 条件に応じて確認メッセージを表示します。
         .alert("固定収支を反映しました", isPresented: Binding(get: { processedMessage != nil }, set: { _ in processedMessage = nil })) {
@@ -119,18 +83,6 @@ struct ContentView: View {
         // } message:の範囲をここで閉じます。
         }
     // 画面構成の範囲をここで閉じます。
-    }
-    
-    // `completeLanguageSelection` という関数を定義し、括弧内の入力を使って処理します。
-    private func completeLanguageSelection(language: AppLanguage) {
-        // `lm.currentLanguage`へ `language` の結果を代入します。
-        lm.currentLanguage = language
-        
-        // `hasSelectedLanguage`をオンにし、対応する状態を更新します。
-        hasSelectedLanguage = true // Keep this to mark language as selected
-        // `showLanguageAlert`をオフにし、対応する状態を更新します。
-        showLanguageAlert = false
-    // 関数の範囲をここで閉じます。
     }
     
     // `setupInitialData` という関数を定義し、括弧内の入力を使って処理します。

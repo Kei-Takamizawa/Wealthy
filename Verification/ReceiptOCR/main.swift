@@ -142,8 +142,73 @@ let largeAnchorGroups = ReceiptTextParser.orderedRows(elements: largeAnchorRows)
 // 隣行にかぶる大きな枠を同じ行と誤判定しないことを確認します。
 verify("巨大anchor領域による隣行誤結合防止", largeAnchorGroups.count == 2 && ReceiptTextParser.totalAmount(elements: largeAnchorRows) == 1980)
 
+// 税抜き合計と税込み総合計を区別する回帰ケースです。
+verify("本体合計より総合計を採用", ReceiptTextParser.totalAmount(elements: [item("本体合計 482円", 0.1, 0.3), item("総合計 520円", 0.1, 0.1)]) == 520)
+// 税額の合計を支出合計の候補へ混ぜない回帰ケースです。
+verify("税合計を支出へ混ぜない", ReceiptTextParser.totalAmount(elements: [item("税合計 56円", 0.1, 0.3), item("合計 758円", 0.1, 0.1)]) == 758)
+// フッターの支払い案内を金額不明の合計行と誤認しない回帰ケースです。
+verify("広告のお支払い語を合計にしない", ReceiptTextParser.totalAmount(elements: [item("総合計 520円", 0.1, 0.3), item("カードやアプリでのお支払いでStarを", 0.1, 0.1)]) == 520)
+// ドルの整数も円として登録しない回帰ケースです。
+verify("ドル通貨を円へ変換しない", ReceiptTextParser.totalAmount(elements: [item("TOTAL $55")]) == 0)
+// 合計ラベルの左にある外貨単位も見落とさない回帰ケースです。
+verify("左側のUSDを円にしない", ReceiptTextParser.totalAmount(elements: [item("USD", 0.1), item("TOTAL", 0.3), item("55", 0.7)]) == 0)
+// 日付文字列の比較に使う書式です。
+let dateFormatter = DateFormatter()
+// 西暦カレンダーを明示します。
+dateFormatter.calendar = Calendar(identifier: .gregorian)
+// 固定した年月日書式を使います。
+dateFormatter.dateFormat = "yyyy-MM-dd"
+// 日付の抽出と実在日付の検証をまとめて確認します。
+let dateCases: [(String, String?)] = [
+    ("2024年05月01日（水）23:27", "2024-05-01"),
+    ("2024/04/19 18:56:02", "2024-04-19"),
+    ("2023-05-27", "2023-05-27"),
+    ("Fri 04/07/2017 2:47 PM", "2017-04-07"),
+    ("07/25/17 18:43:53", "2017-07-25"),
+    ("RECEIPT 包 TOTAL $42.37 07/25/17", "2017-07-25"),
+    ("領収書 24/04/19", "2024-04-19"),
+    ("令和元年5月1日", "2019-05-01"),
+    ("平成31年4月30日", "2019-04-30"),
+    ("R6.2.29", "2024-02-29"),
+    ("H31.5.1", nil),
+    ("R1.4.30", nil),
+    ("2023/02/29", nil),
+    ("2024/13/01", nil),
+    ("2024/04/31", nil),
+    ("2024/02/29", "2024-02-29"),
+    ("Jan 22, 2025", "2025-01-22"),
+    ("2999/12/31", "2999-12-31"),
+    ("日付記載なし", nil),
+    ("購入2024/03/23 有効期限2025/03/14", "2024-03-23"),
+    ("有効期限2025/03/14", nil)
+]
+for (input, expected) in dateCases {
+    let actual = ReceiptTextParser.printedDate(in: input).map { dateFormatter.string(from: $0) }
+    verify("印字日付：\(input)", actual == expected)
+}
+// 既存カテゴリー名を保持し、用途に対応する名前がなければ提案します。
+let categoryCases: [(String, [String], String, String)] = [
+    ("牛丼 小盛", ["食費", "その他"], "ja", "食費"),
+    ("coffee", ["Groceries", "Other"], "en", "Groceries"),
+    ("文庫", ["食費"], "ja", "書籍"),
+    ("書籍", ["趣味"], "ja", "趣味"),
+    ("木材", ["食費", "その他"], "ja", "住居・DIY"),
+    ("clinic", ["Food"], "en", "Healthcare"),
+    ("", ["その他"], "ja", "未分類"),
+    ("RECEIPT shop", ["その他"], "ja", "その他"),
+    ("グミ 薬局", ["食費", "医療費"], "ja", "食費")
+]
+for (text, categories, language, expected) in categoryCases {
+    verify("カテゴリー：\(text)", ReceiptCategoryPolicy.suggestedCategory(text: text, existingCategories: categories, language: language) == expected)
+}
+
+// 用途が読めない文字から強い分類根拠を作らないことを確認します。
+verify("根拠なしはハイブリッド分類へnil", ReceiptCategoryPolicy.evidenceBasedCategory(text: "RECEIPT Shop TOTAL 100", existingCategories: ["その他"]) == nil)
+// 明瞭な商品の用途だけをAIより優先する分類として返します。
+verify("書籍の用途根拠を既存趣味へ対応", ReceiptCategoryPolicy.evidenceBasedCategory(text: "書籍 合計 1200円", existingCategories: ["趣味"]) == "趣味")
+
 // 実行した金額ケース数と追加確認数から総テスト件数を計算します。
-let totalChecks = amountCases.count + 6
+let totalChecks = amountCases.count + 6 + 7 + dateCases.count + categoryCases.count
 // 全件合格なら成功数を表示し、一件以上失敗したら非ゼロ終了にします。
 if failures == 0 {
     // 抽出ルールの回帰確認がすべて成功したことを表示します。
