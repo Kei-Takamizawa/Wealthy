@@ -5,6 +5,9 @@
 ## User settings
 xcuserdata/
 
+# macOSが自動作成するFinderの表示設定ファイルを、新しいコミット対象から除外します。
+.DS_Store
+
 ## Obj-C/Swift specific
 *.hmap
 

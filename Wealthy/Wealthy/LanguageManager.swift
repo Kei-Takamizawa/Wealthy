@@ -15,10 +15,10 @@ import SwiftUI
 // 言語の種類の定義
 // アプリで選べる言語の型を定義します。
 enum AppLanguage: String, CaseIterable, Identifiable {
-    // 列挙型で使う選択肢として、japanese = "日本語"を定義します。
-    case japanese = "日本語"
-    // 列挙型で使う選択肢として、english = "English"を定義します。
+    // 初回表示や選択メニューで英語を先頭にするため、英語を最初に定義します。
     case english = "English"
+    // 英語以外を希望する利用者が選べる日本語を定義します。
+    case japanese = "日本語"
     
     // 各データを識別するIDを保持するプロパティを定義します。
     var id: String { self.rawValue }
@@ -42,6 +42,8 @@ enum L10n: String {
     case tapToExpand, loading
     // 列挙型で使う選択肢として、shopName, amount, wallet, selectWalletを定義します。
     case shopName, amount, wallet, selectWallet
+    // レシートの合計額が未確定で、画像確認と手入力が必要な場合の案内を識別します。
+    case receiptAmountUnclear
     // 列挙型で使う選択肢として、editTitle, done, closeを定義します。
     case editTitle, done, close
     // 列挙型で使う選択肢として、depositTitle, depositInfo, details, dateLabelを定義します。
@@ -59,8 +61,8 @@ enum L10n: String {
     // Manual Input & Settings Keys
     // 列挙型で使う選択肢として、manualInput, aiModelManagement, languageSettings, languageAlertTitle, languageAlertMessageを定義します。
     case manualInput, aiModelManagement, languageSettings, languageAlertTitle, languageAlertMessage
-    // 列挙型で使う選択肢として、aiDownloadAlertTitle, aiDownloadAlertMessage, download, notNow, installed, uninstalledを定義します。
-    case aiDownloadAlertTitle, aiDownloadAlertMessage, download, notNow, installed, uninstalled
+    // ダウンロード操作と、インストール状態に関する表示文言を識別します。
+    case download, notNow, installed, uninstalled
     // 列挙型で使う選択肢として、deleteModel, modelDescription, downloading, aiReady, modelDeleted, modelInstallを定義します。
     case deleteModel, modelDescription, downloading, aiReady, modelDeleted, modelInstall
     
@@ -96,10 +98,10 @@ final class LanguageManager: ObservableObject {
     
     // 渡された引数で新しい値を初期化する入口を定義します。
     init() {
-        // savedLangとして後続の処理で使う値を作成または更新します。
-        let savedLang = UserDefaults.standard.string(forKey: "selectedLanguage") ?? AppLanguage.japanese.rawValue
-        // 保存済みの言語を選び、読めなければ日本語を使います。
-        self.currentLanguage = AppLanguage(rawValue: savedLang) ?? .japanese
+        // 保存済みの言語を読み、未設定ならアプリの既定言語である英語を使います。
+        let savedLang = UserDefaults.standard.string(forKey: "selectedLanguage") ?? AppLanguage.english.rawValue
+        // 有効な保存値を維持し、未対応の値だけ英語に戻します。
+        self.currentLanguage = AppLanguage(rawValue: savedLang) ?? .english
         
         // 直前に定義した処理へ、この設定または引数を追加します。
         $currentLanguage
@@ -169,6 +171,8 @@ final class LanguageManager: ObservableObject {
             .tapToExpand: "タップして拡大", .loading: "読み込み中...",
             // shopName、amount、wallet、selectWalletの表示文言を対応づけます。
             .shopName: "店名", .amount: "金額", .wallet: "財布", .selectWallet: "財布を選択",
+            // 合計を確定できなかったレシートで、入力すべき内容を日本語で案内します。
+            .receiptAmountUnclear: "合計金額を読み取れませんでした。画像を確認して金額を入力してください。",
             // editTitle、done、closeの表示文言を対応づけます。
             .editTitle: "編集", .done: "完了", .close: "閉じる",
             // depositTitle、depositInfo、details、dateLabelの表示文言を対応づけます。
@@ -194,10 +198,6 @@ final class LanguageManager: ObservableObject {
             .languageAlertTitle: "言語を選択 / Select Language",
             // languageAlertMessageの表示文言を対応づけます。
             .languageAlertMessage: "アプリの言語を選択してください。\nPlease select your preferred language.\n(後で設定から変更できます / You can change this later in Settings)",
-            // aiDownloadAlertTitleの表示文言を対応づけます。
-            .aiDownloadAlertTitle: "AIモデルのダウンロード",
-            // aiDownloadAlertMessageの表示文言を対応づけます。
-            .aiDownloadAlertMessage: "レシート解析にはAIモデルが必要です。\n設定画面から好みのモデルをダウンロードしてください。",
             // downloadの表示文言を対応づけます。
             .download: "設定へ移動",
             // notNowの表示文言を対応づけます。
@@ -209,7 +209,7 @@ final class LanguageManager: ObservableObject {
             // deleteModelの表示文言を対応づけます。
             .deleteModel: "モデルを削除",
             // modelDescriptionの表示文言を対応づけます。
-            .modelDescription: "AIモデルを導入すると、レシートの読み取り精度が向上し、カテゴリーも自動分類されます。",
+            .modelDescription: "端末内AIで店名・日付の補助抽出とカテゴリーの分類を行います。金額が不明な場合は画像を確認して手入力してください。",
             // downloadingの表示文言を対応づけます。
             .downloading: "ダウンロード中",
             // aiReadyの表示文言を対応づけます。
@@ -295,6 +295,8 @@ final class LanguageManager: ObservableObject {
             .tapToExpand: "Tap to expand", .loading: "Loading...",
             // shopName、amount、wallet、selectWalletの表示文言を対応づけます。
             .shopName: "Shop Name", .amount: "Amount", .wallet: "Wallet", .selectWallet: "Select Wallet",
+            // 合計を確定できなかったレシートで、入力すべき内容を英語で案内します。
+            .receiptAmountUnclear: "The total could not be read. Check the receipt image and enter the amount.",
             // editTitle、done、closeの表示文言を対応づけます。
             .editTitle: "Edit", .done: "Done", .close: "Close",
             // depositTitle、depositInfo、details、dateLabelの表示文言を対応づけます。
@@ -320,10 +322,6 @@ final class LanguageManager: ObservableObject {
             .languageAlertTitle: "Select Language",
             // languageAlertMessageの表示文言を対応づけます。
             .languageAlertMessage: "Please select your preferred language.\n(You can change this later in Settings)",
-            // aiDownloadAlertTitleの表示文言を対応づけます。
-            .aiDownloadAlertTitle: "Download AI Model",
-            // aiDownloadAlertMessageの表示文言を対応づけます。
-            .aiDownloadAlertMessage: "AI Model is required for receipt scanning.\nPlease download a model from Settings.",
             // downloadの表示文言を対応づけます。
             .download: "Go to Settings",
             // notNowの表示文言を対応づけます。
@@ -335,7 +333,7 @@ final class LanguageManager: ObservableObject {
             // deleteModelの表示文言を対応づけます。
             .deleteModel: "Delete Model",
             // modelDescriptionの表示文言を対応づけます。
-            .modelDescription: "Installing the AI model improves receipt scanning accuracy and enables automatic categorization.",
+            .modelDescription: "On-device AI helps extract the shop name and date and classify the category. Review the image and enter the amount when it is unclear.",
             // downloadingの表示文言を対応づけます。
             .downloading: "Downloading",
             // aiReadyの表示文言を対応づけます。
@@ -425,4 +423,3 @@ final class LanguageManager: ObservableObject {
     }
 // ここまでの処理またはデータ定義を閉じます。
 }
-

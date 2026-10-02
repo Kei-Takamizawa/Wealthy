@@ -26,15 +26,9 @@ struct ContentView: View {
     
     // 括弧内のキーを使い、設定値を端末内に保存・読み出しします。
     @AppStorage("hasSelectedLanguage") private var hasSelectedLanguage = false
-    // 括弧内のキーを使い、設定値を端末内に保存・読み出しします。
-    @AppStorage("hasShownAIDownloadAlert") private var hasShownAIDownloadAlert = false
     
     // `showLanguageAlert`を画面の状態として保持し、変更時に表示を更新します。
     @State private var showLanguageAlert = false
-    // `showAIDownloadAlert`を画面の状態として保持し、変更時に表示を更新します。
-    @State private var showAIDownloadAlert = false
-    // AIモデル管理画面を表示するかどうかを記録します。
-    @State private var showModelSettings = false
     // 選択中のタブ番号を画面の状態として保持し、変更時に表示を更新します。
     @State private var selection = 0
     // `processedMessage`を画面の状態として保持し、変更時に表示を更新します。
@@ -75,16 +69,6 @@ struct ContentView: View {
         }
         // 画面内の強調色を設定します。
         .accentColor(.orange)
-        // 初回案内でダウンロードを選んだとき、既存のモデル管理画面を表示します。
-        .sheet(isPresented: $showModelSettings) {
-            // モデル管理画面に見出しを表示できるようにします。
-            NavigationStack {
-                // アプリに元からあるAIモデル管理画面を開きます。
-                ModelSettingsView()
-            // ナビゲーション画面の範囲を閉じます。
-            }
-        // シート表示の範囲を閉じます。
-        }
         // この画面が現れたときの処理を登録します。
         .onAppear {
             // `setupInitialData` を呼び出し、括弧内の値を使って処理します。
@@ -97,11 +81,6 @@ struct ContentView: View {
             if !hasSelectedLanguage {
                 // `showLanguageAlert`をオンにし、対応する状態を更新します。
                 showLanguageAlert = true
-            // 前の条件が成り立たず、続く条件が成り立つ場合の処理に進みます。
-            } else if !hasShownAIDownloadAlert {
-                // 言語は選択済みだがAIはまだの場合（アプデ後など）
-                // `showAIDownloadAlert`をオンにし、対応する状態を更新します。
-                showAIDownloadAlert = true
             // 開いていた画面部品や処理の範囲を閉じます。
             }
         // 画面表示時の処理の範囲をここで閉じます。
@@ -110,12 +89,6 @@ struct ContentView: View {
         // 条件に応じて確認メッセージを表示します。
         .alert(lm.t(.languageAlertTitle), isPresented: $showLanguageAlert) {
             // タップで処理を実行するボタンを配置します。
-            Button("日本語") {
-                // `completeLanguageSelection` を呼び出し、括弧内の値を使って処理します。
-                completeLanguageSelection(language: .japanese)
-            // ボタンの処理の範囲をここで閉じます。
-            }
-            // タップで処理を実行するボタンを配置します。
             Button("English") {
                 // `lm.currentLanguage`へ `.english` の結果を代入します。
                 lm.currentLanguage = .english
@@ -123,35 +96,16 @@ struct ContentView: View {
                 completeLanguageSelection(language: .english)
             // ボタンの処理の範囲をここで閉じます。
             }
+            // 英語以外を希望する利用者が日本語を選ぶボタンを表示します。
+            Button("日本語") {
+                // 選択した日本語をアプリ設定へ保存します。
+                completeLanguageSelection(language: .japanese)
+            // 日本語ボタンの処理範囲を閉じます。
+            }
         // 確認画面の範囲をここで閉じます。
         } message: {
             // 文字列を画面に表示します。
             Text(lm.t(.languageAlertMessage))
-        // } message:の範囲をここで閉じます。
-        }
-        // AIダウンロードアラート
-        // 条件に応じて確認メッセージを表示します。
-        .alert(lm.t(.aiDownloadAlertTitle), isPresented: $showAIDownloadAlert) {
-            // タップで処理を実行するボタンを配置します。
-            Button(lm.t(.download)) {
-                // 存在しない5番目のタブではなく、AIモデル管理画面を開きます。
-                showModelSettings = true
-                // 初回案内を閉じます。
-                showAIDownloadAlert = false
-            // ボタンの処理の範囲をここで閉じます。
-            }
-            // タップで処理を実行するボタンを配置します。
-            Button(lm.t(.notNow), role: .cancel) {
-                // `hasShownAIDownloadAlert`をオンにし、対応する状態を更新します。
-                hasShownAIDownloadAlert = true // Still mark as shown if user cancels
-                // `showAIDownloadAlert`をオフにし、対応する状態を更新します。
-                showAIDownloadAlert = false // Dismiss the alert
-            // ボタンの処理の範囲をここで閉じます。
-            }
-        // 確認画面の範囲をここで閉じます。
-        } message: {
-            // 文字列を画面に表示します。
-            Text(lm.t(.aiDownloadAlertMessage))
         // } message:の範囲をここで閉じます。
         }
         // 条件に応じて確認メッセージを表示します。
@@ -172,28 +126,13 @@ struct ContentView: View {
         // `lm.currentLanguage`へ `language` の結果を代入します。
         lm.currentLanguage = language
         
-        // Initial Model & Ticker Suggestion
-        // 選択された言語が日本語の場合に進みます。
-        if language == .japanese {
-             // `LocalLLMService.shared.currentModelId`へ `"gemma"` の結果を代入します。
-             LocalLLMService.shared.currentModelId = "gemma"
-             // AIの短い助言に使う言語を日本語へ切り替えます。
-             LocalLLMService.shared.setTickerLanguage("日本語")
-        // 前の条件に当てはまらない場合の処理に進みます。
-        } else {
-             // `LocalLLMService.shared.currentModelId`へ `"llama"` の結果を代入します。
-             LocalLLMService.shared.currentModelId = "llama"
-             // AIの短い助言に使う言語を英語へ切り替えます。
-             LocalLLMService.shared.setTickerLanguage("English")
-        // } elseの範囲をここで閉じます。
-        }
+        // 表示言語に合わせて助言の言語だけを変え、保存済みのAIモデル選択は維持します。
+        LocalLLMService.shared.setTickerLanguage(language == .japanese ? "日本語" : "English")
         
         // `hasSelectedLanguage`をオンにし、対応する状態を更新します。
         hasSelectedLanguage = true // Keep this to mark language as selected
         // `showLanguageAlert`をオフにし、対応する状態を更新します。
         showLanguageAlert = false
-        // `showAIDownloadAlert`をオンにし、対応する状態を更新します。
-        showAIDownloadAlert = true
     // 関数の範囲をここで閉じます。
     }
     

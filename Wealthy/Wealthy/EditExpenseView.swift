@@ -42,6 +42,12 @@ struct EditExpenseView: View {
     @State private var initialAmount: Int = 0
     // 編集開始時点の財布名を保持し、値が変わると画面を更新します。
     @State private var initialAssetName: String? = nil
+    // 新しいレシートで合計額が0のままの場合に、手入力が必要であることを表します。
+    private var needsReceiptAmount: Bool {
+        // 手入力の通常記録や既存の履歴には、このレシート専用の案内を表示しません。
+        isNewEntry && expense.imageFilename != nil && expense.amount == 0
+    // レシート金額の入力待ち判定を閉じます。
+    }
     
     // この画面または部品の表示内容をSwiftUIの部品として返します。
     var body: some View {
@@ -91,6 +97,18 @@ struct EditExpenseView: View {
                                     // 文字またはアイコンの書体と大きさを指定します。
                                     .font(.title2.bold())
                             // この画面部品または処理の範囲をここで閉じます。
+                            }
+                            // レシートの金額が未確定の間、画像を確認して手入力するよう案内します。
+                            if needsReceiptAmount {
+                                // 保存済みの言語設定に従って、読み取り失敗時の案内を表示します。
+                                Text(lm.t(.receiptAmountUnclear))
+                                    // 金額欄の補助説明として、本文より小さな文字で表示します。
+                                    .font(.footnote)
+                                    // 黒背景で案内が見えるように、オレンジ色の文字を使います。
+                                    .foregroundStyle(.orange)
+                                    // 複数行の案内を入力欄と同じ左端にそろえます。
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                            // 金額未確定時の案内表示を閉じます。
                             }
                             
                             // ■ カテゴリ選択（エラー対策のため構造を整理）
@@ -281,6 +299,8 @@ struct EditExpenseView: View {
                     }
                     // この文字やアイコンを.orangeで描画します。
                     .foregroundStyle(.orange)
+                    // 新しいレシートの未確定0円を、完了操作で削除してしまわないよう入力を待ちます。
+                    .disabled(needsReceiptAmount)
                     // 文字を太字にします。
                     .bold()
                 // ここで「ツールバー項目」の範囲を閉じます。

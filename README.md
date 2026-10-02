@@ -1,89 +1,73 @@
-# [Wealthy] 
+# Wealthy
 
-![Version](https://img.shields.io/badge/version-1.2.0-blue.svg?style=flat-square)
-![Platform](https://img.shields.io/badge/platform-iOS%20%7C%20iPadOS-lightgrey.svg?style=flat-square)
-![Privacy](https://img.shields.io/badge/Privacy-100%25%20Local-green.svg?style=flat-square)
+English · [Japanese](README.ja.md)
 
-**Your Financial Fortress.**
-**あなたの資産を守る「要塞」。**
+An iPhone and iPad app for tracking expenses, income, and balances. Financial records, receipt recognition, and AI inference are handled on device.
 
-Private, offline-first expense tracking for individuals and businesses.
-個人の家計から事業の収支まで。プライバシーを最優先にした、オフライン完結型の記録アプリ。
+## Features
 
----
+- Record expenses and income, with categories and separate wallets.
+- Scan receipts and keep their images alongside expense records.
+- Review transactions in a calendar and explore spending by category.
+- Set monthly recurring entries, applied when the app opens.
+- Use local AI chat and export or import records as JSON.
 
-## 📖 Overview / 概要
+## Getting started
 
-**[Wealthy]** is designed for those who value privacy and efficiency. It manages your financial records—whether for household budgets or company expenses—without ever touching the cloud.
-**[Wealthy]** は、プライバシーと効率を重視する人のために設計されました。家計簿から会社の経費精算まで、あらゆる収支記録をクラウドを介さずに管理します。
+Wealthy requires iOS or iPadOS 26.0 or later. English is the default language for a new installation. Choose Japanese during setup or under **Home → Settings → Language Settings**. The app remembers your selection.
 
-All data is stored 100% locally on your device. Zero risk of data leaks.
-データはすべて、あなたの端末内（ローカル）にのみ保存されます。外部への流出リスクはゼロです。
+Receipt scanning and manual entry work independently of the optional AI model downloads. Apple Foundation Models is the default AI provider; its availability depends on the device and Apple Intelligence settings.
 
----
+## On-device AI
 
-## ✨ Key Features / 特徴
+Open **Home → Settings → AI Model Management** to view model sizes, download progress, and compatibility information for the current device. Download an optional model, then select it. Downloading alone does not change the active model.
 
-### 🧾 Receipt Scanning & Evidence
-**レシートスキャンと証拠保存**
+| Model | Format | Download | Device RAM guide | Inference RAM estimate |
+| --- | --- | ---: | ---: | ---: |
+| Apple Foundation Models | OS managed | See below | Determined by iOS | Not measured |
+| [Bonsai 8B](https://huggingface.co/inferencerlabs/Bonsai-8B-MLX-Q2) | MLX 2-bit | 2.32 GB | 6 GB | 3.5 GB |
+| [MiniCPM5-1B (Reasoning)](https://huggingface.co/mlx-community/MiniCPM5-1B-4bit) | MLX 4-bit | 0.62 GB | 4 GB | 1.6 GB |
+| [MiniCPM5-2B](https://huggingface.co/mlx-community/MiniCPM5-2B-mlx-4Bit) | MLX 4-bit | 1.43 GB | 6 GB | 2.5 GB |
+| [K2 Horizon 3.7B](https://huggingface.co/mlx-community/K2-Horizon-3.7B-4bit) | MLX mixed 4/8-bit | 4.16 GB | 8 GB | 5.6 GB |
 
-* **Scan & Track**: Instantly record expenses by scanning receipts with the camera.
-    * カメラでレシートをスキャンし、瞬時に支出を記録します。
-* **Auto-Save Evidence**: The scanned image is automatically saved locally as proof of purchase/expense.
-    * スキャンした画像は、支出の「証拠」として自動的に端末内に保存されます。
+Download sizes were checked against the pinned model revisions on October 2, 2026. GB uses decimal units; all four optional downloads total approximately **8.52 GB**, plus temporary storage headroom. Only one model is loaded at a time.
 
-### 🔒 100% Privacy Focused
-**徹底したプライバシー保護**
+Apple manages its model through the operating system. Wealthy downloads **0 B** for this provider; that does not mean the system model occupies no storage. The app reports unsupported devices, disabled Apple Intelligence, and a model that is still being prepared using [Apple's availability API](https://developer.apple.com/documentation/foundationmodels/systemlanguagemodel/availability-swift.property).
 
-* **Offline First**: No external servers, no tracking, no data sharing. Your financial data belongs only to you.
-    * 外部サーバー不使用、追跡なし、データ共有なし。あなたの資産データは、あなただけのものです。
+RAM figures are application estimates, not verified minimum requirements. Optional models require Metal and sufficient available memory. Compatibility remains an estimate until a one-token inference succeeds in the current app session; this check does not establish response quality, speed, or long-session stability. MLX models cannot be selected in the Simulator.
 
-### 🎨 Modern & Minimalist
-**モダンでミニマルなデザイン**
+Bonsai uses a third-party 2-bit conversion, which differs from the official 1-bit release. K2 uses a native Swift implementation. Model downloads require an internet connection; interrupted or failed downloads are not marked as installed. See [model management notes](Verification/AIModels/ModelManagement.md) for implementation details.
 
-* **Refined UI**: A clean interface designed to eliminate the hassle of daily logging.
-    * 日々の記録から「面倒」を排除するために設計された、洗練されたインターフェース。
+## Receipt review
 
-### 🚀 Elevate with Private AI
-**プライバシー重視のAI機能**
+Receipt recognition uses Apple Vision for Japanese and English. The parser fills in an amount only when it identifies an unambiguous, explicitly labeled total. AI does not overwrite that amount. If the total is unclear, review the saved image and enter it before saving.
 
-* **On-device AI**: On-device AI analyzes spending and advises without sending data to cloud.
-    * データをクラウドに送信することなく、端末内で支出傾向を分析・アドバイスするAIを搭載。
+Automatic amount extraction currently targets integer Japanese yen. Blurred images, shadows, unsupported labels, decimal amounts, and negative amounts may require manual entry. Recognition accuracy on photographed receipts has not been measured.
 
----
+## Data and backup
 
-## 📥 Installation / インストール方法
+Records and receipt images are stored locally. JSON exports include record data and chat history, but **do not embed receipt images or downloaded models**. Importing replaces the existing records. Keep receipt images separately if you need a complete archive.
 
-This app is distributed as an **IPA file** for sideloading. It is not available on the App Store to maintain full control and privacy.
-本アプリはサイドローディング用の **IPAファイル** として配布しています。完全な管理権とプライバシーを維持するため、App Storeでは配信していません。
+## Building and verification
 
-### Requirements / 必要なもの
-* iOS / iPadOS Device
-* PC or Mac
-* [Sideloadly](https://sideloadly.io/) or [AltStore](https://altstore.io/)
+Open `Wealthy/Wealthy.xcodeproj` in Xcode, select the **Wealthy** scheme, configure signing, and choose a compatible device. The build checks below used Xcode 27.0 and SDK 27.0; they do not establish the oldest supported Xcode version.
 
-### How to Install (via Sideloadly) / 手順
+Checks recorded for the receipt and model implementation on October 2, 2026:
 
-1.  **Download**: Get the latest `.ipa` file from the **[Releases](../../releases)** page of this repository.
-    * 本リポジトリの **[Releases](../../releases)** ページから、最新の `.ipa` ファイルをダウンロードしてください。
-2.  **Connect**: Open **Sideloadly** on your PC/Mac and connect your iPhone via USB.
-    * PCまたはMacで **Sideloadly** を起動し、iPhoneをUSBで接続してください。
-3.  **Drag & Drop**: Drag the downloaded `.ipa` file into Sideloadly.
-    * ダウンロードした `.ipa` ファイルをSideloadlyにドラッグ＆ドロップします。
-4.  **Install**: Enter your Apple ID and click `Start`.
-    * Apple IDを入力し、`Start` をクリックしてインストールを開始します。
-5.  **Trust**: On your iPhone, go to `Settings` > `General` > `VPN & Device Management` and trust your Apple ID.
-    * iPhoneの「設定」>「一般」>「VPNとデバイス管理」を開き、自身のApple IDを信頼（Trust）してください。
+| Check | Result | Scope |
+| --- | --- | --- |
+| Receipt parser | 42/42 passed | Text and coordinate fixtures |
+| Model chat templates | 26 checks passed | Swift Jinja; no model weights |
+| Download management | Passed, including 8 cancellation checks | Local HTTP server and synthetic files |
+| App builds | Passed | Simulator and unsigned device builds |
+| Native model harness | Type checking passed | Numerical execution pending |
 
-> **⚠️ Note regarding Free Apple IDs:**
-> If you sign with a free Apple ID, the app will expire in **7 days**. You must reconnect to your PC and re-install (resign) via Sideloadly every 7 days. **Your data will remain safe.**
->
-> **無料のApple IDをご利用の方へ:**
-> 無料IDで署名した場合、アプリの有効期限は**7日間**です。7日ごとにPCに接続し、Sideloadlyで再度インストール（上書き）を行ってください。**データは消えずに引き継がれます。**
+The subsequent language-default update also passed a Simulator build and the Japanese source-comment audit.
 
----
+Run `python3 Verification/verify_receipt_ocr.py` for receipt checks, `python3 Verification/ai_model_download_fixture.py` for download checks, and `python3 Verification/verify_ai_comments.py` for the source-comment audit. Template checks use `python3 Verification/verify_ai_templates.py --checkouts PATH`, where `PATH` points to the Xcode dependency checkouts.
 
-## 🛡️ License / ライセンス
+These checks do not verify app launch, camera capture, Apple model responses on a device, or inference with the four downloaded models. Model speed, memory peaks, and recognition quality remain unmeasured. [Native model verification](Verification/AIModels/NativeModelVerification.md) records the remaining numerical checks.
 
-All rights reserved.
-本アプリケーションのソースコードおよびバイナリの無断転載・再配布を禁じます。
+## License
+
+All rights reserved. Redistribution of the source code or binaries requires permission.

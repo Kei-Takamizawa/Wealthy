@@ -218,8 +218,8 @@ struct DashboardView: View {
             .overlay {
                 // 複数の表示要素を一つのまとまりとして扱います。
                 Group {
-                    // AIモデルが準備完了・未インストール・準備中のいずれでもない場合に、進行状況を表示します。
-                    if !LocalLLMService.shared.loadStatus.contains("準備完了") && LocalLLMService.shared.loadStatus != "未インストール" && LocalLLMService.shared.loadStatus != "準備中..." {
+                    // モデルを実際に読み込んでいる間だけ、操作を待つ表示を重ねます。
+                    if LocalLLMService.shared.isLoading {
                         // 要素を手前と奥に重ねます。
                         ZStack {
                             // 画面に色を表示します。
@@ -338,8 +338,6 @@ struct DashboardView: View {
                // `json`を変更できない値として作り、右辺の結果を保存します。
                let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
                 
-                // `amount`を変更できない値として作り、右辺の結果を保存します。
-                let amount = json["amount"] as? Int ?? result.legacyAmount
                 // `shopName`を変更できない値として作り、右辺の結果を保存します。
                 let shopName = json["shopName"] as? String ?? result.legacyTitle
                 // `categoryName`を変更できない値として作り、右辺の結果を保存します。
@@ -363,8 +361,8 @@ struct DashboardView: View {
                 // 条件分岐の範囲をここで閉じます。
                 }
                 
-                // `finalAmount`を変更できない値として作り、右辺の結果を保存します。
-                let finalAmount = amount > 0 ? amount : result.legacyAmount
+                // AIによる金額の推測で上書きせず、OCRの合計候補を使い、未確定の0円は編集画面で入力します。
+                let finalAmount = result.legacyAmount
                 // `finalTitle`を変更できない値として作り、右辺の結果を保存します。
                 let finalTitle = (shopName.isEmpty || shopName == "Store Name") ? result.legacyTitle : shopName
                 
