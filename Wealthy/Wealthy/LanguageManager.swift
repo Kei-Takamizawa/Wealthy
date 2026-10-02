@@ -59,12 +59,7 @@ enum L10n: String {
     case catFood, catTransport, catDaily, catHobby, catClothing, catOthers
     
     // Manual Input & Settings Keys
-    // 列挙型で使う選択肢として、manualInput, aiModelManagement, languageSettings, languageAlertTitle, languageAlertMessageを定義します。
-    case manualInput, aiModelManagement, languageSettings, languageAlertTitle, languageAlertMessage
-    // ダウンロード操作と、インストール状態に関する表示文言を識別します。
-    case download, notNow, installed, uninstalled
-    // 列挙型で使う選択肢として、deleteModel, modelDescription, downloading, aiReady, modelDeleted, modelInstallを定義します。
-    case deleteModel, modelDescription, downloading, aiReady, modelDeleted, modelInstall
+    case manualInput, languageSettings, languageAlertTitle, languageAlertMessage
     
     // AI Butler Keys
     // 列挙型で使う選択肢として、aiButler, aiButlerWelcome, askAnythingを定義します。
@@ -78,11 +73,6 @@ enum L10n: String {
     // 列挙型で使う選択肢として、emoji, customColor, selectFromPaletteを定義します。
     case emoji, customColor, selectFromPalette
     
-    // Ticker & UI
-    // 列挙型で使う選択肢として、tickerLanguage, tickerJP, tickerENを定義します。
-    case tickerLanguage, tickerJP, tickerEN
-    // 列挙型で使う選択肢として、currentStatus, availableForDownload, installedModels, noInstalledModels, active, select, install, uninstallSwipeTipを定義します。
-    case currentStatus, availableForDownload, installedModels, noInstalledModels, active, select, install, uninstallSwipeTip
 // ここまでの処理またはデータ定義を閉じます。
 }
 
@@ -190,34 +180,12 @@ final class LanguageManager: ObservableObject {
             // New
             // manualInputの表示文言を対応づけます。
             .manualInput: "手動入力",
-            // aiModelManagementの表示文言を対応づけます。
-            .aiModelManagement: "AIモデル管理",
             // languageSettingsの表示文言を対応づけます。
             .languageSettings: "言語設定",
             // languageAlertTitleの表示文言を対応づけます。
             .languageAlertTitle: "言語を選択 / Select Language",
             // languageAlertMessageの表示文言を対応づけます。
             .languageAlertMessage: "アプリの言語を選択してください。\nPlease select your preferred language.\n(後で設定から変更できます / You can change this later in Settings)",
-            // downloadの表示文言を対応づけます。
-            .download: "設定へ移動",
-            // notNowの表示文言を対応づけます。
-            .notNow: "キャンセル",
-            // installedの表示文言を対応づけます。
-            .installed: "インストール済み",
-            // uninstalledの表示文言を対応づけます。
-            .uninstalled: "未インストール",
-            // deleteModelの表示文言を対応づけます。
-            .deleteModel: "モデルを削除",
-            // modelDescriptionの表示文言を対応づけます。
-            .modelDescription: "端末内AIで店名・日付の補助抽出とカテゴリーの分類を行います。金額が不明な場合は画像を確認して手入力してください。",
-            // downloadingの表示文言を対応づけます。
-            .downloading: "ダウンロード中",
-            // aiReadyの表示文言を対応づけます。
-            .aiReady: "準備完了",
-            // modelDeletedの表示文言を対応づけます。
-            .modelDeleted: "モデル削除済",
-            // modelInstallの表示文言を対応づけます。
-            .modelInstall: "モデルインストール",
             
             // Butler
             // aiButlerの表示文言を対応づけます。
@@ -251,29 +219,6 @@ final class LanguageManager: ObservableObject {
             // selectFromPaletteの表示文言を対応づけます。
             .selectFromPalette: "パレットから選択",
             
-            // Ticker Settings
-            // tickerLanguageの表示文言を対応づけます。
-            .tickerLanguage: "ホームティッカー言語",
-            // tickerJPの表示文言を対応づけます。
-            .tickerJP: "日本語",
-            // tickerENの表示文言を対応づけます。
-            .tickerEN: "英語",
-            // currentStatusの表示文言を対応づけます。
-            .currentStatus: "現在の状態",
-            // availableForDownloadの表示文言を対応づけます。
-            .availableForDownload: "ダウンロード可能",
-            // installedModelsの表示文言を対応づけます。
-            .installedModels: "インストール済みモデル",
-            // noInstalledModelsの表示文言を対応づけます。
-            .noInstalledModels: "インストール済みのモデルはありません",
-            // activeの表示文言を対応づけます。
-            .active: "使用中",
-            // selectの表示文言を対応づけます。
-            .select: "選択",
-            // installの表示文言を対応づけます。
-            .install: "インストール",
-            // uninstallSwipeTipの表示文言を対応づけます。
-            .uninstallSwipeTip: "ヒント: リストを左にスワイプして削除"
         // ここで一覧または辞書を閉じます。
         ],
         // 英語の翻訳文言をまとめます。
@@ -314,34 +259,12 @@ final class LanguageManager: ObservableObject {
              // New
             // manualInputの表示文言を対応づけます。
             .manualInput: "Manual Input",
-            // aiModelManagementの表示文言を対応づけます。
-            .aiModelManagement: "AI Model Management",
             // languageSettingsの表示文言を対応づけます。
             .languageSettings: "Language Settings",
             // languageAlertTitleの表示文言を対応づけます。
             .languageAlertTitle: "Select Language",
             // languageAlertMessageの表示文言を対応づけます。
             .languageAlertMessage: "Please select your preferred language.\n(You can change this later in Settings)",
-            // downloadの表示文言を対応づけます。
-            .download: "Go to Settings",
-            // notNowの表示文言を対応づけます。
-            .notNow: "Cancel",
-            // installedの表示文言を対応づけます。
-            .installed: "Installed",
-            // uninstalledの表示文言を対応づけます。
-            .uninstalled: "Not Installed",
-            // deleteModelの表示文言を対応づけます。
-            .deleteModel: "Delete Model",
-            // modelDescriptionの表示文言を対応づけます。
-            .modelDescription: "On-device AI helps extract the shop name and date and classify the category. Review the image and enter the amount when it is unclear.",
-            // downloadingの表示文言を対応づけます。
-            .downloading: "Downloading",
-            // aiReadyの表示文言を対応づけます。
-            .aiReady: "Ready",
-            // modelDeletedの表示文言を対応づけます。
-            .modelDeleted: "Model Deleted",
-            // modelInstallの表示文言を対応づけます。
-            .modelInstall: "Model Install",
             
             // Butler
             // aiButlerの表示文言を対応づけます。
@@ -375,29 +298,6 @@ final class LanguageManager: ObservableObject {
             // selectFromPaletteの表示文言を対応づけます。
             .selectFromPalette: "Select from Palette",
             
-            // Ticker Settings
-            // tickerLanguageの表示文言を対応づけます。
-            .tickerLanguage: "Home Ticker Language",
-            // tickerJPの表示文言を対応づけます。
-            .tickerJP: "Japanese",
-            // tickerENの表示文言を対応づけます。
-            .tickerEN: "English",
-            // currentStatusの表示文言を対応づけます。
-            .currentStatus: "Current Activity",
-            // availableForDownloadの表示文言を対応づけます。
-            .availableForDownload: "Available for Download",
-            // installedModelsの表示文言を対応づけます。
-            .installedModels: "Installed Models",
-            // noInstalledModelsの表示文言を対応づけます。
-            .noInstalledModels: "No installed models",
-            // activeの表示文言を対応づけます。
-            .active: "Active",
-            // selectの表示文言を対応づけます。
-            .select: "Select",
-            // installの表示文言を対応づけます。
-            .install: "Install",
-            // uninstallSwipeTipの表示文言を対応づけます。
-            .uninstallSwipeTip: "Tip: Swipe left on an installed model to uninstall it."
         // ここで一覧または辞書を閉じます。
         ]
     // ここで一覧または辞書を閉じます。

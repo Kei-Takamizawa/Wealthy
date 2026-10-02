@@ -167,11 +167,6 @@ struct DashboardView: View {
             .sheet(isPresented: $showSettings) { AdvancedSettingsView() }
             // 条件に応じて下から現れる画面を表示します。
             .sheet(isPresented: $showChat) { ChatView() }
-            // この画面が現れたときの処理を登録します。
-            .onAppear {
-                // Initial load removed as per request
-            // 画面表示時の処理の範囲をここで閉じます。
-            }
             // ... (rest of modifiers)
 
     
@@ -193,18 +188,7 @@ struct DashboardView: View {
                          // `self.tempImageFilename`へ `filename` の結果を代入します。
                          self.tempImageFilename = filename
                          
-                         // 2. モデルがインストール済みか確認
-                         // AIモデルがインストール済みなら、そのモデルを使う処理へ進みます。
-                         if LocalLLMService.shared.isModelInstalled {
-                             // `processWithAI(result: result, filename: filename)` が終わるまで待ってから次へ進みます。
-                             await processWithAI(result: result, filename: filename)
-                         // 前の条件に当てはまらない場合の処理に進みます。
-                         } else {
-                             // 未インストールなら旧方式
-                             // `processLegacy` を呼び出し、括弧内の値を使って処理します。
-                             processLegacy(result: result, filename: filename)
-                         // } elseの範囲をここで閉じます。
-                         }
+                         await processWithAI(result: result, filename: filename)
                      // 非同期処理の範囲をここで閉じます。
                      }
                  // 条件分岐の範囲をここで閉じます。
@@ -218,48 +202,7 @@ struct DashboardView: View {
             .overlay {
                 // 複数の表示要素を一つのまとまりとして扱います。
                 Group {
-                    // モデルを実際に読み込んでいる間だけ、操作を待つ表示を重ねます。
-                    if LocalLLMService.shared.isLoading {
-                        // 要素を手前と奥に重ねます。
-                        ZStack {
-                            // 画面に色を表示します。
-                            Color.black.opacity(0.6).ignoresSafeArea()
-                            // 要素を上から下へ並べます。
-                            VStack(spacing: 20) {
-                                // 処理の進行状況を示す表示を作ります。
-                                ProgressView()
-                                    // 表示の拡大率を設定します。
-                                    .scaleEffect(1.5)
-                                    // 操作部品に使う強調色を設定します。
-                                    .tint(.white)
-                                // 文字列を画面に表示します。
-                                Text(LocalLLMService.shared.loadStatus)
-                                    // 文字の大きさや書体を設定します。
-                                    .font(.headline)
-                                    // 文字やアイコンの色を設定します。
-                                    .foregroundStyle(.white)
-                                // AIモデルのダウンロードが始まり、まだ完了していない場合の表示を作ります。
-                                if LocalLLMService.shared.downloadProgress > 0 && LocalLLMService.shared.downloadProgress < 1.0 {
-                                    // 処理の進行状況を示す表示を作ります。
-                                    ProgressView(value: LocalLLMService.shared.downloadProgress)
-                                        // 進行状況を横長のバーで表示します。
-                                        .progressViewStyle(.linear)
-                                        // 表示領域の幅や高さを設定します。
-                                        .frame(width: 200)
-                                // 条件分岐の範囲をここで閉じます。
-                                }
-                            // 縦並びの表示の範囲をここで閉じます。
-                            }
-                            // 表示の周囲に余白を設けます。
-                            .padding(40)
-                            // 背景の色や形を設定します。
-                            .background(Color(white: 0.2))
-                            // 表示の角を丸くします。
-                            .cornerRadius(20)
-                        // 重ねた表示の範囲をここで閉じます。
-                        }
-                    // 前の条件が成り立たず、続く条件が成り立つ場合の処理に進みます。
-                    } else if isScanningReceipt {
+                    if isScanningReceipt {
                         // 要素を手前と奥に重ねます。
                         ZStack {
                             // 画面に色を表示します。
@@ -544,7 +487,7 @@ struct DashboardView: View {
     private func generateDailyAdvice(forceRefresh: Bool = false) {
         // Prevent multiple calls
         // AIモデルがあり、助言生成がまだ始まっていない場合だけ処理を続けます。
-        guard LocalLLMService.shared.isModelInstalled, !isAdviceLoading else {
+        guard LocalLLMService.shared.isReady, !isAdviceLoading else {
             // ここで現在の関数や処理から抜けます。
             return
         // 開いていた画面部品や処理の範囲を閉じます。
@@ -944,40 +887,6 @@ struct AdvancedSettingsView: View {
                 // 開いていた画面部品や処理の範囲を閉じます。
                 }
                 
-                // 関連する項目を一つのまとまりに分けます。
-                Section(header: Text(lm.t(.aiModelManagement)), footer: Text(lm.t(.modelDescription))) {
-                    // タップで別の画面へ移動する項目を作ります。
-                    NavigationLink(destination: ModelSettingsView()) {
-                        // 要素を左から右へ並べます。
-                        HStack {
-                            // 要素を上から下へ並べます。
-                            VStack(alignment: .leading) {
-                                // 文字列を画面に表示します。
-                                Text(LocalLLMService.shared.currentModel.name)
-                                    // 文字の大きさや書体を設定します。
-                                    .font(.headline)
-                                // 文字列を画面に表示します。
-                                Text(LocalLLMService.shared.loadStatus)
-                                    // 文字の大きさや書体を設定します。
-                                    .font(.caption)
-                                    // 文字やアイコンの色を設定します。
-                                    .foregroundStyle(.gray)
-                            // 縦並びの表示の範囲をここで閉じます。
-                            }
-                            // 空き領域を使って要素間の距離を広げます。
-                            Spacer()
-                            // AIモデルがインストール済みなら、そのモデルを使う処理へ進みます。
-                            if LocalLLMService.shared.isModelInstalled {
-                                // 画像またはシステムアイコンを表示します。
-                                Image(systemName: "checkmark.circle.fill").foregroundStyle(.green)
-                            // 条件分岐の範囲をここで閉じます。
-                            }
-                        // 横並びの表示の範囲をここで閉じます。
-                        }
-                    // 開いていた画面部品や処理の範囲を閉じます。
-                    }
-                // 開いていた画面部品や処理の範囲を閉じます。
-                }
             // Listの範囲をここで閉じます。
             }
             // 画面上部の見出しを設定します。

@@ -2,71 +2,54 @@
 
 English · [Japanese](README.ja.md)
 
-An iPhone and iPad app for tracking expenses, income, and balances. Financial records, receipt recognition, and AI inference are handled on device.
+Wealthy is an iPhone and iPad app for tracking everyday expenses, income, and wallet balances. It combines receipt scanning, spending summaries, and on-device AI in a single personal finance app.
 
 ## Features
 
-- Record expenses and income, with categories and separate wallets.
-- Scan receipts and keep their images alongside expense records.
-- Review transactions in a calendar and explore spending by category.
-- Set monthly recurring entries, applied when the app opens.
-- Use local AI chat and export or import records as JSON.
+- Record expenses and income with categories and separate wallets.
+- Scan receipts, review the extracted details, and keep the original images.
+- Browse transactions in a calendar and compare spending by category.
+- Create monthly recurring entries, applied when the app opens.
+- Ask questions about your records with Apple Foundation Models.
+- Export and import records as JSON.
 
-## Getting started
+## Requirements
 
-Wealthy requires iOS or iPadOS 26.0 or later. English is the default language for a new installation. Choose Japanese during setup or under **Home → Settings → Language Settings**. The app remembers your selection.
+Wealthy requires **iOS or iPadOS 26.0 or later** and an **Apple Intelligence-capable device**. Apple Intelligence must be enabled and its system model must be ready before the app can be used.
 
-Receipt scanning and manual entry work independently of the optional AI model downloads. Apple Foundation Models is the default AI provider; its availability depends on the device and Apple Intelligence settings.
+| Device | Supported hardware |
+| --- | --- |
+| iPhone | iPhone 15 Pro / Pro Max, or iPhone 16 and later |
+| iPad | Models with M1 or later, or iPad mini with A17 Pro |
+
+Availability also depends on Apple's language and regional support. Wealthy checks the operating system's model availability at launch and when returning to the foreground. See [Apple's current requirements](https://www.apple.com/apple-intelligence/).
+
+## Using the app
+
+1. Enable Apple Intelligence under **Settings → Apple Intelligence & Siri** and allow the system model to finish preparing.
+2. Open Wealthy and choose a display language. English is the default; Japanese is available during setup and under **Home → Settings → Language Settings**.
+3. Add a wallet, then record income or scan a receipt. Check the recognized details before saving.
+4. Use the Calendar and Analysis tabs to review your records. Open the AI assistant to ask about them.
 
 ## On-device AI
 
-Open **Home → Settings → AI Model Management** to view model sizes, download progress, and compatibility information for the current device. Download an optional model, then select it. Downloading alone does not change the active model.
+Wealthy uses Apple's built-in **SystemLanguageModel** for chat, receipt enrichment, and short spending comments. Model installation and updates are managed by the operating system. There is no model download or selection screen.
 
-| Model | Format | Download | Device RAM guide | Inference RAM estimate |
-| --- | --- | ---: | ---: | ---: |
-| Apple Foundation Models | OS managed | See below | Determined by iOS | Not measured |
-| [Bonsai 8B](https://huggingface.co/inferencerlabs/Bonsai-8B-MLX-Q2) | MLX 2-bit | 2.32 GB | 6 GB | 3.5 GB |
-| [MiniCPM5-1B (Reasoning)](https://huggingface.co/mlx-community/MiniCPM5-1B-4bit) | MLX 4-bit | 0.62 GB | 4 GB | 1.6 GB |
-| [MiniCPM5-2B](https://huggingface.co/mlx-community/MiniCPM5-2B-mlx-4Bit) | MLX 4-bit | 1.43 GB | 6 GB | 2.5 GB |
-| [K2 Horizon 3.7B](https://huggingface.co/mlx-community/K2-Horizon-3.7B-4bit) | MLX mixed 4/8-bit | 4.16 GB | 8 GB | 5.6 GB |
+Chat replies follow the language of the latest message, independently of the display language. For example, a Japanese question requests a Japanese answer even when the app is set to English. Inputs without a detectable language use the display language. Supported reply languages depend on the installed Apple model; spending comments use the display language.
 
-Download sizes were checked against the pinned model revisions on October 2, 2026. GB uses decimal units; all four optional downloads total approximately **8.52 GB**, plus temporary storage headroom. Only one model is loaded at a time.
+The app uses on-device inference and does not connect to Private Cloud Compute or another cloud AI provider.
 
-Apple manages its model through the operating system. Wealthy downloads **0 B** for this provider; that does not mean the system model occupies no storage. The app reports unsupported devices, disabled Apple Intelligence, and a model that is still being prepared using [Apple's availability API](https://developer.apple.com/documentation/foundationmodels/systemlanguagemodel/availability-swift.property).
+## Records, receipts, and backup
 
-RAM figures are application estimates, not verified minimum requirements. Optional models require Metal and sufficient available memory. Compatibility remains an estimate until a one-token inference succeeds in the current app session; this check does not establish response quality, speed, or long-session stability. MLX models cannot be selected in the Simulator.
+Records, chat history, and receipt images are stored locally. JSON exports include records and chat history, but **do not include receipt image files**. Importing a backup replaces the existing records.
 
-Bonsai uses a third-party 2-bit conversion, which differs from the official 1-bit release. K2 uses a native Swift implementation. Model downloads require an internet connection; interrupted or failed downloads are not marked as installed. See [model management notes](Verification/AIModels/ModelManagement.md) for implementation details.
+Receipt amount extraction currently targets integer Japanese yen. An ambiguous total requires manual entry, and AI does not overwrite the amount selected by the receipt parser. Blurred images, shadows, and unsupported receipt layouts can affect recognition. Always review the result before saving.
 
-## Receipt review
+## Build from source
 
-Receipt recognition uses Apple Vision for Japanese and English. The parser fills in an amount only when it identifies an unambiguous, explicitly labeled total. AI does not overwrite that amount. If the total is unclear, review the saved image and enter it before saving.
+Use Xcode with the iOS 26 SDK or later; development builds are checked with Xcode 27.0. Open `Wealthy/Wealthy.xcodeproj`, select the **Wealthy** scheme, configure your signing team, and run on a compatible iPhone or iPad. The project uses Apple system frameworks and has no external Swift package dependencies.
 
-Automatic amount extraction currently targets integer Japanese yen. Blurred images, shadows, unsupported labels, decimal amounts, and negative amounts may require manual entry. Recognition accuracy on photographed receipts has not been measured.
-
-## Data and backup
-
-Records and receipt images are stored locally. JSON exports include record data and chat history, but **do not embed receipt images or downloaded models**. Importing replaces the existing records. Keep receipt images separately if you need a complete archive.
-
-## Building and verification
-
-Open `Wealthy/Wealthy.xcodeproj` in Xcode, select the **Wealthy** scheme, configure signing, and choose a compatible device. The build checks below used Xcode 27.0 and SDK 27.0; they do not establish the oldest supported Xcode version.
-
-Checks recorded for the receipt and model implementation on October 2, 2026:
-
-| Check | Result | Scope |
-| --- | --- | --- |
-| Receipt parser | 42/42 passed | Text and coordinate fixtures |
-| Model chat templates | 26 checks passed | Swift Jinja; no model weights |
-| Download management | Passed, including 8 cancellation checks | Local HTTP server and synthetic files |
-| App builds | Passed | Simulator and unsigned device builds |
-| Native model harness | Type checking passed | Numerical execution pending |
-
-The subsequent language-default update also passed a Simulator build and the Japanese source-comment audit.
-
-Run `python3 Verification/verify_receipt_ocr.py` for receipt checks, `python3 Verification/ai_model_download_fixture.py` for download checks, and `python3 Verification/verify_ai_comments.py` for the source-comment audit. Template checks use `python3 Verification/verify_ai_templates.py --checkouts PATH`, where `PATH` points to the Xcode dependency checkouts.
-
-These checks do not verify app launch, camera capture, Apple model responses on a device, or inference with the four downloaded models. Model speed, memory peaks, and recognition quality remain unmeasured. [Native model verification](Verification/AIModels/NativeModelVerification.md) records the remaining numerical checks.
+The Simulator can be used for build checks; Apple Intelligence behavior needs testing on a supported device. See [verification instructions](Verification/README.md) for automated checks and the remaining device tests.
 
 ## License
 

@@ -126,9 +126,6 @@ struct ContentView: View {
         // `lm.currentLanguage`へ `language` の結果を代入します。
         lm.currentLanguage = language
         
-        // 表示言語に合わせて助言の言語だけを変え、保存済みのAIモデル選択は維持します。
-        LocalLLMService.shared.setTickerLanguage(language == .japanese ? "日本語" : "English")
-        
         // `hasSelectedLanguage`をオンにし、対応する状態を更新します。
         hasSelectedLanguage = true // Keep this to mark language as selected
         // `showLanguageAlert`をオフにし、対応する状態を更新します。

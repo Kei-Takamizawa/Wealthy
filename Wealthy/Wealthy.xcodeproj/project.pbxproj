@@ -6,13 +6,6 @@
 	objectVersion = 77;
 	objects = {
 
-/* Begin PBXBuildFile section */
-		844872FF2F016D0F00E280FB /* MLX in Frameworks */ = {isa = PBXBuildFile; productRef = 844872FE2F016D0F00E280FB /* MLX */; };
-		844873012F016D0F00E280FB /* MLXNN in Frameworks */ = {isa = PBXBuildFile; productRef = 844873002F016D0F00E280FB /* MLXNN */; };
-		844873032F016D0F00E280FB /* MLXRandom in Frameworks */ = {isa = PBXBuildFile; productRef = 844873022F016D0F00E280FB /* MLXRandom */; };
-		8448732C2F01FA3600E280FB /* MLXLLM in Frameworks */ = {isa = PBXBuildFile; productRef = 8448732B2F01FA3600E280FB /* MLXLLM */; };
-		8448732E2F01FA3600E280FB /* MLXLMCommon in Frameworks */ = {isa = PBXBuildFile; productRef = 8448732D2F01FA3600E280FB /* MLXLMCommon */; };
-/* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		84BE02D62EFFDCA6000C29F9 /* Wealthy.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Wealthy.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -44,11 +37,6 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				8448732E2F01FA3600E280FB /* MLXLMCommon in Frameworks */,
-				8448732C2F01FA3600E280FB /* MLXLLM in Frameworks */,
-				844873012F016D0F00E280FB /* MLXNN in Frameworks */,
-				844873032F016D0F00E280FB /* MLXRandom in Frameworks */,
-				844872FF2F016D0F00E280FB /* MLX in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -99,11 +87,6 @@
 			);
 			name = Wealthy;
 			packageProductDependencies = (
-				844872FE2F016D0F00E280FB /* MLX */,
-				844873002F016D0F00E280FB /* MLXNN */,
-				844873022F016D0F00E280FB /* MLXRandom */,
-				8448732B2F01FA3600E280FB /* MLXLLM */,
-				8448732D2F01FA3600E280FB /* MLXLMCommon */,
 			);
 			productName = Wealthy;
 			productReference = 84BE02D62EFFDCA6000C29F9 /* Wealthy.app */;
@@ -134,8 +117,6 @@
 			mainGroup = 84BE02CD2EFFDCA6000C29F9;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
-				844872FD2F016D0E00E280FB /* XCRemoteSwiftPackageReference "mlx-swift" */,
-				8448732A2F01FA3600E280FB /* XCRemoteSwiftPackageReference "mlx-swift-lm" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 84BE02D72EFFDCA6000C29F9 /* Products */;
@@ -314,7 +295,6 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				// アプリの表示バージョンをリリースタグ v0.1.0 に合わせます。
 				MARKETING_VERSION = 0.1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.harrison.Wealthy;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -353,7 +333,6 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				// Release構成の表示バージョンもリリースタグ v0.1.0 に合わせます。
 				MARKETING_VERSION = 0.1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.harrison.Wealthy;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -390,52 +369,7 @@
 		};
 /* End XCConfigurationList section */
 
-/* Begin XCRemoteSwiftPackageReference section */
-		844872FD2F016D0E00E280FB /* XCRemoteSwiftPackageReference "mlx-swift" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/ml-explore/mlx-swift";
-			requirement = {
-				kind = upToNextMajorVersion;
-				minimumVersion = 0.29.1;
-			};
-		};
-		8448732A2F01FA3600E280FB /* XCRemoteSwiftPackageReference "mlx-swift-lm" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/ml-explore/mlx-swift-lm";
-			requirement = {
-				kind = upToNextMajorVersion;
-				minimumVersion = 2.29.2;
-			};
-		};
-/* End XCRemoteSwiftPackageReference section */
 
-/* Begin XCSwiftPackageProductDependency section */
-		844872FE2F016D0F00E280FB /* MLX */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 844872FD2F016D0E00E280FB /* XCRemoteSwiftPackageReference "mlx-swift" */;
-			productName = MLX;
-		};
-		844873002F016D0F00E280FB /* MLXNN */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 844872FD2F016D0E00E280FB /* XCRemoteSwiftPackageReference "mlx-swift" */;
-			productName = MLXNN;
-		};
-		844873022F016D0F00E280FB /* MLXRandom */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 844872FD2F016D0E00E280FB /* XCRemoteSwiftPackageReference "mlx-swift" */;
-			productName = MLXRandom;
-		};
-		8448732B2F01FA3600E280FB /* MLXLLM */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 8448732A2F01FA3600E280FB /* XCRemoteSwiftPackageReference "mlx-swift-lm" */;
-			productName = MLXLLM;
-		};
-		8448732D2F01FA3600E280FB /* MLXLMCommon */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 8448732A2F01FA3600E280FB /* XCRemoteSwiftPackageReference "mlx-swift-lm" */;
-			productName = MLXLMCommon;
-		};
-/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 84BE02CE2EFFDCA6000C29F9 /* Project object */;
 }
