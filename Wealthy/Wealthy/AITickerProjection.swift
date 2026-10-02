@@ -1,6 +1,6 @@
 import Foundation
 
-struct AITickerProjection: Equatable {
+nonisolated struct AITickerProjection: Equatable {
     let scale: CGFloat
     let blurRadius: CGFloat
     let opacity: CGFloat

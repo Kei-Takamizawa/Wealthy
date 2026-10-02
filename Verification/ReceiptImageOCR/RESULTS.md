@@ -10,7 +10,7 @@ These are development-set measurements on 15 supplied images, not a held-out acc
 - The real `LocalLLMService.extractReceiptData` was compiled into a CLI and run with `SystemLanguageModel.default`; availability was `available`. Category measurements used the six default Japanese categories. This was local Mac inference, not iPhone/iPad inference or cloud inference. Apple's API describes this model as [the on-device foundation model](https://developer.apple.com/documentation/foundationmodels/systemlanguagemodel).
 - Sandbox restrictions initially caused Vision to return `nilError` for every image. Measurements below are from the successful native execution, not those failed attempts.
 
-## Results
+## Historical native Mac results
 
 | Measurement | Result | Scope |
 | --- | ---: | --- |
@@ -47,13 +47,46 @@ Three additional synthetic cases with no existing categories returned reusable c
 
 Native Vision processed the 15 final images in approximately 3.91 seconds in total. The final hybrid service completed its 15 receipt calls in approximately 30.55 seconds in total (2.04 seconds per receipt on average). Timing depends on device, OS, model preparation and warm caches and is not an iPhone performance promise.
 
-## Reproduction
+## Final physical-iPhone measurement
+
+The same fixed 15-image development corpus was processed on an **iPhone 16 Pro Max with iOS 27.2**, using the shipping `ReceiptScanner.scan` and `LocalLLMService.extractReceiptData`. Apple Intelligence was available. Original image files were bundled only into the disposable test project; this measured iOS Vision and local Apple inference, not a live camera session or cloud inference.
+
+| Measurement | Final iPhone result |
+| --- | ---: |
+| Readable integer-JPY totals | 6/10 (60.0%) |
+| Foreign or cropped totals appropriately left unconfirmed | 5/5, including 4 foreign-currency images and 1 cropped total |
+| Printed purchase dates | 14/14 |
+| Undated image using the supplied capture timestamp | 1/1 |
+| Hybrid purpose classification | 14/14 labeled images; one meaningless mock receipt excluded |
+| Selected-row CER | 46/410 characters (11.22%), across 30 selected rows |
+| Completed native OCR/model calls | 15/15; no generation errors in the final run |
+
+The initial iPhone run assigned a confectionery purchase to Books despite no recognized book keyword. The final rule can use an explicit Japanese reduced-tax note and a positive 8% taxable subtotal as additional food evidence, while excluding newspaper/subscription and mixed 10% tax contexts; ordinary percentage discounts are not tax evidence. Japan's reduced-rate classes include food/drinks and qualifying newspaper subscriptions. [National Tax Agency](https://www.nta.go.jp/taxes/shiraberu/taxanswer/shohi/6102.htm). Twelve synthetic regressions cover this rule and exclusions. No source-image filename, expected category or merchant-specific identifier is imported into the policy.
+
+An earlier iPhone attempt also triggered the model's safety guardrails on one receipt; the app handles generation failure through its deterministic fallback. The final run did not trigger that error. Model completion and wording can vary between runs, so one successful rerun does not establish guaranteed availability or classification.
+
+The final 15 sequential scanner/model calls took approximately **23.75 seconds combined**, averaging **1.58 seconds per image** with the model already available. This includes recognition and enrichment and is not directly comparable to the Mac's separate OCR and model timings. It is not a performance promise for another device or a cold model.
+
+All category scores use the same purpose grouping described above. **14/14 is a result on reused development samples, not a held-out estimate or a model-only score.** Four readable JPY totals still require manual entry. Selected-row CER remains limited to the fixed 30 rows, not every character of every receipt. Printed-payment-method accuracy was not manually scored.
+
+Generate the separate device test project as described in [verification instructions](../README.md), supplying the private image directory and frozen labels. Export its private receipt JSON attachment with `xcresulttool`, then evaluate it without copying those files into Git:
+
+```sh
+python3 Verification/evaluate_device_receipts.py /private/tmp/device-receipts.json \
+  --output /private/tmp/device-receipt-summary.json
+```
+
+## Native Mac reproduction
 
 The harness accepts an image directory and a private output path:
 
 ```sh
 xcrun swiftc -module-cache-path /tmp/wealthy-receipt-cache \
   Wealthy/Wealthy/ReceiptTextParser.swift \
+  Wealthy/Wealthy/AppLanguage.swift Wealthy/Wealthy/AppLocalization.swift \
+  Wealthy/Wealthy/CurrencyPolicy.swift \
+  Wealthy/Wealthy/CoreTranslations.swift Wealthy/Wealthy/UITranslations.swift \
+  Wealthy/Wealthy/FinanceTranslations.swift \
   Wealthy/Wealthy/ReceiptCategoryPolicy.swift \
   Verification/ReceiptImageOCR/main.swift \
   -o /tmp/wealthy-receipt-image-ocr
@@ -65,6 +98,10 @@ Compile the actual app service for local model evaluation:
 ```sh
 xcrun swiftc -parse-as-library -module-cache-path /tmp/wealthy-receipt-cache \
   Wealthy/Wealthy/LocalLLMService.swift \
+  Wealthy/Wealthy/AppLanguage.swift Wealthy/Wealthy/AppLocalization.swift \
+  Wealthy/Wealthy/CurrencyPolicy.swift \
+  Wealthy/Wealthy/CoreTranslations.swift Wealthy/Wealthy/UITranslations.swift \
+  Wealthy/Wealthy/FinanceTranslations.swift \
   Wealthy/Wealthy/ReplyLanguagePolicy.swift \
   Wealthy/Wealthy/ReceiptCategoryPolicy.swift \
   Wealthy/Wealthy/MoneyTipContext.swift \
@@ -81,4 +118,4 @@ python3 Verification/evaluate_receipt_images.py /tmp/private-truth.json \
   --output /tmp/wealthy-receipt-evaluation.json
 ```
 
-Separate rule regression: `python3 Verification/verify_receipt_ocr.py` passed **79/79 fixtures** plus iOS Simulator SDK type checking. Those synthetic text/coordinate/date/category fixtures verify rules and regressions; they are not photographed-receipt accuracy measurements. End-to-end iPhone/iPad scanning, saving, capture-time fallback and category creation still require real-device interaction checks.
+Separate final rule regression: `python3 Verification/verify_receipt_ocr.py` passed **91/91 fixtures** plus iOS Simulator SDK type checking. Those synthetic text/coordinate/date/category fixtures verify rules and regressions; they are not photographed-receipt accuracy measurements. The [device report](../DeviceUI/RESULTS.md) separates completed native checks from untested camera/file-picker/category-persistence workflows.

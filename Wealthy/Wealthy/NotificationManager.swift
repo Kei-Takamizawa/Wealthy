@@ -40,9 +40,11 @@ class NotificationManager {
             // 通知に表示する題名と本文を入れる値を作ります。
             let content = UNMutableNotificationContent()
             // content.titleに、右辺の計算結果または取得結果を設定します。
-            content.title = item.isIncome ? "💰 入金予定日" : "💸 支払予定日"
-            // content.bodyに、右辺の計算結果または取得結果を設定します。
-            content.body = "\(item.title) (¥\(item.amount)) の予定日です。"
+            content.title = AppLocalization.text(item.isIncome ? "notificationIncome" : "notificationExpense", language: .saved)
+            // 定期取引に保存された通貨と小数桁数で、通知の金額を表示します。
+            let amount = CurrencyPolicy.format(item.amount, currencyCode: item.effectiveCurrencyCode, locale: AppLanguage.saved.locale)
+            // 記号だけでは区別できない通貨も、ISOコードを添えて通知します。
+            content.body = AppLocalization.format("notificationBody", language: .saved, item.title, "\(item.effectiveCurrencyCode) \(amount)")
             // content.soundに、右辺の計算結果または取得結果を設定します。
             content.sound = .default
             

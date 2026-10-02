@@ -17,7 +17,9 @@ struct CalendarView: View {
     // 画面間で共有される言語設定を受け取り、表示文や通貨記号に使います。
     @EnvironmentObject var lm: LanguageManager
     // 保存済みの収支記録を取得し、月別・日別の集計に使います。
-    @Query var expenses: [Expense]
+    @Query var allExpenses: [Expense]
+    @ObservedObject private var currency = CurrencyManager.shared
+    private var expenses: [Expense] { allExpenses.filter { currency.selectedCodes.contains($0.effectiveCurrencyCode) } }
     // 保存済みカテゴリを取得し、選択肢や色・アイコン表示に使います。
     @Query var categories: [Category]
     
@@ -31,9 +33,21 @@ struct CalendarView: View {
     // 表示対象となる過去2年から未来2年までの月を保持します。
     private let months: [Date]
     // 日付の月・日・範囲を計算するため、端末設定の暦を保持します。
-    private let calendar = Calendar.current
+    private var calendar: Calendar {
+        var calendar = Calendar.current
+        calendar.locale = lm.currentLanguage.locale
+        return calendar
+    }
     // カレンダー見出しに表示する曜日名を日曜から順に保持します。
-    private let daysOfWeek = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"] // Ideally localized
+    private var daysOfWeek: [String] {
+        let formatter = DateFormatter()
+        formatter.locale = lm.currentLanguage.locale
+        let symbols = formatter.shortStandaloneWeekdaySymbols ?? formatter.shortWeekdaySymbols ?? []
+        var localizedCalendar = Calendar.current
+        localizedCalendar.locale = lm.currentLanguage.locale
+        let start = max(0, localizedCalendar.firstWeekday - 1)
+        return Array(symbols[start...]) + Array(symbols[..<start])
+    }
     
     // この型を作るときに実行する初期化処理を定義します。
     init() {
@@ -152,7 +166,7 @@ struct CalendarView: View {
                 // キャンセルまたは確定などの操作をナビゲーションバーへ配置します。
                 ToolbarItem(placement: .topBarTrailing) {
                     // 押したときに実行する処理と、ボタンに見せる内容を定義します。
-                    Button("Today") {
+                    Button(lm.text("calendar.today")) {
                         // currentMonthIndexへ右辺の値を代入し、状態または集計結果を更新します。
                         currentMonthIndex = 24 
                     // ここで「ボタン定義」の範囲を閉じます。
@@ -182,7 +196,7 @@ struct CalendarView: View {
     // headerViewを実行する処理を定義します。
     private func headerView(for month: Date) -> some View {
         // statsという定数へ「getMonthlyStats(for: month)」の計算結果を保存します。
-        let stats = getMonthlyStats(for: month)
+        // Each currency has its own totals; no exchange-rate assumption is made.
         // 計算結果を呼び出し元へ返し、この関数の処理を終えます。
         return HStack {
             // 押したときに実行する処理と、ボタンに見せる内容を定義します。
@@ -198,17 +212,25 @@ struct CalendarView: View {
             // 子部品を上から下へ並べる領域を作ります。
             VStack {
                 // 画面に文字を表示します。
-                Text(month.formatted(.dateTime.year().month(.wide)))
+                Text(month.formatted(.dateTime.year().month(.wide).locale(lm.currentLanguage.locale)))
                     // 文字またはアイコンの書体と大きさを指定します。
                     .font(.title2).bold().foregroundStyle(.white)
                 
                 // 子部品を左から右へ並べる領域を作ります。
-                HStack(spacing: 15) {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 15) {
                     // 画面に「In: \(lm.currencySymbol)\(stats.income)」という文字を表示します。
-                    Text("In: \(lm.currencySymbol)\(stats.income)").font(.caption).foregroundStyle(.green)
+                    ForEach(currency.selectedCodes, id: \.self) { code in
+                        let stats = getMonthlyStats(for: month, currencyCode: code)
+                        Text(lm.format("calendar.income", AppLocalization.amount(stats.income, currencyCode: code, language: lm.currentLanguage)))
+                            .font(.caption).foregroundStyle(.green)
+                        Text(lm.format("calendar.expense", AppLocalization.amount(stats.expense, currencyCode: code, language: lm.currentLanguage)))
+                            .font(.caption).foregroundStyle(.red)
+                    }
                     // 画面に「Out: \(lm.currencySymbol)\(stats.expense)」という文字を表示します。
-                    Text("Out: \(lm.currencySymbol)\(stats.expense)").font(.caption).foregroundStyle(.red)
+
                 // ここで「横並びレイアウト」の範囲を閉じます。
+                    }
                 }
             // ここで「縦並びレイアウト」の範囲を閉じます。
             }
@@ -232,19 +254,19 @@ struct CalendarView: View {
     }
 
     // 指定月の収入と支出を集計する処理を定義します。
-    private func getMonthlyStats(for date: Date) -> (income: Int, expense: Int) {
+    private func getMonthlyStats(for date: Date, currencyCode: String) -> (income: Decimal, expense: Decimal) {
         // monthStartという定数へ「calendar.date(from: calendar.dateComponents([.year, .mo」の計算結果を保存します。
         let monthStart = calendar.date(from: calendar.dateComponents([.year, .month], from: date))!
         // monthExpensesという定数へ「expenses.filter {」の計算結果を保存します。
         let monthExpenses = expenses.filter {
             // 収支記録の日付が表示中の月に含まれるか調べます。
-            calendar.isDate($0.date, equalTo: monthStart, toGranularity: .month)
+            calendar.isDate($0.date, equalTo: monthStart, toGranularity: .month) && $0.effectiveCurrencyCode == currencyCode
         // この画面部品または処理の範囲をここで閉じます。
         }
         // incという定数へ「monthExpenses.filter { $0.isIncome }.reduce(0) { $0 + $」の計算結果を保存します。
-        let inc = monthExpenses.filter { $0.isIncome }.reduce(0) { $0 + $1.amount }
+        let inc = monthExpenses.filter { $0.isIncome }.map { $0.amount }.reduce(Decimal.zero) { $0 + Decimal(string: String($1))! }
         // expという定数へ「monthExpenses.filter { !$0.isIncome }.reduce(0) { $0 + 」の計算結果を保存します。
-        let exp = monthExpenses.filter { !$0.isIncome }.reduce(0) { $0 + $1.amount }
+        let exp = monthExpenses.filter { !$0.isIncome }.map { $0.amount }.reduce(Decimal.zero) { $0 + Decimal(string: String($1))! }
         // 計算結果を呼び出し元へ返し、この関数の処理を終えます。
         return (inc, exp)
     // ここで「getMonthlyStats関数」の範囲を閉じます。
@@ -267,7 +289,11 @@ struct CalendarGridView: View {
     let onLongPress: (Date) -> Void
     
     // 日付の月・日・範囲を計算するため、端末設定の暦を保持します。
-    private let calendar = Calendar.current
+    private var calendar: Calendar {
+        var calendar = Calendar.current
+        calendar.locale = lm.currentLanguage.locale
+        return calendar
+    }
     
     // この画面または部品の表示内容をSwiftUIの部品として返します。
     var body: some View {
@@ -286,7 +312,8 @@ struct CalendarGridView: View {
                         // categories引数に、この部品または処理へ渡す値を指定します。
                         categories: categories,
                         // currencySymbol引数に、この部品または処理へ渡す値を指定します。
-                        currencySymbol: lm.currencySymbol
+                        currencySymbol: lm.currencySymbol,
+                        language: lm.currentLanguage
                     // 直前に開いた引数または配列のまとまりを閉じます。
                     )
                     // 日付を長押ししたときの詳細表示処理を登録します。
@@ -320,7 +347,7 @@ struct CalendarGridView: View {
         // weekdayという定数へ「calendar.component(.weekday, from: monthStart)」の計算結果を保存します。
         let weekday = calendar.component(.weekday, from: monthStart)
         // offsetという定数へ「weekday - 1」の計算結果を保存します。
-        let offset = weekday - 1
+        let offset = (weekday - calendar.firstWeekday + 7) % 7
         
         // daysという値または計算結果を定義します。
         var days: [Date?] = Array(repeating: nil, count: offset)
@@ -357,13 +384,15 @@ struct ModernDayCell: View {
     let categories: [Category]
     // 金額の前に表示する通貨記号を受け取ります。
     let currencySymbol: String
+    let language: AppLanguage
     
     // その日の収入合計から支出合計を引いた差額を計算します。
-    var dailyTotal: Int {
+    var dailyTotal: Decimal {
         // incという定数へ「expenses.filter { $0.isIncome }.reduce(0) { $0 + $1.amo」の計算結果を保存します。
-        let inc = expenses.filter { $0.isIncome }.reduce(0) { $0 + $1.amount }
+        guard Set(expenses.map(\.effectiveCurrencyCode)).count <= 1 else { return 0 }
+        let inc = expenses.filter { $0.isIncome }.map { $0.amount }.reduce(Decimal.zero) { $0 + Decimal(string: String($1))! }
         // expという定数へ「expenses.filter { !$0.isIncome }.reduce(0) { $0 + $1.am」の計算結果を保存します。
-        let exp = expenses.filter { !$0.isIncome }.reduce(0) { $0 + $1.amount }
+        let exp = expenses.filter { !$0.isIncome }.map { $0.amount }.reduce(Decimal.zero) { $0 + Decimal(string: String($1))! }
         // 計算結果を呼び出し元へ返し、この関数の処理を終えます。
         return inc - exp
     // この画面部品または処理の範囲をここで閉じます。
@@ -375,7 +404,7 @@ struct ModernDayCell: View {
         VStack(spacing: 4) {
             // Day Number
             // 画面に「\(Calendar.current.component(.day, from: date))」という文字を表示します。
-            Text("\(Calendar.current.component(.day, from: date))")
+            Text(Calendar.current.component(.day, from: date).formatted(.number.locale(language.locale)))
                 // 文字またはアイコンの書体と大きさを指定します。
                 .font(.system(size: 14, weight: .bold))
                 // この文字やアイコンを.whiteで描画します。
@@ -388,7 +417,7 @@ struct ModernDayCell: View {
                 // 「dailyTotal != 0」の条件が真の場合にだけ、次の処理を実行します。
                 if dailyTotal != 0 {
                     // 画面に「\(dailyTotal > 0 ? 」という文字を表示します。
-                    Text("\(dailyTotal > 0 ? "+" : "")\(dailyTotal)")
+                    Text((dailyTotal > 0 ? "+" : "") + AppLocalization.amount(dailyTotal, currencyCode: expenses.first?.effectiveCurrencyCode ?? "JPY", language: language))
                         // 文字またはアイコンの書体と大きさを指定します。
                         .font(.system(size: 10, weight: .semibold, design: .rounded))
                         // この文字やアイコンをdailyTotal > 0 ? .green : .redで描画します。
@@ -537,7 +566,7 @@ struct DayDetailView: View {
                             Spacer()
                             
                             // 画面に文字を表示します。
-                            Text((expense.isIncome ? "+" : "-") + "\(lm.currencySymbol)\(expense.amount)")
+                            Text((expense.isIncome ? "+" : "-") + AppLocalization.amount(expense.amount, currencyCode: expense.effectiveCurrencyCode, language: lm.currentLanguage))
                                 // 文字を太字にします。
                                 .bold()
                                 // この文字やアイコンをexpense.isIncome ? .green : .redで描画します。

@@ -5,6 +5,8 @@ import Foundation
 // /tmp/wealthy-language-checks
 let cases: [(message: String, fallback: String, expected: String)] = [
     ("今月の支出を教えて", "en", "ja"),
+    ("今月の支出を通貨ごとに教えてください。通貨換算せず、通貨コードと金額を表示してください。", "en", "ja"),
+    ("What spending is recorded this month for each currency? Show currency codes and amounts without converting currencies.", "ja", "en"),
     ("日本語でお願いします", "en", "ja"),
     ("こんにちは", "en", "ja"),
     ("ありがとう", "en", "ja"),
@@ -31,6 +33,14 @@ let cases: [(message: String, fallback: String, expected: String)] = [
     ("我想知道本月的收入和支出。", "ja", "zh-Hans"),
     ("¿Cuánto dinero he gastado este mes?", "en", "es"),
     ("Combien ai-je dépensé ce mois-ci ?", "en", "fr"),
+    ("इस महीने मेरी कुल आय और खर्च कितना है? कृपया मेरा बजट बताइए।", "en", "hi"),
+    ("كم أنفقت هذا الشهر؟ أريد معرفة إجمالي الدخل والمصروفات.", "en", "ar"),
+    ("Berapa total pengeluaran saya bulan ini? Tolong jelaskan anggaran saya.", "en", "id"),
+    ("이번 달에 지출한 금액과 수입을 알려 주세요. 예산을 확인하고 싶어요.", "en", "ko"),
+    ("Сколько денег я потратил в этом месяце? Покажите мои доходы и расходы.", "en", "ru"),
+    ("Quanto dinheiro gastei neste mês? Quero saber o total das minhas despesas.", "en", "pt"),
+    ("12345", "hi", "hi"),
+    ("¥1,234", "ar", "ar"),
     ("", "ja", "ja"),
     ("   \n", "en", "en"),
     ("12345", "ja", "ja"),

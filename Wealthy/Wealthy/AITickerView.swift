@@ -9,11 +9,27 @@
 
 import SwiftUI
 
-private struct TickerCentersKey: PreferenceKey {
-    static var defaultValue: [Int: CGFloat] = [:]
+/// Draw system-shaped glyphs so Arabic joining and Indic ligatures survive the curve effect.
+nonisolated private struct CurvedTickerRenderer: TextRenderer {
+    let viewportWidth: CGFloat
+    let textOriginX: CGFloat
 
-    static func reduce(value: inout [Int: CGFloat], nextValue: () -> [Int: CGFloat]) {
-        value.merge(nextValue(), uniquingKeysWith: { _, newest in newest })
+    func draw(layout: Text.Layout, in context: inout GraphicsContext) {
+        for line in layout {
+            for run in line {
+                for glyph in run {
+                    let bounds = glyph.typographicBounds.rect
+                    let effect = AITickerProjection.effect(centerX: textOriginX + bounds.midX, in: viewportWidth)
+                    var glyphContext = context
+                    glyphContext.opacity *= effect.opacity
+                    glyphContext.addFilter(.blur(radius: effect.blurRadius))
+                    glyphContext.translateBy(x: bounds.midX, y: bounds.midY)
+                    glyphContext.scaleBy(x: effect.scale, y: effect.scale)
+                    glyphContext.translateBy(x: -bounds.midX, y: -bounds.midY)
+                    glyphContext.draw(glyph)
+                }
+            }
+        }
     }
 }
 
@@ -31,6 +47,7 @@ private struct TickerWidthKey: PreferenceKey {
 }
 
 struct AITickerView: View {
+    @Environment(\.locale) private var locale
     let text: String
     let onTapSparkle: () -> Void
     let onFinish: () -> Void
@@ -41,13 +58,11 @@ struct AITickerView: View {
     @State private var contentWidth: CGFloat = 0
     @State private var measuredText = ""
     @State private var containerWidth: CGFloat = 0
-    @State private var characterCenters: [Int: CGFloat] = [:]
 
     private let reduceMotionOverride: Bool?
     private let staticRenderDate: Date?
     private let fontSize: CGFloat = 16
     private let speed: CGFloat = 42
-    private let leadingInset: CGFloat = 70
 
     init(
         text: String,
@@ -104,7 +119,7 @@ struct AITickerView: View {
             guard !Task.isCancelled else { return }
 
             if measuredText != text || contentWidth <= 0 {
-                contentWidth = CGFloat(text.count) * (fontSize + 4) + leadingInset
+                contentWidth = CGFloat(text.count) * (fontSize + 4)
             }
 
             animationStart = Date()
@@ -125,57 +140,38 @@ struct AITickerView: View {
             TimelineView(.animation(minimumInterval: 1.0 / 30.0, paused: didFinish || staticRenderDate != nil)) { timeline in
                 let displayDate = staticRenderDate ?? timeline.date
                 let viewportWidth = geometry.size.width
-                let measuredOrEstimatedTextWidth = contentWidth > 0 ? contentWidth : CGFloat(text.count) * (fontSize + 4) + leadingInset
+                let measuredOrEstimatedTextWidth = contentWidth > 0 ? contentWidth : CGFloat(text.count) * (fontSize + 4)
                 let offsetX = tickerOffset(at: displayDate, viewportWidth: viewportWidth, textWidth: measuredOrEstimatedTextWidth)
 
-                ZStack(alignment: .leading) {
-                    HStack(spacing: 0) {
-                        ForEach(Array(text.enumerated()), id: \.offset) { index, character in
-                            let fallbackCenter = leadingInset + CGFloat(index) * (fontSize + 4) + offsetX + (fontSize + 4) / 2
-                            let effect = AITickerProjection.effect(centerX: characterCenters[index] ?? fallbackCenter, in: viewportWidth)
-
-                            Text(String(character))
-                                .font(.system(size: fontSize, weight: .semibold, design: .rounded))
-                                .foregroundStyle(.white)
-                                .padding(.horizontal, 2)
-                                .scaleEffect(effect.scale, anchor: .center)
-                                .blur(radius: effect.blurRadius)
-                                .opacity(effect.opacity)
-                                .accessibilityHidden(true)
-                                .background {
-                                    GeometryReader { glyphGeometry in
-                                        Color.clear.preference(
-                                            key: TickerCentersKey.self,
-                                            value: [index: glyphGeometry.frame(in: .named("tickerViewport")).midX]
-                                        )
-                                    }
-                                }
+                ZStack {
+                    Text(text)
+                        .font(.system(size: fontSize, weight: .semibold, design: .rounded))
+                        .foregroundStyle(.white)
+                        .lineLimit(1)
+                        .textRenderer(CurvedTickerRenderer(viewportWidth: viewportWidth, textOriginX: offsetX))
+                        .environment(\.layoutDirection, AppLanguage.from(identifier: locale.identifier).isRTL ? .rightToLeft : .leftToRight)
+                        .fixedSize(horizontal: true, vertical: false)
+                        .background {
+                            GeometryReader { textGeometry in
+                                Color.clear.preference(
+                                    key: TickerWidthKey.self,
+                                    value: TickerWidthMeasurement(text: text, width: textGeometry.size.width)
+                                )
+                            }
                         }
-                    }
-                    .fixedSize(horizontal: true, vertical: false)
-                    .padding(.leading, leadingInset)
-                    .background {
-                        GeometryReader { textGeometry in
-                            Color.clear.preference(
-                                key: TickerWidthKey.self,
-                                value: TickerWidthMeasurement(text: text, width: textGeometry.size.width)
-                            )
+                        .position(x: offsetX + measuredOrEstimatedTextWidth / 2, y: geometry.size.height / 2)
+                        .accessibilityHidden(true)
+                        .onPreferenceChange(TickerWidthKey.self) { measurement in
+                            measuredText = measurement.text
+                            if abs(contentWidth - measurement.width) > 0.5 { contentWidth = measurement.width }
                         }
-                    }
-                    .offset(x: offsetX)
-                    .frame(height: geometry.size.height, alignment: .center)
-                    .onPreferenceChange(TickerCentersKey.self) { characterCenters = $0 }
-                    .onPreferenceChange(TickerWidthKey.self) { measurement in
-                        measuredText = measurement.text
-                        if abs(contentWidth - measurement.width) > 0.5 { contentWidth = measurement.width }
-                    }
 
                     HStack {
                         sparkleButton
                         Spacer(minLength: 0)
                     }
+                    .environment(\.layoutDirection, AppLanguage.from(identifier: locale.identifier).isRTL ? .rightToLeft : .leftToRight)
                 }
-                .coordinateSpace(name: "tickerViewport")
                 .clipped()
                 .onAppear { containerWidth = geometry.size.width }
                 .onChange(of: geometry.size.width) { _, width in containerWidth = width }
@@ -184,6 +180,8 @@ struct AITickerView: View {
             }
         }
         .frame(height: 42)
+        // Position and projection use physical x coordinates; text keeps its own reading direction.
+        .environment(\.layoutDirection, .leftToRight)
     }
 
     private var reducedMotionTicker: some View {
@@ -210,18 +208,19 @@ struct AITickerView: View {
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .accessibilityLabel("Show AI advice")
+        .accessibilityLabel(AppLocalization.text("showAIAdvice", language: AppLanguage.from(identifier: locale.identifier)))
     }
 
     private func tickerOffset(at date: Date, viewportWidth: CGFloat, textWidth: CGFloat) -> CGFloat {
         guard viewportWidth > 0 else { return 0 }
         if usesReducedMotion { return (viewportWidth - textWidth) / 2 }
-        guard let animationStart else { return viewportWidth }
+        let isRTL = AppLanguage.from(identifier: locale.identifier).isRTL
+        guard let animationStart else { return isRTL ? -textWidth : viewportWidth }
 
         let distance = viewportWidth + textWidth
         let duration = Double(distance / speed)
         let elapsed = min(duration, max(0, date.timeIntervalSince(animationStart)))
-        return viewportWidth - CGFloat(elapsed) * speed
+        return isRTL ? -textWidth + CGFloat(elapsed) * speed : viewportWidth - CGFloat(elapsed) * speed
     }
 }
 

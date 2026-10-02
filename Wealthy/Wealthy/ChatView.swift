@@ -87,7 +87,7 @@ struct ChatView: View {
                                             // 操作部品に使う強調色を設定します。
                                             .tint(.gray)
                                         // 文字列を画面に表示します。
-                                        Text("Thinking...")
+                                        Text(lm.text("thinking"))
                                             // 文字の大きさや書体を設定します。
                                             .font(.caption)
                                             // 文字やアイコンの色を設定します。
@@ -120,7 +120,7 @@ struct ChatView: View {
                     // 要素を左から右へ並べます。
                     HStack(alignment: .bottom) {
                         // 文字を入力する欄を配置します。
-                        TextField(lm.t(.askAnything), text: $inputText, axis: .vertical)
+                        TextField(lm.t(.askAnything), text: $inputText, axis: .vertical).accessibilityIdentifier("chat.input")
                             // 表示の周囲に余白を設けます。
                             .padding(12)
                             // 背景の色や形を設定します。
@@ -149,6 +149,7 @@ struct ChatView: View {
                         // } label:の範囲をここで閉じます。
                         }
                         // 条件に応じて操作を無効にします。
+                        .accessibilityIdentifier("chat.send")
                         .disabled(inputText.isEmpty || isThinking)
                     // 横並びの表示の範囲をここで閉じます。
                     }
@@ -363,7 +364,7 @@ struct MessageBubble: View {
             // 要素を上から下へ並べます。
             VStack(alignment: message.role == .user ? .trailing : .leading) {
                 // 文字列を画面に表示します。
-                Text(message.content)
+                Text(message.content).accessibilityIdentifier(message.role == .user ? "chat.user" : "chat.assistant")
                     // 文字やアイコンの色を設定します。
                     .foregroundStyle(.white)
                     // 表示の周囲に余白を設けます。

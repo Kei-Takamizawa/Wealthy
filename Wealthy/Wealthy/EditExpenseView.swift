@@ -20,11 +20,23 @@ struct EditExpenseView: View {
     @Environment(\.modelContext) var modelContext
     // 画面間で共有される言語設定を受け取り、表示文や通貨記号に使います。
     @EnvironmentObject var lm: LanguageManager
-    // expenseの保存モデルを入力欄から直接編集できるように受け取ります。
-    @Bindable var expense: Expense
+    // 通貨候補と保存対象一覧を共有します。
+    @ObservedObject private var currencyManager = CurrencyManager.shared
+    // 保存を確定するまで、永続化されない下書きを編集します。
+    @State private var expense: Expense
+    // 小数入力中の文字列を、確定済み金額とは別に保持します。
+    @State private var amountText = ""
+    private let originalExpense: Expense?
     // isNewEntryという値または計算結果を定義します。
     var isNewEntry: Bool = false // Default false (for existing items)
     var receiptDateUsesCapture: Bool = false
+
+    init(expense: Expense, isNewEntry: Bool = false, receiptDateUsesCapture: Bool = false) {
+        _expense = State(initialValue: ExpenseLedger.draft(for: expense))
+        originalExpense = isNewEntry ? nil : expense
+        self.isNewEntry = isNewEntry
+        self.receiptDateUsesCapture = receiptDateUsesCapture
+    }
     
     // ■ 修正1: カテゴリ一覧と財布一覧を取得するコードを追加
     // 保存済みの財布を取得し、選択肢や残高更新に使います。
@@ -38,16 +50,24 @@ struct EditExpenseView: View {
     // 一覧内に表示する画像を保持し、値が変わると画面を更新します。
     @State private var previewImage: UIImage? = nil
     
-    // 残高調整用
-    // 編集開始時点の金額を保持し、値が変わると画面を更新します。
-    @State private var initialAmount: Int = 0
-    // 編集開始時点の財布名を保持し、値が変わると画面を更新します。
-    @State private var initialAssetName: String? = nil
+    @State private var saveError: String?
     // 新しいレシートで合計額が0のままの場合に、手入力が必要であることを表します。
     private var needsReceiptAmount: Bool {
         // 手入力の通常記録や既存の履歴には、このレシート専用の案内を表示しません。
         isNewEntry && expense.imageFilename != nil && expense.amount == 0
     // レシート金額の入力待ち判定を閉じます。
+    }
+
+    // 新規入力では有効通貨に下書きの既存コードも加えて選べるようにします。
+    private var availableCurrencyCodes: [String] {
+        currencyManager.selectedCodes.contains(expense.effectiveCurrencyCode)
+            ? currencyManager.selectedCodes
+            : currencyManager.selectedCodes + [expense.effectiveCurrencyCode]
+    }
+
+    // 財布は記録と同じ通貨に限定します。
+    private var availableAssets: [Asset] {
+        assets.filter { $0.effectiveCurrencyCode == expense.effectiveCurrencyCode }
     }
     
     // この画面または部品の表示内容をSwiftUIの部品として返します。
@@ -80,7 +100,7 @@ struct EditExpenseView: View {
                             // 「shopName」の見出しとアイコンを付けて、内側の入力部品をまとめます。
                             InputGroup(label: lm.t(.shopName), icon: "building.2.fill") {
                                 // 「shopName」に対応する値を入力し、バインド先の状態またはモデルへ反映します。
-                                TextField(lm.t(.shopName), text: $expense.title)
+                                TextField(lm.t(.shopName), text: $expense.title).accessibilityIdentifier("expense.title")
                                     // この文字やアイコンを.whiteで描画します。
                                     .foregroundStyle(.white)
                             // この画面部品または処理の範囲をここで閉じます。
@@ -88,16 +108,37 @@ struct EditExpenseView: View {
                             
                             // 金額
                             // 「amount」の見出しとアイコンを付けて、内側の入力部品をまとめます。
-                            InputGroup(label: lm.t(.amount), icon: "yen.circle.fill") {
+                            InputGroup(label: lm.format("currency.amount", expense.effectiveCurrencyCode), icon: "banknote.fill") {
                                 // 「0」に対応する値を入力し、バインド先の状態またはモデルへ反映します。
-                                TextField("0", value: $expense.amount, format: .number)
+                                TextField("0", text: $amountText).accessibilityIdentifier("expense.amount")
                                     // 金額を入力しやすい数字キーボードを表示します。
-                                    .keyboardType(.numberPad)
+                                    .keyboardType(CurrencyPolicy.minorUnits(for: expense.effectiveCurrencyCode) == 0 ? .numberPad : .decimalPad)
                                     // この文字やアイコンを.whiteで描画します。
                                     .foregroundStyle(.white)
                                     // 文字またはアイコンの書体と大きさを指定します。
                                     .font(.title2.bold())
+                                // 通貨で扱えない小数桁数や入力形式をすぐに案内します。
+                                if !amountText.isEmpty && CurrencyPolicy.parseMinorUnits(amountText, currencyCode: expense.effectiveCurrencyCode, locale: lm.currentLanguage.locale) == nil {
+                                    Text(lm.text("currency.invalidAmount")).font(.caption).foregroundStyle(.orange)
+                                }
                             // この画面部品または処理の範囲をここで閉じます。
+                            }
+
+                            // 新規記録に使う通貨を選択し、通貨が変われば金額入力をリセットします。
+                            if isNewEntry {
+                                Picker(lm.text("currency.default"), selection: Binding(
+                                    get: { expense.effectiveCurrencyCode },
+                                    set: { newCode in
+                                        expense.currencyCode = newCode
+                                        expense.amount = 0
+                                        expense.assetName = nil
+                                        amountText = CurrencyPolicy.inputText(0, currencyCode: newCode, locale: lm.currentLanguage.locale)
+                                    })) {
+                                    ForEach(availableCurrencyCodes, id: \.self) { code in
+                                        Text("\(CurrencyPolicy.localizedName(for: code, locale: lm.currentLanguage.locale)) (\(code))").tag(code)
+                                    }
+                                }
+                                .accessibilityIdentifier("expense.currency")
                             }
                             // レシートの金額が未確定の間、画像を確認して手入力するよう案内します。
                             if needsReceiptAmount {
@@ -163,7 +204,7 @@ struct EditExpenseView: View {
                                         // ここで「条件分岐」の処理範囲を閉じます。
                                         } else {
                                             // 言語設定の「unclassified」に対応する翻訳文を表示します。
-                                            Text(expense.categoryName ?? lm.t(.unclassified)).foregroundStyle(.white).bold()
+                                            Text(lm.translateCategory(name: expense.categoryName ?? lm.t(.unclassified))).foregroundStyle(.white).bold()
                                             // 伸縮する空白を入れ、周囲の部品を離して配置します。
                                             Spacer()
                                         // この画面部品または処理の範囲をここで閉じます。
@@ -183,11 +224,13 @@ struct EditExpenseView: View {
                                 // メニューの選択肢と表示内容の範囲を始めます。
                                 Menu {
                                     // 配列や範囲の各要素に対応する画面部品を繰り返し生成します。
-                                    ForEach(assets) { asset in
+                                    ForEach(availableAssets) { asset in
                                         // 押したときに実行する処理と、ボタンに見せる内容を定義します。
                                         Button {
                                             // expense.assetNameへ右辺の値を代入し、状態または集計結果を更新します。
                                             expense.assetName = asset.name
+                                            expense.paymentMethod = asset.paymentMethod ?? ReceiptPaymentPolicy.method(forAssetName: asset.name)
+                                            expense.paymentNeedsReview = false
                                         // ここで「ボタン定義」の処理範囲を閉じます。
                                         } label: {
                                             // 子部品を左から右へ並べる領域を作ります。
@@ -211,7 +254,7 @@ struct EditExpenseView: View {
                                     // 子部品を左から右へ並べる領域を作ります。
                                     HStack {
                                         // 言語設定の「unselected」に対応する翻訳文を表示します。
-                                        Text(expense.assetName ?? lm.t(.unselected))
+                                        Text(expense.assetName ?? expense.paymentMethod.map { ReceiptPaymentPolicy.displayName($0, language: lm.currentLanguage) } ?? lm.t(.unselected))
                                             // この文字やアイコンを.whiteで描画します。
                                             .foregroundStyle(.white)
                                             // 文字を太字にします。
@@ -229,6 +272,24 @@ struct EditExpenseView: View {
                             // この画面部品または処理の範囲をここで閉じます。
                             }
                             
+                            InputGroup(label: lm.text("payment.title"), icon: "creditcard") {
+                                Menu {
+                                    ForEach(ReceiptPaymentPolicy.methods, id: \.self) { method in
+                                        Button(ReceiptPaymentPolicy.displayName(method, language: lm.currentLanguage)) {
+                                            expense.paymentMethod = method
+                                            let matches = availableAssets.filter { ($0.paymentMethod ?? ReceiptPaymentPolicy.method(forAssetName: $0.name)) == method }
+                                            expense.assetName = matches.count == 1 ? matches[0].name : nil
+                                            expense.paymentNeedsReview = matches.count > 1
+                                        }
+                                    }
+                                } label: {
+                                    Text(expense.paymentMethod.map { ReceiptPaymentPolicy.displayName($0, language: lm.currentLanguage) } ?? lm.t(.unselected))
+                                        .foregroundStyle(.white)
+                                }
+                            }
+                            if expense.paymentNeedsReview {
+                                Text(lm.text("payment.review")).font(.footnote).foregroundStyle(.orange)
+                            }
                             // 日付
                             // 「date」の見出しとアイコンを付けて、内側の入力部品をまとめます。
                             InputGroup(label: lm.t(.date), icon: "calendar") {
@@ -236,14 +297,10 @@ struct EditExpenseView: View {
                                 DatePicker("", selection: $expense.date, displayedComponents: .date)
                                     // 入力部品の標準ラベルを隠します。
                                     .labelsHidden()
-                                    // 表示色を反転して暗い背景でも見やすくします。
-                                    .colorInvert()
                             // この画面部品または処理の範囲をここで閉じます。
                             }
                             if isNewEntry && expense.imageFilename != nil && receiptDateUsesCapture {
-                                Text(lm.currentLanguage == .japanese
-                                     ? "印字日付を読み取れなかったため、撮影日を仮入力しました。必要に応じて修正してください。"
-                                     : "No printed date was recognized. The scan date is filled in; adjust it if needed.")
+                                Text(lm.text("receipt.captureDateWarning"))
                                     .font(.footnote)
                                     .foregroundStyle(.orange)
                                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -271,18 +328,15 @@ struct EditExpenseView: View {
                 // キャンセルまたは確定などの操作をナビゲーションバーへ配置します。
                 ToolbarItem(placement: .topBarLeading) {
                     // 「isNewEntry」の条件が真の場合にだけ、次の処理を実行します。
-                    if isNewEntry {
-                        // 押したときに実行する処理と、ボタンに見せる内容を定義します。
+                    Group {
+                        // Discarding an uninserted draft leaves the saved record and balance intact.
                         Button(lm.t(.cancel)) {
-                            // キャンセル時は削除
-                            // 選択された保存データを削除対象として登録します。
-                            modelContext.delete(expense)
-                            // 現在のシートまたは画面を閉じます。
                             dismiss()
                         // ここで「ボタン定義」の範囲を閉じます。
                         }
                         // この文字やアイコンを.redで描画します。
                         .foregroundStyle(.red)
+                        .accessibilityIdentifier("expense.cancel")
                     // ここで「条件分岐」の範囲を閉じます。
                     }
                 // ここで「ツールバー項目」の範囲を閉じます。
@@ -293,29 +347,40 @@ struct EditExpenseView: View {
                     Button(lm.t(.done)) {
                         // 金額0の場合は保存せず削除
                         // 「expense.amount == 0」の条件が真の場合にだけ、次の処理を実行します。
+                        do {
                         if expense.amount == 0 {
                             // 選択された保存データを削除対象として登録します。
-                            modelContext.delete(expense)
+                            if let originalExpense { try ExpenseLedger.delete(originalExpense, context: modelContext) }
                         // ここで「条件分岐」の処理範囲を閉じます。
                         } else {
                             // 編集前後の金額差を計算して財布の残高に反映します。
-                            updateAssetBalance()
+                            if isNewEntry && !currencyManager.selectedCodes.contains(expense.effectiveCurrencyCode) {
+                                // 保存対象の通貨を利用可能通貨一覧へ加えます。
+                                currencyManager.selectedCodes.append(expense.effectiveCurrencyCode)
+                            }
+                            try ExpenseLedger.saveDraft(expense, replacing: originalExpense, context: modelContext)
                         // この画面部品または処理の範囲をここで閉じます。
                         }
                         // 現在のシートまたは画面を閉じます。
                         dismiss()
+                        } catch { saveError = error.localizedDescription }
                     // ここで「ボタン定義」の範囲を閉じます。
                     }
                     // この文字やアイコンを.orangeで描画します。
                     .foregroundStyle(.orange)
                     // 新しいレシートの未確定0円を、完了操作で削除してしまわないよう入力を待ちます。
-                    .disabled(needsReceiptAmount)
+                    .accessibilityIdentifier("expense.save")
+                    .disabled(needsReceiptAmount || expense.paymentNeedsReview || CurrencyPolicy.parseMinorUnits(amountText, currencyCode: expense.effectiveCurrencyCode, locale: lm.currentLanguage.locale) == nil)
                     // 文字を太字にします。
                     .bold()
                 // ここで「ツールバー項目」の範囲を閉じます。
                 }
             // この画面部品または処理の範囲をここで閉じます。
             }
+            .alert(lm.t(.error), isPresented: Binding(get: { saveError != nil }, set: { if !$0 { saveError = nil } })) {
+                Button(lm.text("ok"), role: .cancel) { saveError = nil }
+            } message: { Text(saveError ?? "") }
+            .interactiveDismissDisabled()
             // 状態に応じて画像を画面全体のモーダルで表示します。
             .fullScreenCover(isPresented: $showingFullScreenImage) {
                 // オプショナル値の取得に成功した場合だけ、中の値を使って表示します。
@@ -326,14 +391,25 @@ struct EditExpenseView: View {
                 }
             // この画面部品または処理の範囲をここで閉じます。
             }
-            // 画面が表示された直後に必要な初期化処理を実行します。
-            .onAppear {
-                // initialAmountへ右辺の値を代入し、状態または集計結果を更新します。
-                initialAmount = expense.amount
-                // initialAssetNameへ右辺の値を代入し、状態または集計結果を更新します。
-                initialAssetName = expense.assetName
-            // ここで「画面表示時の処理」の範囲を閉じます。
+        // 日付ピッカーやメニューも、この編集画面の暗い背景に合わせます。
+        .preferredColorScheme(.dark)
+        // 新規記録に既定通貨を設定し、保存値を正しい通貨表記で入力欄へ読み込みます。
+        .onAppear {
+            if isNewEntry && expense.currencyCode == nil {
+                expense.currencyCode = currencyManager.selectedCode
             }
+            amountText = CurrencyPolicy.inputText(expense.amount, currencyCode: expense.effectiveCurrencyCode, locale: lm.currentLanguage.locale)
+        }
+        // 入力文字列が有効な間だけ、最小通貨単位へ変換して下書きを更新します。
+        .onChange(of: amountText) { _, text in
+            if let amount = CurrencyPolicy.parseMinorUnits(text, currencyCode: expense.effectiveCurrencyCode, locale: lm.currentLanguage.locale) {
+                expense.amount = amount
+            }
+        }
+        // 言語を変えた場合も金額の小数区切りを表示言語へ合わせます。
+        .onChange(of: lm.currentLanguage) { _, _ in
+            amountText = CurrencyPolicy.inputText(expense.amount, currencyCode: expense.effectiveCurrencyCode, locale: lm.currentLanguage.locale)
+        }
         // ここで「ナビゲーション画面」の範囲を閉じます。
         }
     // この画面部品または処理の範囲をここで閉じます。
@@ -428,26 +504,6 @@ struct EditExpenseView: View {
     }
     
     // 編集前後の金額に合わせて財布残高を調整する処理を定義します。
-    private func updateAssetBalance() {
-        // オプショナル値の取得に成功した場合だけ、中の値を使って表示します。
-        if let oldName = initialAssetName,
-           // oldAssetという定数へ「assets.first(where: { $0.name == oldName }) {」の計算結果を保存します。
-           let oldAsset = assets.first(where: { $0.name == oldName }) {
-            // oldAsset.balance +へ右辺の値を代入し、状態または集計結果を更新します。
-            oldAsset.balance += initialAmount
-        // この画面部品または処理の範囲をここで閉じます。
-        }
-        // オプショナル値の取得に成功した場合だけ、中の値を使って表示します。
-        if let newName = expense.assetName,
-           // newAssetという定数へ「assets.first(where: { $0.name == newName }) {」の計算結果を保存します。
-           let newAsset = assets.first(where: { $0.name == newName }) {
-            // newAsset.balance -へ右辺の値を代入し、状態または集計結果を更新します。
-            newAsset.balance -= expense.amount
-        // この画面部品または処理の範囲をここで閉じます。
-        }
-    // ここで「updateAssetBalance関数」の範囲を閉じます。
-    }
-    
     // 保存先から画像を読み込む処理を定義します。
     private func loadPreviewImage(filename: String) {
         // 画面操作を止めずに独立した非同期処理を開始します。
@@ -471,6 +527,7 @@ struct EditExpenseView: View {
 
 // AsyncFullScreenImageViewという画面または補助部品の定義を始めます。
 struct AsyncFullScreenImageView: View {
+    @Environment(\.locale) private var locale
     // 読み込む画像ファイルの名前を受け取ります。
     let filename: String
     // 画像画面を閉じる状態を親画面と共有します。
@@ -497,7 +554,7 @@ struct AsyncFullScreenImageView: View {
             // この画面部品または処理の範囲をここで閉じます。
             } else {
                 // 画面に「Error」という文字を表示します。
-                Text("Error").foregroundStyle(.red)
+                Text(AppLocalization.text("error", language: AppLanguage.from(identifier: locale.identifier))).foregroundStyle(.red)
             // この画面部品または処理の範囲をここで閉じます。
             }
             // 子部品を上から下へ並べる領域を作ります。
@@ -666,6 +723,7 @@ struct InputGroup<Content: View>: View {
             Label(label, systemImage: icon).font(.caption2).bold().foregroundStyle(.gray).tracking(1)
             // 子部品を左から右へ並べる領域を作ります。
             HStack { content }
+                .frame(maxWidth: .infinity, alignment: .leading)
                 // 部品の内側または外側に余白を追加します。
                 .padding()
                 // この部品の背後に指定した背景を描きます。

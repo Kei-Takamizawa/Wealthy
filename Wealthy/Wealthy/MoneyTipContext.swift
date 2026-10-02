@@ -2,12 +2,39 @@ import Foundation
 
 /// Negative recorded wallet balances take priority; balances never substitute for monthly income records.
 struct MoneyTipContext: Codable, Equatable {
-    let assetsBalance: Int
+    // 複数のInt残高の合計も、整数の上限を超えて正確に保持します。
+    let assetsBalance: Decimal
     let walletCount: Int
-    let monthlyIncome: Int
-    let monthlySpending: Int
+    // 今月の収入合計を、丸めずに比較できる十進数で保持します。
+    let monthlyIncome: Decimal
+    // 今月の支出合計を、丸めずに比較できる十進数で保持します。
+    let monthlySpending: Decimal
     let incomeRecordCount: Int
     let expenseRecordCount: Int
+
+    // 従来のInt入力を受け付け、保存単位を変えずに十進数へ変換します。
+    init(assetsBalance: Int, walletCount: Int, monthlyIncome: Int, monthlySpending: Int, incomeRecordCount: Int, expenseRecordCount: Int) {
+        // 既存のテストや呼び出しも、上限で切り詰めずに同じ初期化処理へ渡します。
+        self.init(assetsBalance: Decimal(string: String(assetsBalance))!, walletCount: walletCount,
+                  monthlyIncome: Decimal(string: String(monthlyIncome))!, monthlySpending: Decimal(string: String(monthlySpending))!,
+                  incomeRecordCount: incomeRecordCount, expenseRecordCount: expenseRecordCount)
+    }
+
+    // 集計済みの十進数をそのまま受け取り、Intへ戻さない入口です。
+    init(assetsBalance: Decimal, walletCount: Int, monthlyIncome: Decimal, monthlySpending: Decimal, incomeRecordCount: Int, expenseRecordCount: Int) {
+        // 通貨別の残高合計を保持します。
+        self.assetsBalance = assetsBalance
+        // 集計対象の財布の数を保持します。
+        self.walletCount = walletCount
+        // 通貨別の収入合計を保持します。
+        self.monthlyIncome = monthlyIncome
+        // 通貨別の支出合計を保持します。
+        self.monthlySpending = monthlySpending
+        // 収入の記録件数を保持します。
+        self.incomeRecordCount = incomeRecordCount
+        // 支出の記録件数を保持します。
+        self.expenseRecordCount = expenseRecordCount
+    }
 
     enum Situation: String, Codable, CaseIterable {
         case negativeAssets
@@ -27,54 +54,24 @@ struct MoneyTipContext: Codable, Equatable {
         return .balanced
     }
 
-    /// One modest action, with the fact explicitly limited to the user's records.
-    /// Leaves at least 20 Japanese characters or eight English words for a humorous opening.
+    /// Factual advice stays bounded to recorded data in every display language.
     func shortAction(language: String) -> String {
-        let japanese = language.lowercased().hasPrefix("ja")
-        switch situation {
-        case .negativeAssets:
-            return japanese
-                ? "記録上の総残高はマイナス。財布ごとの入出金を確認しましょう。"
-                : "The recorded total balance is negative. Check each wallet’s income and expense entries."
-        case .noTransactions:
-            return japanese
-                ? "今月の取引は未記録。まず一件記録しましょう。"
-                : "No transactions recorded this month. Start by recording one."
-        case .incomeNotRecorded:
-            return japanese
-                ? "今月の収入は未記録。記録漏れを確認しましょう。"
-                : "No income recorded this month. Check for missing income entries."
-        case .deficit:
-            return japanese
-                ? "記録上は支出超過。任意の出費を一つ見直しましょう。"
-                : "Recorded spending exceeds income. Review one optional expense."
-        case .surplus:
-            return japanese
-                ? "記録上は黒字。余裕があれば少し取り分けましょう。"
-                : "Records show a surplus. Set a little aside if affordable."
-        case .balanced:
-            return japanese
-                ? "記録では収支同額。次の出費を一つ確認しましょう。"
-                : "Recorded income matches spending. Check one upcoming expense."
-        }
+        AppLocalization.text("tipAction" + localizationSuffix, language: .from(identifier: language))
     }
 
-    /// Number-free fallback humor avoids inferring that an unrecorded wallet is empty.
+    /// Number-free humor never infers that an unrecorded wallet is empty.
     func fallbackOpening(language: String) -> String {
-        let japanese = language.lowercased().hasPrefix("ja")
+        AppLocalization.text("tipOpening" + localizationSuffix, language: .from(identifier: language))
+    }
+
+    private var localizationSuffix: String {
         switch situation {
-        case .negativeAssets:
-            return japanese ? "財布が帳簿チェックを希望しています。" : "Your wallet has called a bookkeeping meeting."
-        case .noTransactions:
-            return japanese ? "財布の家計簿、まだ白紙ですね。" : "Your wallet’s diary has a blank page."
-        case .incomeNotRecorded:
-            return japanese ? "財布の入金欄がかくれんぼ中です。" : "The wallet’s income column is feeling shy."
-        case .deficit:
-            return japanese ? "財布が小休憩を希望しています。" : "Your wallet has requested a coffee break."
-        case .surplus:
-            return japanese ? "財布がちょっと得意げですね。" : "Your wallet is quietly taking a bow."
-        case .balanced:
-            return japanese ? "財布のシーソーが水平ですね。" : "Your wallet’s seesaw has found its balance."
+        case .negativeAssets: "NegativeAssets"
+        case .noTransactions: "NoTransactions"
+        case .incomeNotRecorded: "IncomeNotRecorded"
+        case .deficit: "Deficit"
+        case .surplus: "Surplus"
+        case .balanced: "Balanced"
         }
     }
 }

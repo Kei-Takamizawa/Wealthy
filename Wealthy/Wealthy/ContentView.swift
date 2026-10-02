@@ -73,9 +73,9 @@ struct ContentView: View {
         // 画面表示時の処理の範囲をここで閉じます。
         }
         // 条件に応じて確認メッセージを表示します。
-        .alert("固定収支を反映しました", isPresented: Binding(get: { processedMessage != nil }, set: { _ in processedMessage = nil })) {
+        .alert(lm.text("processedRecurringTitle"), isPresented: Binding(get: { processedMessage != nil }, set: { _ in processedMessage = nil })) {
             // タップで処理を実行するボタンを配置します。
-            Button("OK", role: .cancel) { }
+            Button(lm.text("ok"), role: .cancel) { }
         // 確認画面の範囲をここで閉じます。
         } message: {
             // 文字列を画面に表示します。
@@ -127,6 +127,7 @@ struct ContentView: View {
         let currentDay = calendar.component(.day, from: today)
         // `processList`を表す変更可能な値または計算結果を定義します。
         var processList: [String] = []
+        var failures: [String] = []
         
         // `item in recurringItems` の要素を順番に処理します。
         for item in recurringItems {
@@ -148,9 +149,10 @@ struct ContentView: View {
                 // 今月分をまだ処理していない場合だけ、収支を追加します。
                 if !alreadyProcessed {
                     // `processRecurringItem` を呼び出し、括弧内の値を使って処理します。
-                    processRecurringItem(item)
-                    // 処理した定期収支の名前と金額を通知用の一覧に追加します。
-                    processList.append("\(item.title) (¥\(item.amount))")
+                    do {
+                        try processRecurringItem(item)
+                        processList.append("\(item.title) (\(AppLocalization.amount(item.amount, currencyCode: item.effectiveCurrencyCode, language: lm.currentLanguage)))")
+                    } catch { failures.append("\(item.title): \(error.localizedDescription)") }
                 // 条件分岐の範囲をここで閉じます。
                 }
             // 条件分岐の範囲をここで閉じます。
@@ -158,52 +160,26 @@ struct ContentView: View {
         // 繰り返しの範囲をここで閉じます。
         }
         // 反映した定期収支が一件以上あれば、結果の案内文を作ります。
-        if !processList.isEmpty {
+        if !processList.isEmpty || !failures.isEmpty {
             // `processedMessage`へ `processList.joined(separator: "\n")` の結果を代入します。
-            processedMessage = processList.joined(separator: "\n")
+            processedMessage = (processList + failures).joined(separator: "\n")
         // 条件分岐の範囲をここで閉じます。
         }
     // 関数の範囲をここで閉じます。
     }
     
     // `processRecurringItem` という関数を定義し、括弧内の入力を使って処理します。
-    private func processRecurringItem(_ item: RecurringItem) {
-        // `newLog`を変更できない値として作り、右辺の結果を保存します。
-        let newLog = Expense(
-            // `title` という引数・項目に続く値を指定します。
-            title: item.title,
-            // `amount` という引数・項目に続く値を指定します。
-            amount: item.amount,
-            // `date` という引数・項目に続く値を指定します。
-            date: Date(),
-            // `assetName` という引数・項目に続く値を指定します。
-            assetName: item.assetName,
-            // `isIncome` という引数・項目に続く値を指定します。
-            isIncome: item.isIncome,
-            // `categoryName` という引数・項目に続く値を指定します。
-            categoryName: "固定費" // 固定費として記録
-        // 関数の範囲をここで閉じます。
-        )
-        // 新しく作った定期収支の記録を保存対象に追加します。
-        modelContext.insert(newLog)
-        
-        // 定期収支に指定された名前の財布が見つかれば、その残高を更新します。
-        if let targetAsset = assets.first(where: { $0.name == item.assetName }) {
-            // 定期収支が収入なら、財布の残高に金額を加えます。
-            if item.isIncome {
-                // `targetAsset.balance`を右辺の値で増減し、結果を保存します。
-                targetAsset.balance += item.amount
-            // 前の条件に当てはまらない場合の処理に進みます。
-            } else {
-                // `targetAsset.balance`を右辺の値で増減し、結果を保存します。
-                targetAsset.balance -= item.amount
-            // } elseの範囲をここで閉じます。
-            }
-        // 条件分岐の範囲をここで閉じます。
-        }
-        // `item.lastProcessedDate`へ `Date()` の結果を代入します。
+    private func processRecurringItem(_ item: RecurringItem) throws {
+        let entry = Expense(title: item.title, amount: item.amount, date: Date(), assetName: item.assetName,
+                            isIncome: item.isIncome, categoryName: lm.text("categoryFixedCosts"),
+                            balanceApplied: false, currencyCode: item.effectiveCurrencyCode)
+        let previous = item.lastProcessedDate
         item.lastProcessedDate = Date()
-    // 関数の範囲をここで閉じます。
+        do {
+            try ExpenseLedger.saveDraft(entry, replacing: nil, context: modelContext)
+        } catch {
+            item.lastProcessedDate = previous
+            throw error
+        }
     }
-// 構造体の範囲をここで閉じます。
 }

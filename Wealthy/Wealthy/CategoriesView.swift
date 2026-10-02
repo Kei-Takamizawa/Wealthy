@@ -38,7 +38,7 @@ struct CategoriesView: View {
                 // 「categories.isEmpty」の条件が真の場合にだけ、次の処理を実行します。
                 if categories.isEmpty {
                     // 表示できるデータがない状態を利用者へ案内します。
-                    ContentUnavailableView("No Categories", systemImage: "tray")
+                    ContentUnavailableView(lm.text("category.empty"), systemImage: "tray")
                 // ここで「条件分岐」の処理範囲を閉じます。
                 } else {
                     // 各データを行に分けて表示するスクロール可能な一覧を作ります。

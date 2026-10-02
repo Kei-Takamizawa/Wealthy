@@ -1,4 +1,6 @@
 import Foundation
+import FoundationModels
+import NaturalLanguage
 
 /// Exercises the actual service with synthetic records; it does not access an app database.
 @main
@@ -19,7 +21,7 @@ struct EvaluateTickerAdvice {
         }
         let now = Date()
         var results: [[String: Any]] = []
-        for language in [AppLanguage.english, .japanese] {
+        for language in AppLanguage.allCases {
             defaults.set(language.rawValue, forKey: "selectedLanguage")
             let scenarios: [(String, [Asset], [Expense])] = [
                 ("empty", [], []),
@@ -37,21 +39,27 @@ struct EvaluateTickerAdvice {
                 let started = Date()
                 do {
                     let reply = try await service.generateAdvice(context: context)
-                    let languageCode = language == .japanese ? "ja" : "en"
-                    let length = language == .japanese ? reply.count : reply.split(whereSeparator: { $0.isWhitespace }).count
+                    let languageCode = language.languageIdentifier
+                    let countsCharacters = [.japanese, .chinese, .korean].contains(language)
+                    let length = countsCharacters ? reply.count : reply.split(whereSeparator: { $0.isWhitespace }).count
+                    let limit = language == .japanese ? 70 : (countsCharacters ? 100 : 30)
+                    let recognizer = NLLanguageRecognizer()
+                    recognizer.processString(reply)
                     results.append([
                         "scenario": name, "language": languageCode, "situation": context.situation.rawValue, "reply": reply,
                         "fallbackUsed": service.lastAdviceUsedFallback,
                         "fallbackReason": service.lastAdviceFallbackReason ?? "",
-                        "length": length, "lengthWithinPromptLimit": length < (language == .japanese ? 70 : 30),
+                        "length": length, "lengthWithinPromptLimit": length < limit,
                         "languageConflict": ReplyLanguagePolicy.clearlyConflicts(reply, with: languageCode),
+                        "detectedLanguage": recognizer.dominantLanguage?.rawValue ?? "unknown",
+                        "modelSupportsLocale": SystemLanguageModel.default.supportsLocale(language.locale),
                         "seconds": Date().timeIntervalSince(started)
                     ])
                 } catch {
                     results.append(["scenario": name, "language": language.rawValue, "error": error.localizedDescription])
                 }
                 try JSONSerialization.data(withJSONObject: results, options: [.prettyPrinted, .sortedKeys]).write(to: output)
-                print("Measured \(results.count)/6 ticker cases")
+                print("Measured \(results.count)/\(AppLanguage.allCases.count * 3) ticker cases")
             }
         }
     }

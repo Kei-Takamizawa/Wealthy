@@ -69,7 +69,7 @@ struct RecurringSettingsView: View {
                                     // 子部品を左から右へ並べる領域を作ります。
                                     HStack {
                                         // 画面に「毎月 \(item.dayOfMonth)日」という文字を表示します。
-                                        Text("毎月 \(item.dayOfMonth)日")
+                                        Text(lm.format("recurring.monthlyDay", item.dayOfMonth))
                                         // 画面に「•」という文字を表示します。
                                         Text("•")
                                         // 画面に文字を表示します。
@@ -86,8 +86,9 @@ struct RecurringSettingsView: View {
                                 // 伸縮する空白を入れ、周囲の部品を離して配置します。
                                 Spacer()
                                 
-                                // 画面に「¥\(item.amount)」という文字を表示します。
-                                Text("¥\(item.amount)")
+                                // 定期記録に保存された通貨で金額を表示します。
+                                // 定期記録ごとの通貨で金額を整形します。
+                                Text(CurrencyPolicy.format(item.amount, currencyCode: item.effectiveCurrencyCode, locale: lm.currentLanguage.locale))
                                     // 文字またはアイコンの書体と大きさを指定します。
                                     .font(.title3.bold())
                                     // 収入は緑、支出は赤
@@ -158,19 +159,33 @@ struct AddRecurringForm: View {
     @Environment(\.dismiss) var dismiss
     // 画面間で共有される言語設定を受け取り、表示文や通貨記号に使います。
     @EnvironmentObject var lm: LanguageManager
+    // 新規ルールで選べる通貨一覧を共有設定から取得します。
+    @ObservedObject private var currencyManager = CurrencyManager.shared
     // assetsという値または計算結果を定義します。
     var assets: [Asset]
     
     // 入力するタイトルを保持し、値が変わると画面を更新します。
     @State private var title = ""
-    // 入力する金額を保持し、値が変わると画面を更新します。
-    @State private var amount = 0
+    // 通貨ごとの小数表記を含む入力文字列を保持します。
+    @State private var amountText = ""
+    // 新規ルールで使う通貨を保持します。
+    @State private var currencyCode = CurrencyPolicy.defaultCode
     // 毎月の実行日を保持し、値が変わると画面を更新します。
     @State private var day = 25
     // 収入として登録するかどうかを保持し、値が変わると画面を更新します。
     @State private var isIncome = false // false=支出, true=収入
     // 繰り返し対象の財布を保持し、値が変わると画面を更新します。
-    @State private var selectedAsset = "現金"
+    @State private var selectedAsset = ""
+
+    // ルールの財布候補を選択通貨に限定します。
+    private var availableAssets: [Asset] {
+        assets.filter { $0.effectiveCurrencyCode == currencyCode }
+    }
+
+    // 入力金額を最小通貨単位へ変換します。
+    private var parsedAmount: Int? {
+        CurrencyPolicy.parseMinorUnits(amountText, currencyCode: currencyCode, locale: lm.currentLanguage.locale)
+    }
     
     // この画面または部品の表示内容をSwiftUIの部品として返します。
     var body: some View {
@@ -180,12 +195,24 @@ struct AddRecurringForm: View {
             Form {
                 // フォーム項目を見出し付きのグループにまとめます。
                 Section(lm.t(.basicInfo)) {
+                    // 新しい定期ルールに使う通貨を選択します。
+                    Picker(lm.text("currency.default"), selection: $currencyCode) {
+                        // 利用可能な通貨の表示名とコードを並べます。
+                        ForEach(currencyManager.selectedCodes, id: \.self) { code in
+                            // 選択値としてISOコードを保持します。
+                            Text("\(CurrencyPolicy.localizedName(for: code, locale: lm.currentLanguage.locale)) (\(code))").tag(code)
+                        }
+                    }
                     // 「shopName」に対応する値を入力し、バインド先の状態またはモデルへ反映します。
                     TextField(lm.t(.shopName), text: $title)
-                    // 「amount」に対応する値を入力し、バインド先の状態またはモデルへ反映します。
-                    TextField(lm.t(.amount), value: $amount, format: .number)
+                    // 選択通貨に対応する金額を入力します。
+                    TextField(lm.format("currency.amount", currencyCode), text: $amountText)
                         // 金額を入力しやすい数字キーボードを表示します。
-                        .keyboardType(.numberPad)
+                        .keyboardType(CurrencyPolicy.minorUnits(for: currencyCode) == 0 ? .numberPad : .decimalPad)
+                    // 通貨で扱えない小数桁数や形式が入力された場合に説明を表示します。
+                    if !amountText.isEmpty && parsedAmount == nil {
+                        Text(lm.text("currency.invalidAmount")).font(.footnote).foregroundStyle(.orange)
+                    }
                     
                     // 「type」の候補を表示し、選択値をバインド先へ保存します。
                     Picker(lm.t(.type), selection: $isIncome) {
@@ -201,22 +228,22 @@ struct AddRecurringForm: View {
                 }
                 
                 // フォーム項目を見出し付きのグループにまとめます。
-                Section("スケジュール") {
+                Section(lm.text("recurring.schedule")) {
                     // 「monthlyDate」の候補を表示し、選択値をバインド先へ保存します。
                     Picker(lm.t(.monthlyDate), selection: $day) {
                         // 配列や範囲の各要素に対応する画面部品を繰り返し生成します。
                         ForEach(1...31, id: \.self) { d in
                             // 画面に「\(d)」という文字を表示します。
-                            Text("\(d)").tag(d)
+                            Text(d.formatted(.number.locale(lm.currentLanguage.locale))).tag(d)
                         // ここで「ForEachクロージャ」の範囲を閉じます。
                         }
                     // この画面部品または処理の範囲をここで閉じます。
                     }
                     
                     // 「対象の財布」の候補を表示し、選択値をバインド先へ保存します。
-                    Picker("対象の財布", selection: $selectedAsset) {
+                    Picker(lm.text("recurring.targetWallet"), selection: $selectedAsset) {
                         // 配列や範囲の各要素に対応する画面部品を繰り返し生成します。
-                        ForEach(assets) { asset in
+                        ForEach(availableAssets) { asset in
                             // 画面に文字を表示します。
                             Text(asset.name).tag(asset.name)
                         // ここで「ForEachクロージャ」の範囲を閉じます。
@@ -229,6 +256,17 @@ struct AddRecurringForm: View {
             }
             // ナビゲーションバーに現在の画面名を表示します。
             .navigationTitle(lm.t(.newRule))
+            // 既定通貨と同じ通貨の財布をフォームへ初期設定します。
+            .onAppear {
+                currencyCode = currencyManager.selectedCode
+                amountText = CurrencyPolicy.inputText(0, currencyCode: currencyCode, locale: lm.currentLanguage.locale)
+                selectedAsset = availableAssets.first?.name ?? ""
+            }
+            // 通貨を変更したら金額をゼロに戻し、同じ通貨の財布を選び直します。
+            .onChange(of: currencyCode) { _, newCode in
+                amountText = CurrencyPolicy.inputText(0, currencyCode: newCode, locale: lm.currentLanguage.locale)
+                selectedAsset = assets.first { $0.effectiveCurrencyCode == newCode }?.name ?? ""
+            }
             // ナビゲーションバーなどの操作項目をまとめます。
             .toolbar {
                 // キャンセルまたは確定などの操作をナビゲーションバーへ配置します。
@@ -237,8 +275,9 @@ struct AddRecurringForm: View {
                 ToolbarItem(placement: .confirmationAction) {
                     // 押したときに実行する処理と、ボタンに見せる内容を定義します。
                     Button(lm.t(.save)) {
-                        // newItemという定数へ「RecurringItem(title: title, amount: amount, dayOfMonth:」の計算結果を保存します。
-                        let newItem = RecurringItem(title: title, amount: amount, dayOfMonth: day, isIncome: isIncome, assetName: selectedAsset)
+                        // 入力値を最小単位で保存し、通貨コードをルールに記録します。
+                        guard let amount = parsedAmount else { return }
+                        let newItem = RecurringItem(title: title, amount: amount, dayOfMonth: day, isIncome: isIncome, assetName: selectedAsset, currencyCode: currencyCode)
                         // 新しい収支または設定をSwiftDataへ追加します。
                         modelContext.insert(newItem)
                         // 現在のシートまたは画面を閉じます。
@@ -246,7 +285,7 @@ struct AddRecurringForm: View {
                     // ここで「ボタン定義」の範囲を閉じます。
                     }
                     // 条件に応じてこの操作を無効にします。
-                    .disabled(title.isEmpty)
+                .disabled(title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || (parsedAmount ?? 0) <= 0 || !availableAssets.contains { $0.name == selectedAsset })
                 // ここで「ツールバー項目」の範囲を閉じます。
                 }
             // この画面部品または処理の範囲をここで閉じます。

@@ -11,6 +11,8 @@ PARSER = ROOT / 'Wealthy/Wealthy/ReceiptTextParser.swift'
 CATEGORY = ROOT / 'Wealthy/Wealthy/ReceiptCategoryPolicy.swift'
 SCANNER = ROOT / 'Wealthy/Wealthy/ReceiptScanner.swift'
 FIXTURES = ROOT / 'Verification/ReceiptOCR/main.swift'
+LOCALIZATION = [ROOT / 'Wealthy/Wealthy' / name for name in (
+    'AppLanguage.swift', 'AppLocalization.swift', 'CurrencyPolicy.swift', 'CoreTranslations.swift', 'UITranslations.swift', 'FinanceTranslations.swift')]
 
 
 def run(arguments, label):
@@ -31,7 +33,7 @@ def main():
         executable = temporary / 'receipt-parser-regression'
         cache = temporary / 'module-cache'
         run(['xcrun', 'swiftc', '-module-cache-path', str(cache), str(PARSER),
-             str(CATEGORY), str(FIXTURES), '-o', str(executable)], 'receipt fixture compilation')
+             str(CATEGORY), *map(str, LOCALIZATION), str(FIXTURES), '-o', str(executable)], 'receipt fixture compilation')
         run([str(executable)], 'receipt parser regression')
         sdk = run(['xcrun', '--sdk', 'iphonesimulator', '--show-sdk-path'], 'iOS SDK lookup')
         run(['xcrun', 'swiftc', '-sdk', sdk, '-target', 'arm64-apple-ios26.0-simulator',

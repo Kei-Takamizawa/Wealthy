@@ -21,7 +21,9 @@ struct WealthyApp: App {
     @State private var service = LocalLLMService.shared
     @Environment(\.scenePhase) private var scenePhase
     @AppStorage("hasSelectedLanguage") private var hasSelectedLanguage = false
-    @State private var showLanguageSelection = false
+    @AppStorage("hasSelectedCurrencies") private var hasSelectedCurrencies = false
+    @State private var showLanguageSelection = !UserDefaults.standard.bool(forKey: "hasSelectedLanguage")
+    @State private var showCurrencySelection = UserDefaults.standard.bool(forKey: "hasSelectedLanguage") && !UserDefaults.standard.bool(forKey: "hasSelectedCurrencies")
 
     // アプリが表示する画面の構成を返す入口を定義します。
     var body: some Scene {
@@ -39,20 +41,27 @@ struct WealthyApp: App {
                     ChatRetentionObserver()
                         .frame(width: 0, height: 0)
                 }
-                .alert(languageManager.currentLanguage == .japanese ? "言語を選択 / Select Language" : "Select Language", isPresented: $showLanguageSelection) {
-                    Button("English") { selectLanguage(.english) }
-                    Button("日本語") { selectLanguage(.japanese) }
-                } message: {
-                    Text(languageManager.currentLanguage == .japanese
-                         ? "アプリの言語を選択してください。後で設定から変更できます。"
-                         : "Choose the app language. You can change it later in Settings.")
-                }
                 // これで全画面から languageManager を呼べるようになります
                 // 言語管理オブジェクトを下位の全画面へ渡します。
                 .environmentObject(languageManager)
+                .environment(\.locale, languageManager.currentLanguage.locale)
+                .environment(\.layoutDirection, languageManager.currentLanguage.isRTL ? .rightToLeft : .leftToRight)
                 .task { service.refreshAvailability() }
-                .task {
-                    if !hasSelectedLanguage { showLanguageSelection = true }
+                .sheet(isPresented: $showLanguageSelection, onDismiss: {
+                    if hasSelectedLanguage && !hasSelectedCurrencies { showCurrencySelection = true }
+                }) {
+                    languageSelectionSheet
+                        .environment(\.locale, languageManager.currentLanguage.locale)
+                        .environment(\.layoutDirection, languageManager.currentLanguage.isRTL ? .rightToLeft : .leftToRight)
+                }
+                .sheet(isPresented: $showCurrencySelection) {
+                    CurrencySelectionView(firstLaunch: true, onSave: {
+                        hasSelectedCurrencies = true
+                        showCurrencySelection = false
+                    })
+                    .environmentObject(languageManager)
+                    .environment(\.locale, languageManager.currentLanguage.locale)
+                    .environment(\.layoutDirection, languageManager.currentLanguage.isRTL ? .rightToLeft : .leftToRight)
                 }
                 .onChange(of: scenePhase) { _, phase in
                     if phase == .active { service.refreshAvailability() }
@@ -60,7 +69,7 @@ struct WealthyApp: App {
         // ここまでの処理またはデータ定義を閉じます。
         }
         // 指定したデータ型をSwiftDataに保存できるようにします。
-        .modelContainer(for: [Expense.self, Asset.self, RecurringItem.self, Category.self, ChatMessageModel.self])
+        .modelContainer(for: [Expense.self, Asset.self, RecurringItem.self, Category.self, ChatMessageModel.self, PointCard.self])
     // ここまでの処理またはデータ定義を閉じます。
     }
 // ここまでの処理またはデータ定義を閉じます。
@@ -71,6 +80,32 @@ private extension WealthyApp {
         languageManager.currentLanguage = language
         hasSelectedLanguage = true
         showLanguageSelection = false
+    }
+
+    var languageSelectionSheet: some View {
+        NavigationStack {
+            List {
+                ForEach(AppLanguage.allCases) { language in
+                    Button {
+                        selectLanguage(language)
+                    } label: {
+                        HStack {
+                            Text(language.nativeName)
+                            Spacer()
+                            Text(language.englishName)
+                                .foregroundStyle(.secondary)
+                        }
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityIdentifier("onboarding.language.\(language.languageIdentifier)")
+                }
+            }
+            .navigationTitle(languageManager.text("language.choose"))
+            .navigationBarTitleDisplayMode(.inline)
+        }
+        .presentationDetents([.large])
+        .interactiveDismissDisabled()
     }
 }
 
@@ -120,14 +155,12 @@ private struct AppleIntelligenceUnavailableView: View {
     @EnvironmentObject private var languageManager: LanguageManager
     let service: LocalLLMService
 
-    private var isJapanese: Bool { languageManager.currentLanguage == .japanese }
-
     var body: some View {
         VStack(spacing: 18) {
             Image(systemName: service.readiness == .available ? "hourglass" : "sparkles")
                 .font(.system(size: 44))
                 .foregroundStyle(.orange)
-            Text(isJapanese ? "Apple Intelligenceを利用できません" : "Apple Intelligence is unavailable")
+            Text(languageManager.text("availability.unavailable"))
                 .font(.title2.bold())
                 .multilineTextAlignment(.center)
             Text(service.loadStatus)
@@ -139,17 +172,20 @@ private struct AppleIntelligenceUnavailableView: View {
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
             }
-            Picker(isJapanese ? "表示言語" : "Display Language", selection: $languageManager.currentLanguage) {
-                Text("English").tag(AppLanguage.english)
-                Text("日本語").tag(AppLanguage.japanese)
+            Menu {
+                Picker(languageManager.text("language.display"), selection: $languageManager.currentLanguage) {
+                    ForEach(AppLanguage.allCases) { language in
+                        Text(language.nativeName).tag(language)
+                    }
+                }
+            } label: {
+                Label(languageManager.currentLanguage.nativeName, systemImage: "globe")
             }
-            .pickerStyle(.segmented)
-            .frame(maxWidth: 280)
-            Button(isJapanese ? "再確認" : "Check Again") {
+            Button(languageManager.text("availability.checkAgain")) {
                 service.refreshAvailability()
             }
             .buttonStyle(.borderedProminent)
-            Button(isJapanese ? "設定を開く" : "Open Settings") {
+            Button(languageManager.text("settings.open")) {
                 guard let url = URL(string: UIApplication.openSettingsURLString) else { return }
                 UIApplication.shared.open(url)
             }
@@ -158,6 +194,5 @@ private struct AppleIntelligenceUnavailableView: View {
         .padding(32)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color(uiColor: .systemBackground))
-    }
-
+}
 }

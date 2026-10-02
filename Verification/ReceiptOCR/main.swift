@@ -196,7 +196,19 @@ let categoryCases: [(String, [String], String, String)] = [
     ("clinic", ["Food"], "en", "Healthcare"),
     ("", ["その他"], "ja", "未分類"),
     ("RECEIPT shop", ["その他"], "ja", "その他"),
-    ("グミ 薬局", ["食費", "医療費"], "ja", "食費")
+    ("グミ 薬局", ["食費", "医療費"], "ja", "食費"),
+    ("商品A 500円\n8%税込対象額 ¥500\n※印は軽減税率適用商品です", ["食費", "その他"], "ja", "食費"),
+    ("商品A\n対象外の商品を除く会員10%OFF\n8%税込対象額 ¥500\n※印は軽減税率適用商品です", ["Groceries", "Other"], "en", "Groceries"),
+    ("新聞 定期購読\n8%税込対象額 ¥500\n軽減税率", ["食費", "その他"], "ja", "その他"),
+    ("商品A 商品B\n8%税込対象額 ¥500\n10%税込対象額 ¥700\n軽減税率", ["食費", "その他"], "ja", "その他"),
+    ("商品A\n8%税込対象額 ¥500", ["食費", "その他"], "ja", "その他"),
+    ("商品A\n8%税込対象額 ¥0\n軽減税率", ["食費", "その他"], "ja", "その他"),
+    ("商品A\n8%OFF\n軽減税率適用商品には印を付けます", ["食費", "その他"], "ja", "その他"),
+    ("書籍\n8%税込対象額 ¥500\n軽減税率", ["趣味", "食費"], "ja", "趣味"),
+    ("商品A\n８％税込対象額 ￥１，２００\n軽減税率", [], "en", "Food"),
+    ("商品A\n8%税込対象額 ¥500\n税率10%\n軽減税率", ["食費", "その他"], "ja", "その他"),
+    ("商品A\n8%税込対象額 ¥500\n10%税額\n70円\n軽減税率", ["食費", "その他"], "ja", "その他"),
+    ("newspaper subscription\n8%税込対象額 ¥500\n軽減税率", ["Food", "Other"], "en", "Other")
 ]
 for (text, categories, language, expected) in categoryCases {
     verify("カテゴリー：\(text)", ReceiptCategoryPolicy.suggestedCategory(text: text, existingCategories: categories, language: language) == expected)

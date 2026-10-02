@@ -15,21 +15,29 @@ import SwiftData
 @Model
 // 財布や資産を保存する型を定義します。
 class Asset {
+    var currencyCode: String? = nil
+    var effectiveCurrencyCode: String { CurrencyPolicy.normalizedCode(currencyCode) }
     // 表示名を保持するプロパティを定義します。
     var name: String
     // 資産残高を保持するプロパティを定義します。
     var balance: Int
     // 表示色の16進数文字列を保持するプロパティを定義します。
     var colorHex: String
+    var paymentMethod: String? = nil
+    var isAutoCreated: Bool = false
     
     // 渡された引数で新しい値を初期化する入口を定義します。
-    init(name: String, balance: Int, colorHex: String = "FFA500") {
+    init(name: String, balance: Int, colorHex: String = "FFA500", paymentMethod: String? = nil, isAutoCreated: Bool = false, currencyCode: String? = nil) {
+
+        self.currencyCode = currencyCode
         // nameに、右辺で指定した値を設定します。
         self.name = name
         // balanceに、右辺で指定した値を設定します。
         self.balance = balance
         // colorHexに、右辺で指定した値を設定します。
         self.colorHex = colorHex
+        self.paymentMethod = paymentMethod
+        self.isAutoCreated = isAutoCreated
     // ここまでの処理またはデータ定義を閉じます。
     }
 // ここまでの処理またはデータ定義を閉じます。
@@ -40,6 +48,8 @@ class Asset {
 @Model
 // 収入と支出の履歴を保存する型を定義します。
 class Expense {
+    var currencyCode: String? = nil
+    var effectiveCurrencyCode: String { CurrencyPolicy.normalizedCode(currencyCode) }
     // 表示する項目名を保持するプロパティを定義します。
     var title: String
     // 金額を保持するプロパティを定義します。
@@ -54,9 +64,14 @@ class Expense {
     var isIncome: Bool
     // カテゴリ名を保持するプロパティを定義します。
     var categoryName: String?
+    var paymentMethod: String? = nil
+    var balanceApplied: Bool = true
+    var paymentNeedsReview: Bool = false
     
     // 渡された引数で新しい値を初期化する入口を定義します。
-    init(title: String, amount: Int, date: Date, imageFilename: String? = nil, assetName: String? = "現金", isIncome: Bool = false, categoryName: String? = "未分類") {
+    init(title: String, amount: Int, date: Date, imageFilename: String? = nil, assetName: String? = "現金", isIncome: Bool = false, categoryName: String? = "未分類", paymentMethod: String? = nil, balanceApplied: Bool = true, paymentNeedsReview: Bool = false, currencyCode: String? = nil) {
+
+        self.currencyCode = currencyCode
         // titleに、右辺で指定した値を設定します。
         self.title = title
         // amountに、右辺で指定した値を設定します。
@@ -71,9 +86,27 @@ class Expense {
         self.isIncome = isIncome
         // categoryNameに、右辺で指定した値を設定します。
         self.categoryName = categoryName
+        self.paymentMethod = paymentMethod
+        self.balanceApplied = balanceApplied
+        self.paymentNeedsReview = paymentNeedsReview
     // ここまでの処理またはデータ定義を閉じます。
     }
 // ここまでの処理またはデータ定義を閉じます。
+}
+
+/// Points are kept separately from monetary assets; no yen conversion is assumed.
+@Model
+class PointCard {
+    var name: String
+    var memberNumber: String
+    var points: Int
+    var expiryDate: Date?
+    init(name: String, memberNumber: String = "", points: Int = 0, expiryDate: Date? = nil) {
+        self.name = name
+        self.memberNumber = memberNumber
+        self.points = points
+        self.expiryDate = expiryDate
+    }
 }
 
 // 3. 定期ルール（給料やサブスク）
@@ -81,6 +114,8 @@ class Expense {
 @Model
 // 毎月の収支ルールを保存する型を定義します。
 class RecurringItem {
+    var currencyCode: String? = nil
+    var effectiveCurrencyCode: String { CurrencyPolicy.normalizedCode(currencyCode) }
     // 表示する項目名を保持するプロパティを定義します。
     var title: String
     // 金額を保持するプロパティを定義します。
@@ -95,7 +130,9 @@ class RecurringItem {
     var lastProcessedDate: Date?
     
     // 渡された引数で新しい値を初期化する入口を定義します。
-    init(title: String, amount: Int, dayOfMonth: Int, isIncome: Bool, assetName: String) {
+    init(title: String, amount: Int, dayOfMonth: Int, isIncome: Bool, assetName: String, currencyCode: String? = nil) {
+
+        self.currencyCode = currencyCode
         // titleに、右辺で指定した値を設定します。
         self.title = title
         // amountに、右辺で指定した値を設定します。

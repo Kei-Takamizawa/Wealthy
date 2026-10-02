@@ -19,9 +19,12 @@ struct DashboardView: View {
     @EnvironmentObject var lm: LanguageManager
     
     // SwiftDataから収支履歴を読み、変更を画面に反映します。
-    @Query(sort: \Expense.date, order: .reverse) var expenses: [Expense]
+    @Query(sort: \Expense.date, order: .reverse) var allExpenses: [Expense]
+    private var expenses: [Expense] { allExpenses.filter { currency.selectedCodes.contains($0.effectiveCurrencyCode) } }
     // SwiftDataから財布・資産を読み、変更を画面に反映します。
-    @Query var assets: [Asset]
+    @Query var allAssets: [Asset]
+    @ObservedObject private var currency = CurrencyManager.shared
+    private var assets: [Asset] { allAssets.filter { currency.selectedCodes.contains($0.effectiveCurrencyCode) } }
     // SwiftDataからカテゴリを読み、変更を画面に反映します。
     @Query var categories: [Category]
     // SwiftUIの環境からデータ保存用のコンテキストを取得します。
@@ -52,15 +55,15 @@ struct DashboardView: View {
         // 古い日付から順に収支履歴を並べて返します。
         case .dateAsc: return expenses.sorted { $0.date < $1.date }
         // 金額の大きい順に収支履歴を並べて返します。
-        case .amountDesc: return expenses.sorted { $0.amount > $1.amount }
+        case .amountDesc: return expenses.sorted { $0.effectiveCurrencyCode == $1.effectiveCurrencyCode ? $0.amount > $1.amount : $0.effectiveCurrencyCode < $1.effectiveCurrencyCode }
         // 金額の小さい順に収支履歴を並べて返します。
-        case .amountAsc: return expenses.sorted { $0.amount < $1.amount }
+        case .amountAsc: return expenses.sorted { $0.effectiveCurrencyCode == $1.effectiveCurrencyCode ? $0.amount < $1.amount : $0.effectiveCurrencyCode < $1.effectiveCurrencyCode }
         // 条件の振り分けの範囲をここで閉じます。
         }
     // 直前の処理の範囲をここで閉じます。
     }
     // `totalBalance`を表す変更可能な値または計算結果を定義します。
-    var totalBalance: Int { assets.reduce(0) { $0 + $1.balance } }
+    private func totalBalance(for code: String) -> Decimal { assets.filter { $0.effectiveCurrencyCode == code }.map { $0.balance }.reduce(Decimal.zero) { $0 + Decimal(string: String($1))! } }
     
     // 画面に表示する部品の並びを返す `body` を定義します。
     var body: some View {
@@ -91,7 +94,7 @@ struct DashboardView: View {
                                     .foregroundStyle(.yellow)
                                     .padding(12)
                             }
-                            .accessibilityLabel(lm.currentLanguage == .japanese ? "お金のひとこと" : "Money tip")
+                            .accessibilityLabel(lm.text("moneyTip"))
                             .disabled(isAdviceLoading)
                             if isAdviceLoading { ProgressView().tint(.white) }
                             Spacer()
@@ -116,6 +119,7 @@ struct DashboardView: View {
             .navigationTitle("")
             // 画面上部の操作項目を設定します。
             .toolbar(.hidden, for: .navigationBar)
+            .onChange(of: currency.selectedCode) { _, _ in aiAdviceText = "" }
             // 条件に応じて全画面の画面を表示します。
             .fullScreenCover(isPresented: $showScanner) { ScannerView(scannedImage: $scannedImage).ignoresSafeArea() }
             // 条件に応じて下から現れる画面を表示します。
@@ -135,7 +139,7 @@ struct DashboardView: View {
                 get: { receiptError != nil },
                 set: { if !$0 { receiptError = nil } }
             )) {
-                Button("OK", role: .cancel) { receiptError = nil }
+                Button(lm.text("ok"), role: .cancel) { receiptError = nil }
             } message: {
                 Text(receiptError ?? "")
             }
@@ -176,7 +180,7 @@ struct DashboardView: View {
                                     // 操作部品に使う強調色を設定します。
                                     .tint(.white)
                                 // 文字列を画面に表示します。
-                                Text(lm.currentLanguage == .japanese ? "レシートを解析中…" : "Reading receipt…")
+                                Text(lm.text("readingReceipt"))
                                     // 文字の大きさや書体を設定します。
                                     .font(.headline)
                                     // 文字やアイコンの色を設定します。
@@ -222,6 +226,7 @@ struct DashboardView: View {
     private func processWithAI(result: ReceiptScanner.ReceiptScanResult, filename: String) async {
         defer { isScanningReceipt = false }
         receiptDateUsesCapture = !result.dateWasPrinted
+        let payment = ReceiptPaymentPolicy.detect(result.rawText)
         do {
             let jsonString = try await LocalLLMService.shared.extractReceiptData(
                 prompt: result.rawText, categories: categories.map { $0.name }
@@ -233,51 +238,40 @@ struct DashboardView: View {
                 let category = (json["category"] as? String) ?? suggestedCategory(for: result.rawText)
                 // Amounts and dates come from the deterministic OCR parser, never a model guess.
                 addExpense(title: title, amount: result.legacyAmount, date: result.receiptDate,
-                           category: category, filename: filename)
+                           category: category, filename: filename, payment: payment)
                 return
             }
         } catch {
             // A busy or unavailable model still leaves a reviewable OCR result.
         }
         addExpense(title: result.legacyTitle, amount: result.legacyAmount, date: result.receiptDate,
-                   category: suggestedCategory(for: result.rawText), filename: filename)
+                   category: suggestedCategory(for: result.rawText), filename: filename, payment: payment)
     }
 
     private func suggestedCategory(for receiptText: String) -> String {
         ReceiptCategoryPolicy.suggestedCategory(
             text: receiptText, existingCategories: categories.map { $0.name },
-            language: lm.currentLanguage == .japanese ? "ja" : "en"
+            language: lm.currentLanguage.languageIdentifier
         )
     }
 
     // `addExpense` という関数を定義し、括弧内の入力を使って処理します。
-    private func addExpense(title: String, amount: Int, date: Date, category: String, filename: String?) {
-        // Persist useful new categories so they are also available to later receipts and backups.
-        if !["未分類", "Unclassified"].contains(category),
-           !categories.contains(where: { $0.name.compare(category, options: [.caseInsensitive, .widthInsensitive]) == .orderedSame }) {
+    private func addExpense(title: String, amount: Int, date: Date, category: String, filename: String?, payment: ReceiptPaymentPolicy.Detection) {
+        if AppLocalization.standardCategoryKey(for: category) != "unclassified",
+           !categories.contains(where: { AppLocalization.normalized($0.name) == AppLocalization.normalized(category) }) {
             modelContext.insert(Category(name: category, icon: "tag.fill", colorHex: "#7E8CE0"))
         }
-        // `newExpense`を変更できない値として作り、右辺の結果を保存します。
-        let newExpense = Expense(title: title, amount: amount, date: date, imageFilename: filename, isIncome: false, categoryName: category)
-        // 保存済みの財布が一件以上あれば、最初の財布を使います。
-        if let mainAsset = assets.first {
-            // `mainAsset.balance`を右辺の値で増減し、結果を保存します。
-            mainAsset.balance -= amount
-            // `newExpense.assetName`へ `mainAsset.name` の結果を代入します。
-            newExpense.assetName = mainAsset.name
-        // 条件分岐の範囲をここで閉じます。
-        }
-        // 新しい収支記録をSwiftDataの保存対象に追加します。
-        modelContext.insert(newExpense)
-        // 新規入力かどうかをオンにし、対応する状態を更新します。
+        let code = amount > 0 ? "JPY" : currency.selectedCode
+        let matches = allAssets.filter { $0.effectiveCurrencyCode == code && ($0.paymentMethod ?? ReceiptPaymentPolicy.method(forAssetName: $0.name) ?? "custom:" + AppLocalization.normalized($0.name)) == payment.method }
+        let draft = Expense(title: title, amount: amount, date: date, imageFilename: filename,
+            assetName: matches.count == 1 ? matches[0].name : nil, isIncome: false, categoryName: category,
+            paymentMethod: payment.method, balanceApplied: false, paymentNeedsReview: payment.needsReview || matches.count > 1, currencyCode: code)
+        // The uninserted draft is committed only when the review screen confirms it.
         isNewEditingEntry = true
-        // 編集中の収支へ `newExpense` の結果を代入します。
-        expenseToEdit = newExpense
-        // 撮影したレシート画像の参照を空にして、前の値を解除します。
+        expenseToEdit = draft
         scannedImage = nil
-    // 関数の範囲をここで閉じます。
     }
-    
+
     // `WalletFlipCard` という構造体を定義し、関連する値や処理をまとめます。
     struct WalletFlipCard: View {
         // `asset`を変更できない値として作り、右辺の結果を保存します。
@@ -291,13 +285,13 @@ struct DashboardView: View {
         @State private var rotation: Double = 0
         
         // `stats`を表す変更可能な値または計算結果を定義します。
-        var stats: (income: Int, expense: Int) { /* 変更なし */
+        var stats: (income: Decimal, expense: Decimal) { /* 変更なし */
             // `related`を変更できない値として作り、右辺の結果を保存します。
-            let related = allExpenses.filter { $0.assetName == asset.name }
+            let related = allExpenses.filter { $0.assetName == asset.name && $0.effectiveCurrencyCode == asset.effectiveCurrencyCode }
             // `inc`を変更できない値として作り、右辺の結果を保存します。
-            let inc = related.filter { $0.isIncome }.reduce(0) { $0 + $1.amount }
+            let inc = related.filter { $0.isIncome }.map { $0.amount }.reduce(Decimal.zero) { $0 + Decimal(string: String($1))! }
             // `exp`を変更できない値として作り、右辺の結果を保存します。
-            let exp = related.filter { !$0.isIncome }.reduce(0) { $0 + $1.amount }
+            let exp = related.filter { !$0.isIncome }.map { $0.amount }.reduce(Decimal.zero) { $0 + Decimal(string: String($1))! }
             // `(inc, exp)` の結果を呼び出し元へ返します。
             return (inc, exp)
         // 直前の処理の範囲をここで閉じます。
@@ -322,7 +316,7 @@ struct DashboardView: View {
                         Spacer()
                         // ■ 通貨記号
                         // 文字列を画面に表示します。
-                        Text("\(lm.currencySymbol)\(asset.balance)").font(.title2).bold().contentTransition(.numericText())
+                        Text(AppLocalization.amount(asset.balance, currencyCode: asset.effectiveCurrencyCode, language: lm.currentLanguage)).font(.title2).bold().contentTransition(.numericText())
                     // 縦並びの表示の範囲をここで閉じます。
                     }
                     // 表示の周囲に余白を設けます。
@@ -342,7 +336,7 @@ struct DashboardView: View {
                             Image(systemName: "arrow.up.right").foregroundStyle(.green)
                             // ■ 通貨記号
                             // 文字列を画面に表示します。
-                            Text("\(lm.currencySymbol)\(stats.income)")
+                            Text(AppLocalization.amount(stats.income, currencyCode: asset.effectiveCurrencyCode, language: lm.currentLanguage))
                         // 横並びの表示の範囲をここで閉じます。
                         }
                         // 要素を左から右へ並べます。
@@ -351,7 +345,7 @@ struct DashboardView: View {
                             Image(systemName: "arrow.down.right").foregroundStyle(.red)
                             // ■ 通貨記号
                             // 文字列を画面に表示します。
-                            Text("\(lm.currencySymbol)\(stats.expense)")
+                            Text(AppLocalization.amount(stats.expense, currencyCode: asset.effectiveCurrencyCode, language: lm.currentLanguage))
                         // 横並びの表示の範囲をここで閉じます。
                         }
                     // 縦並びの表示の範囲をここで閉じます。
@@ -382,14 +376,15 @@ struct DashboardView: View {
     }
     
     private func deleteExpense(offsets: IndexSet) {
-        withAnimation { offsets.map { sortedExpenses[$0] }.forEach(modelContext.delete) }
+        do {
+            for index in offsets { try ExpenseLedger.delete(sortedExpenses[index], context: modelContext) }
+        } catch { receiptError = error.localizedDescription }
     }
 
     private func saveImageToDocuments(image: UIImage) throws -> String {
         guard let data = image.jpegData(compressionQuality: 0.9) else {
             throw NSError(domain: "ReceiptImage", code: 1, userInfo: [NSLocalizedDescriptionKey:
-                lm.currentLanguage == .japanese ? "レシート画像を保存できませんでした。もう一度撮影してください。"
-                                               : "The receipt image could not be saved. Please scan it again."])
+                lm.text("receiptImageSaveFailed")])
         }
         let directory = try FileManager.default.url(for: .documentDirectory, in: .userDomainMask,
                                                      appropriateFor: nil, create: true)
@@ -400,12 +395,15 @@ struct DashboardView: View {
 
     private func generateDailyAdvice() {
         guard LocalLLMService.shared.isReady, !isAdviceLoading else { return }
+        let code = currency.selectedCode
         isAdviceLoading = true
         Task { @MainActor in
             defer { isAdviceLoading = false }
-            let context = FinancialDataSummary.moneyTipContext(assets: assets, expenses: expenses)
+            let context = FinancialDataSummary.moneyTipContext(assets: assets, expenses: expenses, currencyCode: code)
             do {
-                aiAdviceText = try await LocalLLMService.shared.generateAdvice(context: context)
+                let advice = try await LocalLLMService.shared.generateAdvice(context: context)
+                guard currency.selectedCode == code else { return }
+                aiAdviceText = code + " · " + advice
             } catch {
                 receiptError = error.localizedDescription
             }
@@ -424,13 +422,20 @@ struct DashboardView: View {
                 // 文字列を画面に表示します。
                 Text(lm.t(.totalAssets)).font(.caption).foregroundStyle(.gray)
                 // 文字列を画面に表示します。
-                Text("\(lm.currencySymbol)\(totalBalance)")
-                    // 文字の大きさや書体を設定します。
-                    .font(.system(size: 34, weight: .heavy, design: .rounded))
-                    // 文字やアイコンの色を設定します。
-                    .foregroundStyle(.white)
-                    // 数字の変化を専用のアニメーションで見せます。
-                    .contentTransition(.numericText())
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(alignment: .top, spacing: 16) {
+                        ForEach(currency.selectedCodes, id: \.self) { code in
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(code).font(.caption2).foregroundStyle(.gray)
+                                Text(AppLocalization.amount(totalBalance(for: code), currencyCode: code, language: lm.currentLanguage))
+                                    .font(.system(size: 30, weight: .heavy, design: .rounded))
+                                    .foregroundStyle(.white)
+                                    .contentTransition(.numericText())
+                                    .accessibilityIdentifier("balance.total.\(code)")
+                            }
+                        }
+                    }
+                }
             // 縦並びの表示の範囲をここで閉じます。
             }
             // 空き領域を使って要素間の距離を広げます。
@@ -440,7 +445,7 @@ struct DashboardView: View {
                 // 画像またはシステムアイコンを表示します。
                 Image(systemName: "gearshape.fill").font(.title).foregroundStyle(.gray)
             // ボタンの処理の範囲をここで閉じます。
-            }
+            }.accessibilityIdentifier("settings.open")
         // 横並びの表示の範囲をここで閉じます。
         }
         // 表示の周囲に余白を設けます。
@@ -460,22 +465,21 @@ struct DashboardView: View {
             // アプリ共通の操作ボタンを表示します。
             ActionButton(icon: "square.and.pencil", label: lm.t(.manualInput), color: .blue) {
                 // `newExpense`を変更できない値として作り、右辺の結果を保存します。
-                let newExpense = Expense(title: "", amount: 0, date: Date(), isIncome: false, categoryName: "未分類")
+                let newExpense = Expense(title: "", amount: 0, date: Date(), assetName: nil, isIncome: false, categoryName: "未分類", paymentMethod: "cash", balanceApplied: false, currencyCode: currency.selectedCode)
                 // 新しい収支記録をSwiftDataの保存対象に追加します。
-                modelContext.insert(newExpense)
                 // 新規入力かどうかをオンにし、対応する状態を更新します。
                 isNewEditingEntry = true
                 // 編集中の収支へ `newExpense` の結果を代入します。
                 expenseToEdit = newExpense
             // 開いていた画面部品や処理の範囲を閉じます。
-            }
+            }.accessibilityIdentifier("expense.add")
             // Butler Button
             // アプリ共通の操作ボタンを表示します。
             ActionButton(icon: "bubble.left.and.bubble.right.fill", label: lm.t(.aiButler), color: .purple) {
                 // チャット画面の表示状態をオンにし、対応する状態を更新します。
                 showChat = true
             // 開いていた画面部品や処理の範囲を閉じます。
-            }
+            }.accessibilityIdentifier("chat.open")
         // 横並びの表示の範囲をここで閉じます。
         }
         // 表示の周囲に余白を設けます。
@@ -575,7 +579,7 @@ struct DashboardView: View {
                                 // 空き領域を使って要素間の距離を広げます。
                                 Spacer()
                                 // 文字列を画面に表示します。
-                                Text((expense.isIncome ? "+ " : "- ") + "\(lm.currencySymbol)\(expense.amount)")
+                                Text((expense.isIncome ? "+ " : "- ") + AppLocalization.amount(expense.amount, currencyCode: expense.effectiveCurrencyCode, language: lm.currentLanguage))
                                     // 文字やアイコンの色を設定します。
                                     .foregroundStyle(expense.isIncome ? .green : .red).bold()
                             // 横並びの表示の範囲をここで閉じます。
@@ -632,12 +636,15 @@ struct DashboardView: View {
                         .fontWeight(.semibold)
                         // 文字やアイコンの色を設定します。
                         .foregroundStyle(.white)
+                        .lineLimit(2)
+                        .multilineTextAlignment(.center)
+                        .minimumScaleFactor(0.85)
+                        .fixedSize(horizontal: false, vertical: true)
                 // 縦並びの表示の範囲をここで閉じます。
                 }
                 // 表示領域の幅や高さを設定します。
-                .frame(maxWidth: .infinity)
-                // 表示領域の幅や高さを設定します。
-                .frame(height: 80)
+                .padding(.horizontal, 4)
+                .frame(maxWidth: .infinity, minHeight: 90)
                 // 背景の色や形を設定します。
                 .background(Color(white: 0.12))
                 // 表示の角を丸くします。

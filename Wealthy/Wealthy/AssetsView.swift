@@ -1,267 +1,271 @@
-//
-//  AssetsView.swift
-//  家計簿
-//
-//  Created by Harrison on 12/26/25.
-//
+// xcode: set sdk=iOS
 
-// `SwiftUI` の機能をこのファイルで使えるように読み込みます。
 import SwiftUI
-// `SwiftData` の機能をこのファイルで使えるように読み込みます。
 import SwiftData
 
-// `AssetsView` という構造体を定義し、関連する値や処理をまとめます。
 struct AssetsView: View {
-    // SwiftUIの環境からデータ保存用のコンテキストを取得します。
-    @Environment(\.modelContext) var modelContext
-    // 表示言語の管理役を親画面から受け取ります。
-    @EnvironmentObject var lm: LanguageManager
-    // SwiftDataから財布・資産を読み、変更を画面に反映します。
-    @Query var assets: [Asset]
-    
-    // `showingAddAsset`を画面の状態として保持し、変更時に表示を更新します。
-    @State private var showingAddAsset = false
-    // `assetToEdit`を画面の状態として保持し、変更時に表示を更新します。
-    @State private var assetToEdit: Asset?
-    
-    // 画面に表示する部品の並びを返す `body` を定義します。
+    @Environment(\.modelContext) private var context
+    @EnvironmentObject private var lm: LanguageManager
+    // 利用者が選択中の通貨に属する財布だけを一覧に表示します。
+    @ObservedObject private var currencyManager = CurrencyManager.shared
+    @Query private var assets: [Asset]
+    @Query private var pointCards: [PointCard]
+    @State private var showAdd = false
+    @State private var editingAsset: Asset?
+    @State private var showPoints = false
+    @State private var error: String?
+
     var body: some View {
-        // 画面遷移と見出しを管理する領域を作ります。
         NavigationStack {
-            // 要素を手前と奥に重ねます。
-            ZStack {
-                // 画面に色を表示します。
-                Color.black.ignoresSafeArea()
-                
-                // 項目を一覧表示します。
-                List {
-                    // 資産リスト
-                    // 関連する項目を一つのまとまりに分けます。
-                    Section(lm.t(.wallets)) {
-                        // 配列などの各要素について同じ表示を作ります。
-                        ForEach(assets) { asset in
-                            // タップで処理を実行するボタンを配置します。
-                            Button { assetToEdit = asset } label: {
-                                // 要素を左から右へ並べます。
-                                HStack {
-                                    // 円形の図形を描きます。
-                                    Circle().fill(Color(hex: asset.colorHex)).frame(width: 40, height: 40)
-                                        // 元の表示の上に別の表示を重ねます。
-                                        .overlay(Image(systemName: "creditcard.fill").foregroundStyle(.white).font(.caption))
-                                    // 要素を上から下へ並べます。
-                                    VStack(alignment: .leading) { Text(asset.name).font(.headline).foregroundStyle(.white) }
-                                    // 空き領域を使って要素間の距離を広げます。
-                                    Spacer()
-                                    // 文字列を画面に表示します。
-                                    Text("\(lm.currencySymbol)\(asset.balance)").font(.title3.bold()).foregroundStyle(.white)
-                                // 横並びの表示の範囲をここで閉じます。
+            List {
+                Section(lm.t(.wallets)) {
+                    ForEach(assets.filter { currencyManager.selectedCodes.contains($0.effectiveCurrencyCode) }) { asset in
+                        Button { editingAsset = asset } label: {
+                            HStack {
+                                Circle().fill(Color(hex: asset.colorHex)).frame(width: 18, height: 18)
+                                VStack(alignment: .leading) {
+                                    Text(asset.name).foregroundStyle(.primary)
+                                    if asset.isAutoCreated {
+                                        Text(lm.text("wallet.provisional")).font(.caption).foregroundStyle(.orange)
+                                    }
                                 }
-                            // ボタンの処理の範囲をここで閉じます。
+                                Spacer()
+                                // 財布ごとの通貨と表示言語で残高を整形します。
+                                Text(CurrencyPolicy.format(asset.balance, currencyCode: asset.effectiveCurrencyCode, locale: lm.currentLanguage.locale))
+                                    .accessibilityIdentifier("wallet.balance.\(asset.name)")
+                                    .foregroundStyle(asset.balance < 0 ? .red : .primary)
                             }
-                            // 一覧の行の背景を設定します。
-                            .listRowBackground(Color(white: 0.1))
-                            // 横にスワイプしたときの操作を追加します。
-                            .swipeActions {
-                                // タップで処理を実行するボタンを配置します。
-                                Button(role: .destructive) { modelContext.delete(asset) } label: { Label(lm.t(.delete), systemImage: "trash") }
-                            // .swipeActionsの範囲をここで閉じます。
-                            }
-                        // 繰り返し表示の範囲をここで閉じます。
                         }
-                    // Section(lm.t(.wallets))の範囲をここで閉じます。
+                        .accessibilityIdentifier("wallet.row.\(asset.name)")
+                        .swipeActions {
+                            Button(role: .destructive) {
+                                context.delete(asset)
+                                do { try context.save() } catch { context.rollback(); self.error = error.localizedDescription }
+                            } label: { Label(lm.t(.delete), systemImage: "trash") }
+                        }
                     }
-                // Listの範囲をここで閉じます。
+                    Button { showAdd = true } label: { Label(lm.t(.add), systemImage: "plus") }.accessibilityIdentifier("wallet.add")
                 }
-                // 一覧の見た目を設定します。
-                .listStyle(.insetGrouped)
-                // 一覧が持つ標準の背景を隠します。
-                .scrollContentBackground(.hidden)
-                
-                // 追加ボタン
-                // 要素を上から下へ並べます。
-                VStack {
-                    // 空き領域を使って要素間の距離を広げます。
-                    Spacer()
-                    // タップで処理を実行するボタンを配置します。
-                    Button { showingAddAsset = true } label: {
-                        // 要素を左から右へ並べます。
-                        HStack { Image(systemName: "plus"); Text(lm.t(.add)) }
-                            // 文字の大きさや書体を設定します。
-                            .font(.headline).foregroundStyle(.black).padding()
-                            // 表示領域の幅や高さを設定します。
-                            .frame(maxWidth: .infinity).background(Color.white).cornerRadius(15).padding()
-                    // ボタンの処理の範囲をここで閉じます。
+                Section {
+                    Button { showPoints = true } label: {
+                        HStack {
+                            Label(lm.text("points.title"), systemImage: "creditcard.and.123")
+                            Spacer()
+                            Text(pointCards.count.formatted(.number.locale(lm.currentLanguage.locale)))
+                        }
                     }
-                // 縦並びの表示の範囲をここで閉じます。
+                    .accessibilityIdentifier("points.open")
+                    NavigationLink { FinancialServicesView() } label: {
+                        Label(lm.text("connections.title"), systemImage: "building.columns")
+                    }
                 }
-            // 重ねた表示の範囲をここで閉じます。
             }
-            // 画面上部の見出しを設定します。
             .navigationTitle(lm.t(.wallets))
-            // 見出しの表示形式を設定します。
             .navigationBarTitleDisplayMode(.inline)
-            // 操作欄の配色を設定します。
-            .toolbarColorScheme(.dark, for: .navigationBar)
-            // 条件に応じて下から現れる画面を表示します。
-            .sheet(isPresented: $showingAddAsset) { AddAssetView() }
-            // 条件に応じて下から現れる画面を表示します。
-            .sheet(item: $assetToEdit) { asset in EditAssetView(asset: asset) }
-        // 画面遷移の範囲をここで閉じます。
+            .sheet(isPresented: $showAdd) { AddAssetView() }
+            .sheet(item: $editingAsset) { EditAssetView(asset: $0) }
+            .sheet(isPresented: $showPoints) { PointCardsView() }
+            .alert(lm.t(.error), isPresented: Binding(get: { error != nil }, set: { if !$0 { error = nil } })) {
+                Button(lm.text("ok"), role: .cancel) {}
+            } message: { Text(error ?? "") }
         }
-    // 画面構成の範囲をここで閉じます。
+        .preferredColorScheme(.dark)
     }
-// 構造体の範囲をここで閉じます。
 }
 
-// ■ 以下、足りなかった部品（サブルーチン）を全て定義しました
-
-// 1. 資産追加画面
-// `AddAssetView` という構造体を定義し、関連する値や処理をまとめます。
 struct AddAssetView: View {
-    // SwiftUIの環境から`dismiss`を取得します。
-    @Environment(\.dismiss) var dismiss
-    // SwiftUIの環境からデータ保存用のコンテキストを取得します。
-    @Environment(\.modelContext) var modelContext
-    // 表示言語の管理役を親画面から受け取ります。
-    @EnvironmentObject var lm: LanguageManager
-    
-    // `name`を画面の状態として保持し、変更時に表示を更新します。
+    @Environment(\.dismiss) private var dismiss
+    @Environment(\.modelContext) private var context
+    @EnvironmentObject private var lm: LanguageManager
+    // 新規財布に使う通貨を共有設定から取得します。
+    @ObservedObject private var currencyManager = CurrencyManager.shared
     @State private var name = ""
-    // `balance`を画面の状態として保持し、変更時に表示を更新します。
-    @State private var balance = 0
-    // `selectedColor`を画面の状態として保持し、変更時に表示を更新します。
+    // 入力途中の小数表記を保持します。
+    @State private var balanceText = ""
+    // フォームを開いた時点の新規通貨を保持します。
+    @State private var currencyCode = CurrencyPolicy.defaultCode
+    @State private var method = ""
     @State private var selectedColor = "FFA500"
-    // `colors`を変更できない値として作り、右辺の結果を保存します。
-    let colors = ["FFA500", "FF4500", "32CD32", "1E90FF", "8A2BE2", "FF69B4", "808080", "000000"]
-    
-    // 画面に表示する部品の並びを返す `body` を定義します。
+    @State private var error: String?
+
     var body: some View {
-        // 画面遷移と見出しを管理する領域を作ります。
         NavigationStack {
-            // 設定項目を入力しやすい形式で並べます。
             Form {
-                // 文字を入力する欄を配置します。
-                TextField("Wallet Name", text: $name)
-                // 文字を入力する欄を配置します。
-                TextField("Initial Balance", value: $balance, format: .number).keyboardType(.numberPad)
-                
-                // 関連する項目を一つのまとまりに分けます。
-                Section("Color") {
-                    // 要素を左から右へ並べます。
-                    HStack {
-                        // 配列などの各要素について同じ表示を作ります。
-                        ForEach(colors, id: \.self) { color in
-                            // 円形の図形を描きます。
-                            Circle().fill(Color(hex: color))
-                                // 表示領域の幅や高さを設定します。
-                                .frame(width: 30, height: 30)
-                                // 元の表示の上に別の表示を重ねます。
-                                .overlay(selectedColor == color ? Image(systemName: "checkmark").foregroundStyle(.white) : nil)
-                                // タップされたときの処理を登録します。
-                                .onTapGesture { selectedColor = color }
-                        // 繰り返し表示の範囲をここで閉じます。
-                        }
-                    // 横並びの表示の範囲をここで閉じます。
+                TextField(lm.text("wallet.name"), text: $name).accessibilityIdentifier("wallet.name")
+                // 新規財布に使う通貨を利用可能な一覧から選択します。
+                Picker(lm.text("currency.default"), selection: $currencyCode) {
+                    // 利用可能な通貨の表示名とISOコードを並べます。
+                    ForEach(currencyManager.selectedCodes, id: \.self) { code in
+                        // 選択欄の値にISOコードを設定します。
+                        Text("\(CurrencyPolicy.localizedName(for: code, locale: lm.currentLanguage.locale)) (\(code))").tag(code)
                     }
-                // Section("Color")の範囲をここで閉じます。
                 }
-            // Formの範囲をここで閉じます。
+                // 選択通貨に合わせて初期残高を入力します。
+                TextField(lm.format("currency.amount", currencyCode), text: $balanceText)
+                    // 通貨の最小単位に応じた入力キーボードを表示します。
+                    .keyboardType(.numbersAndPunctuation)
+                    // 既存のUI自動化用識別子を維持します。
+                    .accessibilityIdentifier("wallet.amount")
+                Section {
+                    WalletPaymentPicker(method: $method)
+                } footer: { Text(lm.text("wallet.paymentHint")) }
+                WalletColorPicker(color: $selectedColor)
+                Section { Text(lm.text("wallet.openingNote")).font(.footnote) }
             }
-            // 画面上部の見出しを設定します。
             .navigationTitle(lm.t(.add))
-            // 画面上部の操作項目を設定します。
             .toolbar {
-                // 画面上部の操作項目を追加します。
                 ToolbarItem(placement: .cancellationAction) { Button(lm.t(.cancel)) { dismiss() } }
-                // 画面上部の操作項目を追加します。
                 ToolbarItem(placement: .confirmationAction) {
-                    // タップで処理を実行するボタンを配置します。
-                    Button(lm.t(.save)) {
-                        // `newAsset`を変更できない値として作り、右辺の結果を保存します。
-                        let newAsset = Asset(name: name, balance: balance, colorHex: selectedColor)
-                        // 新しく作った財布をSwiftDataの保存対象に追加します。
-                        modelContext.insert(newAsset)
-                        // `dismiss` を呼び出し、括弧内の値を使って処理します。
-                        dismiss()
-                    // ボタンの処理の範囲をここで閉じます。
-                    }
-                    // 条件に応じて操作を無効にします。
-                    .disabled(name.isEmpty)
-                // 開いていた画面部品や処理の範囲を閉じます。
+                    Button(lm.t(.save)) { save() }.disabled(name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                 }
-            // .toolbarの範囲をここで閉じます。
             }
-        // 画面遷移の範囲をここで閉じます。
+            // フォーム表示時に共有通貨とゼロの入力表記を初期化します。
+            .onAppear {
+                currencyCode = currencyManager.selectedCode
+                balanceText = CurrencyPolicy.inputText(0, currencyCode: currencyCode, locale: lm.currentLanguage.locale)
+            }
+            // 通貨を変えたとき、前の通貨で入力した額を引き継がないようにします。
+            .onChange(of: currencyCode) { _, newCode in
+                balanceText = CurrencyPolicy.inputText(0, currencyCode: newCode, locale: lm.currentLanguage.locale)
+            }
+            .alert(lm.t(.error), isPresented: Binding(get: { error != nil }, set: { if !$0 { error = nil } })) {
+                Button(lm.text("ok"), role: .cancel) {}
+            } message: { Text(error ?? "") }
         }
-    // 画面構成の範囲をここで閉じます。
+        .preferredColorScheme(.dark)
     }
-// 構造体の範囲をここで閉じます。
+    private func save() {
+        do {
+            let title = name.trimmingCharacters(in: .whitespacesAndNewlines)
+            // 選択通貨と表示言語の小数規則に従って入力値を最小単位へ変換します。
+            guard let amount = CurrencyPolicy.parseMinorUnits(balanceText, currencyCode: currencyCode, locale: lm.currentLanguage.locale) else {
+                error = lm.text("currency.invalidAmount")
+                return
+            }
+            let key = method.isEmpty ? (ReceiptPaymentPolicy.method(forAssetName: title) ?? "custom:" + AppLocalization.normalized(title)) : method
+            let assets = try context.fetch(FetchDescriptor<Asset>())
+            // 支出記録は財布名で関連付くため、通貨が違う同名財布を拒否します。
+            if let sameName = assets.first(where: { AppLocalization.normalized($0.name) == AppLocalization.normalized(title) }), sameName.effectiveCurrencyCode != currencyCode {
+                throw ExpenseLedger.failure("wallet.duplicate")
+            }
+            // 自動作成財布を統合する候補も同じ通貨に限定します。
+            let matches = assets.filter { $0.effectiveCurrencyCode == currencyCode && (AppLocalization.normalized($0.name) == AppLocalization.normalized(title) || ($0.paymentMethod ?? ReceiptPaymentPolicy.method(forAssetName: $0.name)) == key) }
+            if let existing = matches.first {
+                guard matches.count == 1 && existing.isAutoCreated else { throw ExpenseLedger.failure("wallet.duplicate") }
+                let sum = existing.balance.addingReportingOverflow(amount)
+                guard !sum.overflow else { throw ExpenseLedger.failure("ledger.invalidAmount") }
+                let old = existing.balance
+                existing.balance = sum.partialValue
+                existing.isAutoCreated = false
+                do { try context.save() } catch { existing.balance = old; existing.isAutoCreated = true; throw error }
+            } else {
+                context.insert(Asset(name: title, balance: amount, colorHex: selectedColor, paymentMethod: key, currencyCode: currencyCode))
+                try context.save()
+            }
+            dismiss()
+        } catch { context.rollback(); self.error = error.localizedDescription }
+    }
 }
 
-// 2. 資産編集画面 (これが見つからないエラーが出ていました)
-// `EditAssetView` という構造体を定義し、関連する値や処理をまとめます。
 struct EditAssetView: View {
-    // SwiftUIの環境から`dismiss`を取得します。
-    @Environment(\.dismiss) var dismiss
-    // 表示言語の管理役を親画面から受け取ります。
-    @EnvironmentObject var lm: LanguageManager
-    // `@Bindable var asset: Asset` の属性を付け、次の宣言の動作を指定します。
-    @Bindable var asset: Asset
-    
-    // `colors`を変更できない値として作り、右辺の結果を保存します。
-    let colors = ["FFA500", "FF4500", "32CD32", "1E90FF", "8A2BE2", "FF69B4", "808080", "000000"]
-    
-    // 画面に表示する部品の並びを返す `body` を定義します。
+    let asset: Asset
+    @Environment(\.dismiss) private var dismiss
+    @Environment(\.modelContext) private var context
+    @EnvironmentObject private var lm: LanguageManager
+    @State private var name = ""
+    // 入力途中の小数表記を保持します。
+    @State private var balanceText = ""
+    @State private var method = ""
+    @State private var selectedColor = "FFA500"
+    @State private var error: String?
     var body: some View {
-        // 画面遷移と見出しを管理する領域を作ります。
         NavigationStack {
-            // 設定項目を入力しやすい形式で並べます。
             Form {
-                // 文字を入力する欄を配置します。
-                TextField("Wallet Name", text: $asset.name)
-                // バランス修正時は手動修正とする
-                // 文字を入力する欄を配置します。
-                TextField("Balance", value: $asset.balance, format: .number).keyboardType(.numberPad)
-                
-                // 関連する項目を一つのまとまりに分けます。
-                Section("Color") {
-                    // 要素を左から右へ並べます。
-                    HStack {
-                        // 配列などの各要素について同じ表示を作ります。
-                        ForEach(colors, id: \.self) { color in
-                            // 円形の図形を描きます。
-                            Circle().fill(Color(hex: color))
-                                // 表示領域の幅や高さを設定します。
-                                .frame(width: 30, height: 30)
-                                // 元の表示の上に別の表示を重ねます。
-                                .overlay(asset.colorHex == color ? Image(systemName: "checkmark").foregroundStyle(.white) : nil)
-                                // タップされたときの処理を登録します。
-                                .onTapGesture { asset.colorHex = color }
-                        // 繰り返し表示の範囲をここで閉じます。
-                        }
-                    // 横並びの表示の範囲をここで閉じます。
-                    }
-                // Section("Color")の範囲をここで閉じます。
-                }
-            // Formの範囲をここで閉じます。
+                TextField(lm.text("wallet.name"), text: $name).accessibilityIdentifier("wallet.name")
+                // 保存済み財布の通貨に合わせて残高を入力します。
+                TextField(lm.format("currency.amount", asset.effectiveCurrencyCode), text: $balanceText)
+                    // 通貨の最小単位に応じた入力キーボードを表示します。
+                    .keyboardType(.numbersAndPunctuation)
+                    // 既存のUI自動化用識別子を維持します。
+                    .accessibilityIdentifier("wallet.amount")
+                WalletPaymentPicker(method: $method)
+                WalletColorPicker(color: $selectedColor)
+                if asset.isAutoCreated { Text(lm.text("wallet.provisional")).foregroundStyle(.orange) }
             }
-            // 画面上部の見出しを設定します。
             .navigationTitle(lm.t(.edit))
-            // 画面上部の操作項目を設定します。
             .toolbar {
-                // タップで処理を実行するボタンを配置します。
-                Button(lm.t(.save)) { dismiss() }
-            // .toolbarの範囲をここで閉じます。
+                ToolbarItem(placement: .cancellationAction) { Button(lm.t(.cancel)) { dismiss() } }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button(lm.t(.save)) { save() }.disabled(name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                }
             }
-        // 画面遷移の範囲をここで閉じます。
+            // 既存の財布情報と通貨に合わせた入力表記を読み込みます。
+            .onAppear {
+                name = asset.name
+                balanceText = CurrencyPolicy.inputText(asset.balance, currencyCode: asset.effectiveCurrencyCode, locale: lm.currentLanguage.locale)
+                method = asset.paymentMethod ?? ""
+                selectedColor = asset.colorHex
+            }
+            .alert(lm.t(.error), isPresented: Binding(get: { error != nil }, set: { if !$0 { error = nil } })) {
+                Button(lm.text("ok"), role: .cancel) {}
+            } message: { Text(error ?? "") }
         }
-    // 画面構成の範囲をここで閉じます。
+        .preferredColorScheme(.dark)
     }
-// 構造体の範囲をここで閉じます。
+    private func save() {
+        do {
+            let title = name.trimmingCharacters(in: .whitespacesAndNewlines)
+            // 財布の通貨に従って入力値を最小単位へ変換します。
+            guard let amount = CurrencyPolicy.parseMinorUnits(balanceText, currencyCode: asset.effectiveCurrencyCode, locale: lm.currentLanguage.locale) else {
+                error = lm.text("currency.invalidAmount")
+                return
+            }
+            let all = try context.fetch(FetchDescriptor<Asset>())
+            guard !all.contains(where: { $0 != asset && AppLocalization.normalized($0.name) == AppLocalization.normalized(title) }) else { throw ExpenseLedger.failure("wallet.duplicate") }
+            let oldName = asset.name
+            for expense in try context.fetch(FetchDescriptor<Expense>()) where expense.assetName == oldName { expense.assetName = title }
+            for rule in try context.fetch(FetchDescriptor<RecurringItem>()) where rule.assetName == oldName { rule.assetName = title }
+            asset.name = title; asset.balance = amount; asset.colorHex = selectedColor
+            asset.paymentMethod = method.isEmpty ? ReceiptPaymentPolicy.method(forAssetName: title) : method
+            asset.isAutoCreated = false
+            try context.save()
+            dismiss()
+        } catch { context.rollback(); self.error = error.localizedDescription }
+    }
 }
 
-// 3. Hex色指定を使うための拡張 (これがなくてエラーが出ていました)
-// `Color` という既存型の拡張を定義し、関連する値や処理をまとめます。
+struct WalletPaymentPicker: View {
+    @Binding var method: String
+    @EnvironmentObject private var lm: LanguageManager
+    var body: some View {
+        Picker(lm.text("payment.title"), selection: $method) {
+            Text(lm.text("payment.other")).tag("")
+            ForEach(ReceiptPaymentPolicy.methods, id: \.self) { key in
+                Text(ReceiptPaymentPolicy.displayName(key, language: lm.currentLanguage)).tag(key)
+            }
+        }
+    }
+}
+
+struct WalletColorPicker: View {
+    @Binding var color: String
+    @EnvironmentObject private var lm: LanguageManager
+    var body: some View {
+        Section(lm.t(.color)) {
+            ScrollView(.horizontal) {
+                HStack {
+                    ForEach(["FFA500", "FF4500", "32CD32", "1E90FF", "8A2BE2", "FF69B4", "808080", "000000"], id: \.self) { value in
+                        Button { color = value } label: {
+                            Circle().fill(Color(hex: value)).frame(width: 30, height: 30)
+                                .overlay { if color == value { Image(systemName: "checkmark").foregroundStyle(.white) } }
+                        }.buttonStyle(.plain).accessibilityLabel(lm.t(.color) + " " + value)
+                    }
+                }
+            }
+        }
+    }
+}
+
 extension Color {
     // この型を作るときに受け取る初期値と初期化処理を定義します。
     init(hex: String) {

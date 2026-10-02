@@ -36,7 +36,7 @@ func png() throws -> Data {
 
 @MainActor
 func context() throws -> ModelContext {
-    let schema = Schema([Asset.self, Expense.self, RecurringItem.self, Category.self, ChatMessageModel.self])
+    let schema = Schema([Asset.self, Expense.self, RecurringItem.self, Category.self, ChatMessageModel.self, PointCard.self])
     let container = try ModelContainer(for: schema, configurations: ModelConfiguration(schema: schema, isStoredInMemoryOnly: true))
     let context = ModelContext(container)
     context.autosaveEnabled = false
@@ -65,11 +65,12 @@ func run() throws {
     let image = try png()
     try image.write(to: sourceURL.appendingPathComponent("receipt.png"))
     let date = Date(timeIntervalSince1970: 1_700_000_000)
-    source.insert(Asset(name: "財布", balance: 12345, colorHex: "FFA500"))
+    source.insert(Asset(name: "財布", balance: 12345, colorHex: "FFA500", paymentMethod: "cash", isAutoCreated: true, currencyCode: "USD"))
+    source.insert(PointCard(name: "Sample points", memberNumber: "test-number", points: 900, expiryDate: date))
     source.insert(Category(name: "食費", icon: "fork.knife", colorHex: "FFFFFF"))
-    source.insert(Expense(title: "お店", amount: 980, date: date, imageFilename: "receipt.png", assetName: "財布", isIncome: false, categoryName: "食費"))
+    source.insert(Expense(title: "お店", amount: 980, date: date, imageFilename: "receipt.png", assetName: "財布", isIncome: false, categoryName: "食費", currencyCode: "USD"))
     source.insert(Expense(title: "共有画像", amount: 20, date: date, imageFilename: "receipt.png", isIncome: true))
-    let recurring = RecurringItem(title: "定期", amount: 1200, dayOfMonth: 10, isIncome: false, assetName: "財布")
+    let recurring = RecurringItem(title: "定期", amount: 1200, dayOfMonth: 10, isIncome: false, assetName: "財布", currencyCode: "USD")
     recurring.lastProcessedDate = date
     source.insert(recurring)
     source.insert(ChatMessageModel(role: "user", content: "private-chat-sentinel"))
@@ -82,7 +83,10 @@ func run() throws {
     let json = String(decoding: data, as: UTF8.self)
     checks.expect(!json.contains("private-chat-sentinel") && !json.contains("chatMessages"), "chat never exported")
     let archive = try BackupArchiveCodec.decode(data)
-    checks.expect(archive.schemaVersion == 2, "version 2")
+    checks.expect(archive.schemaVersion == 4, "version 4")
+    checks.expect(archive.pointCards.first?.points == 900, "point cards exported")
+    checks.expect(archive.assets.first?.paymentMethod == "cash", "payment identity exported")
+    checks.expect(archive.assets.first?.currencyCode == "USD" && archive.expenses.contains { $0.currencyCode == "USD" } && archive.recurringItems.first?.currencyCode == "USD", "currency metadata exported")
     checks.expect(archive.receiptImages.count == 1, "one image payload for two references")
     checks.expect(archive.receiptImages[0].data == image, "byte-exact embedded image")
     let target = try context()
@@ -97,6 +101,9 @@ func run() throws {
     checks.expect(restored.count == 2, "all expenses restored")
     checks.expect(restored.last?.title == "お店" && restored.last?.amount == 980, "expense facts preserved")
     checks.expect(restored.last?.date == date, "expense date preserved")
+    checks.expect(restored.last?.effectiveCurrencyCode == "USD" && restored.first?.effectiveCurrencyCode == "JPY", "USD and legacy JPY expense currencies preserved")
+    checks.expect(try target.fetch(FetchDescriptor<Asset>()).first?.effectiveCurrencyCode == "USD", "wallet currency restored")
+    checks.expect(try target.fetch(FetchDescriptor<RecurringItem>()).first?.effectiveCurrencyCode == "USD", "recurring currency restored")
     checks.expect(restored.last?.assetName == "財布" && restored.last?.categoryName == "食費", "wallet/category preserved")
     checks.expect(restored.first?.isIncome == true, "income flag preserved")
     let restoredName = restored[0].imageFilename!
@@ -107,12 +114,32 @@ func run() throws {
     checks.expect(!fm.fileExists(atPath: targetURL.appendingPathComponent("old.png").path), "old referenced image removed after success")
     checks.expect(try target.fetchCount(FetchDescriptor<ChatMessageModel>()) == 0, "chat not restored")
     checks.expect(try target.fetch(FetchDescriptor<Asset>()).first?.balance == 12345, "asset restored")
+    checks.expect(try target.fetch(FetchDescriptor<Asset>()).first?.isAutoCreated == true, "provisional wallet marker restored")
+    let card = try target.fetch(FetchDescriptor<PointCard>()).first
+    checks.expect(card?.name == "Sample points" && card?.memberNumber == "test-number" && card?.points == 900 && card?.expiryDate == date, "complete point card roundtrip")
     checks.expect(try target.fetch(FetchDescriptor<Category>()).first?.icon == "fork.knife", "category restored")
     checks.expect(try target.fetch(FetchDescriptor<RecurringItem>()).first?.lastProcessedDate == date, "recurring date restored")
 
     let recordsOnly = try sourceManager.createBackupData(context: source, includeReceiptImages: false)
     let recordsArchive = try BackupArchiveCodec.decode(recordsOnly)
     checks.expect(recordsArchive.receiptImages.isEmpty, "records-only has no image bytes")
+    checks.expect(recordsArchive.pointCards.count == 1, "records-only still includes points")
+    for version in 1...3 {
+        let old = try modified(recordsOnly) { object in
+            object["schemaVersion"] = version
+            for key in ["assets", "expenses", "recurringItems"] {
+                object[key] = (object[key] as! [[String: Any]]).map { record in
+                    var record = record; record.removeValue(forKey: "currencyCode"); return record
+                }
+            }
+        }
+        try targetManager.restoreBackup(data: old, context: target)
+        checks.expect(try target.fetch(FetchDescriptor<Asset>()).allSatisfy { $0.currencyCode == nil && $0.effectiveCurrencyCode == "JPY" }, "schema \(version) legacy wallet stays JPY")
+        checks.expect(try target.fetch(FetchDescriptor<Expense>()).allSatisfy { $0.currencyCode == nil && $0.effectiveCurrencyCode == "JPY" }, "schema \(version) legacy expense stays JPY")
+        checks.expect(try target.fetch(FetchDescriptor<RecurringItem>()).allSatisfy { $0.currencyCode == nil && $0.effectiveCurrencyCode == "JPY" }, "schema \(version) legacy recurring stays JPY")
+    }
+    let versionTwo = try modified(data) { value in value["schemaVersion"] = 2; value.removeValue(forKey: "pointCards") }
+    checks.expect(try BackupArchiveCodec.decode(versionTwo).pointCards.isEmpty, "schema 2 remains readable without points")
     checks.expect(recordsArchive.expenses.allSatisfy { $0.imageFilename == nil }, "records-only has no broken references")
     try targetManager.restoreBackup(data: recordsOnly, context: target)
     checks.expect(try target.fetch(FetchDescriptor<Expense>()).allSatisfy { $0.imageFilename == nil }, "records-only restores without references")
@@ -145,6 +172,7 @@ func run() throws {
         checks.expect(try Data(contentsOf: targetURL.appendingPathComponent(preservedName)) == image, "\(label) retains original image")
     }
     let badCases: [(String, Data)] = [
+        ("invalid currency", try modified(data) { var assets = $0["assets"] as! [[String: Any]]; assets[0]["currencyCode"] = "INVALID"; $0["assets"] = assets }),
         ("future schema", try modified(data) { $0["schemaVersion"] = 999 }),
         ("bad base64", try modified(data) { var images = $0["receiptImages"] as! [[String: Any]]; images[0]["data"] = "!not-base64!"; $0["receiptImages"] = images }),
         ("truncated image", try modified(data) { var images = $0["receiptImages"] as! [[String: Any]]; images[0]["data"] = image.prefix(image.count / 2).base64EncodedString(); $0["receiptImages"] = images }),

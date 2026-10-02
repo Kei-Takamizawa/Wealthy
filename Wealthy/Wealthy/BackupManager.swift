@@ -46,6 +46,7 @@ struct BackupManager {
         let expenses = try context.fetch(FetchDescriptor<Expense>())
         let recurring = try context.fetch(FetchDescriptor<RecurringItem>())
         let categories = try context.fetch(FetchDescriptor<Category>())
+        let pointCards = try context.fetch(FetchDescriptor<PointCard>())
         var imageDataByName: [String: Data] = [:]
         if includeReceiptImages {
             // All referenced images must be readable; records-only remains available if any are missing.
@@ -57,15 +58,17 @@ struct BackupManager {
             }
         }
         let archive = BackupArchive(
-            assets: assets.map { .init(name: $0.name, balance: $0.balance, colorHex: $0.colorHex) },
+            assets: assets.map { .init(name: $0.name, balance: $0.balance, colorHex: $0.colorHex, paymentMethod: $0.paymentMethod, isAutoCreated: $0.isAutoCreated, currencyCode: $0.currencyCode) },
             expenses: expenses.map { .init(title: $0.title, amount: $0.amount, date: $0.date,
                 imageFilename: $0.imageFilename.flatMap { imageDataByName[$0] == nil ? nil : $0 },
-                assetName: $0.assetName, isIncome: $0.isIncome, categoryName: $0.categoryName) },
+                assetName: $0.assetName, isIncome: $0.isIncome, categoryName: $0.categoryName,
+                paymentMethod: $0.paymentMethod, balanceApplied: $0.balanceApplied, paymentNeedsReview: $0.paymentNeedsReview, currencyCode: $0.currencyCode) },
             recurringItems: recurring.map { .init(title: $0.title, amount: $0.amount, dayOfMonth: $0.dayOfMonth,
-                isIncome: $0.isIncome, assetName: $0.assetName, lastProcessedDate: $0.lastProcessedDate) },
+                isIncome: $0.isIncome, assetName: $0.assetName, lastProcessedDate: $0.lastProcessedDate, currencyCode: $0.currencyCode) },
             categories: categories.map { .init(name: $0.name, icon: $0.icon, colorHex: $0.colorHex) },
             receiptImagesIncluded: includeReceiptImages,
-            receiptImages: imageDataByName.keys.sorted().map { .init(filename: $0, data: imageDataByName[$0]!) }
+            receiptImages: imageDataByName.keys.sorted().map { .init(filename: $0, data: imageDataByName[$0]!) },
+            pointCards: pointCards.map { .init(name: $0.name, memberNumber: $0.memberNumber, points: $0.points, expiryDate: $0.expiryDate) }
         )
         return try BackupArchiveCodec.encode(archive)
     }
@@ -112,6 +115,7 @@ struct BackupManager {
             let oldRecurring = try context.fetch(FetchDescriptor<RecurringItem>())
             let oldCategories = try context.fetch(FetchDescriptor<Category>())
             let oldChats = try context.fetch(FetchDescriptor<ChatMessageModel>())
+            let oldPointCards = try context.fetch(FetchDescriptor<PointCard>())
             let oldNames = Set(oldExpenses.compactMap(\.imageFilename))
             for name in filenames.values {
                 let destination = imageDirectory.appendingPathComponent(name)
@@ -125,18 +129,21 @@ struct BackupManager {
             oldRecurring.forEach { context.delete($0) }
             oldCategories.forEach { context.delete($0) }
             oldChats.forEach { context.delete($0) }
-            for dto in archive.assets { context.insert(Asset(name: dto.name, balance: dto.balance, colorHex: dto.colorHex)) }
+            oldPointCards.forEach { context.delete($0) }
+            for dto in archive.assets { context.insert(Asset(name: dto.name, balance: dto.balance, colorHex: dto.colorHex, paymentMethod: dto.paymentMethod, isAutoCreated: dto.isAutoCreated ?? false, currencyCode: dto.currencyCode)) }
             for dto in archive.expenses {
                 context.insert(Expense(title: dto.title, amount: dto.amount, date: dto.date,
                     imageFilename: dto.imageFilename.flatMap { filenames[$0] }, assetName: dto.assetName,
-                    isIncome: dto.isIncome, categoryName: dto.categoryName))
+                    isIncome: dto.isIncome, categoryName: dto.categoryName, paymentMethod: dto.paymentMethod,
+                    balanceApplied: dto.balanceApplied ?? true, paymentNeedsReview: dto.paymentNeedsReview ?? false, currencyCode: dto.currencyCode))
             }
             for dto in archive.recurringItems {
-                let item = RecurringItem(title: dto.title, amount: dto.amount, dayOfMonth: dto.dayOfMonth, isIncome: dto.isIncome, assetName: dto.assetName)
+                let item = RecurringItem(title: dto.title, amount: dto.amount, dayOfMonth: dto.dayOfMonth, isIncome: dto.isIncome, assetName: dto.assetName, currencyCode: dto.currencyCode)
                 item.lastProcessedDate = dto.lastProcessedDate
                 context.insert(item)
             }
             for dto in archive.categories { context.insert(Category(name: dto.name, icon: dto.icon, colorHex: dto.colorHex)) }
+            for dto in archive.pointCards { context.insert(PointCard(name: dto.name, memberNumber: dto.memberNumber, points: dto.points, expiryDate: dto.expiryDate)) }
             try save()
             // Remove only formerly referenced safe regular files after a successful database commit.
             for name in oldNames where BackupArchiveCodec.isSafeFilename(name) {

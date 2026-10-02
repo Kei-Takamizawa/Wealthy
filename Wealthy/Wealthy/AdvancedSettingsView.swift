@@ -6,31 +6,26 @@ struct AdvancedSettingsView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
     @EnvironmentObject private var lm: LanguageManager
+    // 通貨設定を共有し、新規記録に使う通貨を画面へ反映します。
+    @ObservedObject private var currencyManager = CurrencyManager.shared
     @State private var isProcessing = false
     @State private var showFileExporter = false
     @State private var showFileImporter = false
+    // 通貨の複数選択画面を表示する状態を保持します。
+    @State private var showCurrencySelection = false
     @State private var backupDocument: BackupDocument?
     @State private var imageSummary: ReceiptImageSummary?
     @State private var showImageChoice = false
     @State private var alertMessage = ""
     @State private var showAlert = false
 
-    private func text(_ japanese: String, _ english: String) -> String {
-        lm.currentLanguage == .japanese ? japanese : english
-    }
-
     private var backupChoiceMessage: String {
         guard let summary = imageSummary else { return "" }
-        let size = ByteCountFormatter.string(fromByteCount: summary.totalBytes, countStyle: .file)
-        let main = text(
-            "レシート画像 \(summary.uniqueImageCount)枚、合計 \(size)。画像もバックアップに含めますか？\nJSONに含めると画像データの容量は約33%増えます。チャット履歴は含まれません。",
-            "\(summary.uniqueImageCount) receipt images, \(size) in total. Include them in the backup?\nEmbedding images in JSON adds about 33% to their size. Chat history is excluded."
-        )
+        let size = summary.totalBytes.formatted(.byteCount(style: .file).locale(lm.currentLanguage.locale))
+        let main = lm.format("backup.imageSummary", summary.uniqueImageCount, size)
+            + "\n" + lm.text("backup.imageSizeNote")
         guard summary.missingImageCount > 0 else { return main }
-        return main + text(
-            "\n読み取れない画像が\(summary.missingImageCount)枚あります。画像を含めるには元画像が必要です。「記録のみ」を選んでください。",
-            "\n\(summary.missingImageCount) images are unavailable. Choose “Records only”, or recover the originals before including images."
-        )
+        return main + "\n" + lm.format("backup.missingImages", summary.missingImageCount)
     }
 
     var body: some View {
@@ -38,9 +33,32 @@ struct AdvancedSettingsView: View {
             List {
                 Section(header: Text(lm.t(.languageSettings))) {
                     Picker(selection: $lm.currentLanguage) {
-                        ForEach(AppLanguage.allCases) { language in Text(language.rawValue).tag(language) }
+                        ForEach(AppLanguage.allCases) { language in Text(language.nativeName).tag(language) }
                     } label: { Text(lm.t(.languageSettings)) }
-                    .pickerStyle(.menu)
+                    .pickerStyle(.menu).accessibilityIdentifier("settings.language")
+                }
+                // 新しい記録に使う通貨と、利用する通貨一覧を設定します。
+                Section(header: Text(lm.text("currency.setting")), footer: Text(lm.text("currency.help"))) {
+                    // 利用可能な通貨から新規記録の既定通貨を選択します。
+                    Picker(selection: $currencyManager.selectedCode) {
+                        // 有効化された各通貨を選択肢として表示します。
+                        ForEach(currencyManager.selectedCodes, id: \.self) { code in
+                            // 表示言語での通貨名とISOコードを併記します。
+                            Text("\(CurrencyPolicy.localizedName(for: code, locale: lm.currentLanguage.locale)) (\(code))").tag(code)
+                        }
+                    } label: {
+                        // 既定通貨の選択欄を現在の表示言語で表示します。
+                        Text(lm.text("currency.default"))
+                    }
+                    // 選択肢をメニュー形式で表示します。
+                    .pickerStyle(.menu).accessibilityIdentifier("settings.currency.default")
+                    // 有効化する通貨一覧を編集する画面を開きます。
+                    Button { showCurrencySelection = true } label: {
+                        // 現在選択中の通貨数を追加アイコンとともに表示します。
+                        Label(lm.format("currency.choose") + " · " + lm.format("currency.selected", currencyManager.selectedCodes.count), systemImage: "plus.circle")
+                    }
+                    // 通貨一覧を編集するボタンへアクセシビリティ識別子を付けます。
+                    .accessibilityIdentifier("settings.currency.choose")
                 }
                 Section(header: Text(lm.t(.settings))) {
                     NavigationLink(destination: RecurringSettingsView()) {
@@ -50,13 +68,10 @@ struct AdvancedSettingsView: View {
                         Label(lm.t(.category), systemImage: "tag.fill")
                     }
                 }
-                Section(header: Text(lm.t(.dataManagement)), footer: Text(text(
-                    "資産、収支、定期収支、カテゴリーをJSONで保存します。レシート画像を含めるか選べます。チャット履歴は24時間で削除され、バックアップにも含まれません。復元すると現在の記録は置き換わります。",
-                    "Save wallets, income, expenses, recurring items and categories as JSON. Choose whether to include receipt images. Chat history expires after 24 hours and is excluded. Restoring replaces your current records."
-                ))) {
+                Section(header: Text(lm.t(.dataManagement)), footer: Text(lm.text("backup.description") + " " + lm.text("backup.pointsIncluded"))) {
                     Button(action: prepareBackupChoice) {
                         Label(lm.t(.backup), systemImage: "square.and.arrow.up")
-                    }
+                    }.accessibilityIdentifier("backup.open")
                     Button { showFileImporter = true } label: {
                         Label(lm.t(.restore), systemImage: "square.and.arrow.down")
                     }
@@ -65,15 +80,15 @@ struct AdvancedSettingsView: View {
             .disabled(isProcessing || showFileExporter || showFileImporter)
             .navigationTitle(lm.t(.settings))
             .toolbar {
-                ToolbarItem(placement: .topBarTrailing) { Button(lm.t(.close)) { dismiss() } }
+                ToolbarItem(placement: .topBarTrailing) { Button(lm.t(.close)) { dismiss() }.accessibilityIdentifier("settings.close") }
             }
-            .alert(showImageChoice ? text("レシート画像のバックアップ", "Back up receipt images") : alertMessage, isPresented: $showAlert) {
+            .alert(showImageChoice ? lm.text("backup.imageTitle") : alertMessage, isPresented: $showAlert) {
                 if showImageChoice {
-                    Button(text("画像も含める", "Include images")) { createBackup(includeImages: true) }
-                    Button(text("記録のみ", "Records only")) { createBackup(includeImages: false) }
+                    Button(lm.text("backup.includeImages")) { createBackup(includeImages: true) }
+                    Button(lm.text("backup.recordsOnly")) { createBackup(includeImages: false) }
                     Button(lm.t(.cancel), role: .cancel) {}
                 } else {
-                    Button("OK", role: .cancel) {}
+                    Button(lm.text("ok"), role: .cancel) {}
                 }
             } message: {
                 if showImageChoice { Text(backupChoiceMessage) }
@@ -85,10 +100,20 @@ struct AdvancedSettingsView: View {
                 case .failure(let error): notify("\(lm.t(.error)): \(error.localizedDescription)")
                 }
             }
+            // 通貨コード検索と複数選択を行うシートを表示します。
+            .sheet(isPresented: $showCurrencySelection) {
+                // 設定画面から開くためキャンセル操作を表示する選択画面を作ります。
+                CurrencySelectionView(firstLaunch: false, onSave: {})
+            }
             .fileImporter(isPresented: $showFileImporter, allowedContentTypes: [.json]) { result in
                 do {
                     let url = try result.get()
                     try BackupManager.shared.restoreBackup(from: url, context: modelContext)
+                    // Make every restored record visible even if its currency was not previously enabled.
+                    let restoredCodes = try modelContext.fetch(FetchDescriptor<Asset>()).map(\.effectiveCurrencyCode)
+                        + modelContext.fetch(FetchDescriptor<Expense>()).map(\.effectiveCurrencyCode)
+                        + modelContext.fetch(FetchDescriptor<RecurringItem>()).map(\.effectiveCurrencyCode)
+                    currencyManager.selectedCodes = Array(Set(currencyManager.selectedCodes + restoredCodes)).sorted()
                     notify(lm.t(.restoreSuccess))
                 } catch { notify("\(lm.t(.error)): \(error.localizedDescription)") }
             }

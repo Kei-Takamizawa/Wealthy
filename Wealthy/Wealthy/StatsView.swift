@@ -17,7 +17,9 @@ struct StatsView: View {
     // 画面間で共有される言語設定を受け取り、表示文や通貨記号に使います。
     @EnvironmentObject var lm: LanguageManager
     // 保存済みの収支記録を取得し、月別・日別の集計に使います。
-    @Query var expenses: [Expense]
+    @Query var allExpenses: [Expense]
+    @ObservedObject private var currency = CurrencyManager.shared
+    private var expenses: [Expense] { allExpenses.filter { $0.effectiveCurrencyCode == currency.selectedCode } }
     // 保存済みカテゴリを取得し、選択肢や色・アイコン表示に使います。
     @Query var categories: [Category] // For colors/icons
     
@@ -90,13 +92,19 @@ struct StatsView: View {
                             // この文字やアイコンを.whiteで描画します。
                             .foregroundStyle(.white)
                         
+                        Picker(lm.text("currency.default"), selection: $currency.selectedCode) {
+                            ForEach(currency.selectedCodes, id: \.self) { Text($0).tag($0) }
+                        }
+                        .pickerStyle(.menu)
+                        .tint(.orange)
+                        .accessibilityIdentifier("analysis.currency")
                         // Chart Type Picker
                         // 「Type」の候補を表示し、選択値をバインド先へ保存します。
-                        Picker("Type", selection: $chartType) {
+                        Picker(lm.text("chart.type"), selection: $chartType) {
                             // 配列や範囲の各要素に対応する画面部品を繰り返し生成します。
                             ForEach(ChartType.allCases) { type in
                                 // 画面に文字を表示します。
-                                Text(type.rawValue).tag(type)
+                                Text(lm.text(type == .bar ? "chart.daily" : "chart.category")).tag(type)
                             // ここで「ForEachクロージャ」の範囲を閉じます。
                             }
                         // この画面部品または処理の範囲をここで閉じます。
@@ -181,19 +189,19 @@ struct StatsView: View {
     // 月と集計額を見せる見出し部品を作る処理を定義します。
     private func monthHeader(for date: Date, expenses: [Expense]) -> some View {
         // totalExpenseという定数へ「expenses.filter { !$0.isIncome }.reduce(0) { $0 + $1.am」の計算結果を保存します。
-        let totalExpense = expenses.filter { !$0.isIncome }.reduce(0) { $0 + $1.amount }
+        let totalExpense = expenses.filter { !$0.isIncome }.map { $0.amount }.reduce(Decimal.zero) { $0 + Decimal(string: String($1))! }
         
         // 計算結果を呼び出し元へ返し、この関数の処理を終えます。
         return VStack(spacing: 5) {
             // 画面に文字を表示します。
-            Text(date.formatted(.dateTime.year().month(.wide)))
+            Text(date.formatted(.dateTime.year().month(.wide).locale(lm.currentLanguage.locale)))
                 // 文字またはアイコンの書体と大きさを指定します。
                 .font(.title3)
                 // この文字やアイコンを.grayで描画します。
                 .foregroundStyle(.gray)
             
             // 画面に文字を表示します。
-            Text(lm.currencySymbol + "\(totalExpense)")
+            Text(AppLocalization.amount(totalExpense, currencyCode: currency.selectedCode, language: lm.currentLanguage))
                 // 文字またはアイコンの書体と大きさを指定します。
                 .font(.system(size: 40, weight: .bold, design: .rounded))
                 // この文字やアイコンを.whiteで描画します。
@@ -212,6 +220,7 @@ struct StatsView: View {
 // MARK: - Modern Bar Chart
 // ModernBarChartという画面または補助部品の定義を始めます。
 struct ModernBarChart: View {
+    @ObservedObject private var currency = CurrencyManager.shared
     // グラフの集計対象にする月を受け取ります。
     let month: Date
     // 表示対象の収支記録を親から受け取ります。
@@ -220,7 +229,7 @@ struct ModernBarChart: View {
     let lm: LanguageManager
     
     // 月内の日ごとの支出額をグラフ用データにまとめます。
-    var dailyData: [(day: Int, amount: Int)] {
+    var dailyData: [(day: Int, amount: Decimal)] {
         // calendarという定数へ「Calendar.current」の計算結果を保存します。
         let calendar = Calendar.current
         // 必要な値を安全に取り出し、値がなければこの関数をその場で終了します。
@@ -229,7 +238,7 @@ struct ModernBarChart: View {
         let expenseItems = expenses.filter { !$0.isIncome }
         
         // dataという値または計算結果を定義します。
-        var data: [(Int, Int)] = []
+        var data: [(Int, Decimal)] = []
         // dayへrangeの各要素を順番に取り出して処理します。
         for day in range {
             // sumという定数へ「expenseItems」の計算結果を保存します。
@@ -237,7 +246,7 @@ struct ModernBarChart: View {
                 // 条件に合う要素だけを抽出します。
                 .filter { calendar.component(.day, from: $0.date) == day }
                 // 複数の金額を合計します。
-                .reduce(0) { $0 + $1.amount }
+                .map { $0.amount }.reduce(Decimal.zero) { $0 + Decimal(string: String($1))! }
             // その日の日付と合計額をグラフ用の一覧へ追加します。
             data.append((day, sum))
         // ここで「繰り返し」の範囲を閉じます。
@@ -256,9 +265,9 @@ struct ModernBarChart: View {
                 // この行で「BarMark(」を指定し、画面構成または処理の一部を定義します。
                 BarMark(
                     // x引数に、この部品または処理へ渡す値を指定します。
-                    x: .value("Day", item.day),
+                    x: .value(lm.text("chart.dayAxis"), item.day),
                     // y引数に、この部品または処理へ渡す値を指定します。
-                    y: .value("Amount", item.amount)
+                    y: .value(currency.selectedCode, NSDecimalNumber(decimal: item.amount).doubleValue / pow(10.0, Double(CurrencyPolicy.minorUnits(for: currency.selectedCode))))
                 // 直前に開いた引数または配列のまとまりを閉じます。
                 )
                 // この文字やアイコンをで描画します。
@@ -321,6 +330,7 @@ struct ModernBarChart: View {
 // MARK: - Modern Pie Chart
 // ModernPieChartという画面または補助部品の定義を始めます。
 struct ModernPieChart: View {
+    @ObservedObject private var currency = CurrencyManager.shared
     // 表示対象の収支記録を親から受け取ります。
     let expenses: [Expense]
     // カテゴリ名に対応する色やアイコンを親から受け取ります。
@@ -335,7 +345,7 @@ struct ModernPieChart: View {
         // categoryに後から変更しない値を保持します。
         let category: String
         // amountに後から変更しない値を保持します。
-        let amount: Int
+        let amount: Decimal
         // colorに後から変更しない値を保持します。
         let color: String
     // ここで「PieData型」の範囲を閉じます。
@@ -350,8 +360,8 @@ struct ModernPieChart: View {
         
         // 計算結果を呼び出し元へ返し、この関数の処理を終えます。
         return grouped.map { (key, value) in
-            // totalという定数へ「value.reduce(0) { $0 + $1.amount }」の計算結果を保存します。
-            let total = value.reduce(0) { $0 + $1.amount }
+            // totalという定数へ「value.map { $0.amount }.reduce(Decimal.zero) { $0 + Decimal(string: String($1))! }」の計算結果を保存します。
+            let total = value.map { $0.amount }.reduce(Decimal.zero) { $0 + Decimal(string: String($1))! }
             // Find color
             // catColorという定数へ「categories.first(where: { $0.name == key })?.colorHex ?」の計算結果を保存します。
             let catColor = categories.first(where: { $0.name == key })?.colorHex ?? "808080"
@@ -381,7 +391,7 @@ struct ModernPieChart: View {
                     // この行で「SectorMark(」を指定し、画面構成または処理の一部を定義します。
                     SectorMark(
                         // angle引数に、この部品または処理へ渡す値を指定します。
-                        angle: .value("Amount", item.amount),
+                        angle: .value("Amount", NSDecimalNumber(decimal: item.amount).doubleValue),
                         // innerRadius引数に、この部品または処理へ渡す値を指定します。
                         innerRadius: .ratio(0.6), // Donut style
                         // angularInset引数に、この部品または処理へ渡す値を指定します。
@@ -415,7 +425,7 @@ struct ModernPieChart: View {
                                 // 伸縮する空白を入れ、周囲の部品を離して配置します。
                                 Spacer()
                                 // 画面に文字を表示します。
-                                Text(lm.currencySymbol + "\(item.amount)").bold().foregroundStyle(.gray)
+                                Text(AppLocalization.amount(item.amount, currencyCode: currency.selectedCode, language: lm.currentLanguage)).bold().foregroundStyle(.gray)
                             // ここで「横並びレイアウト」の範囲を閉じます。
                             }
                         // ここで「ForEachクロージャ」の範囲を閉じます。
