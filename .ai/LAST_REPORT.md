@@ -5,7 +5,7 @@
 - Status: COMPLETED
 - Branch: `codex/wealthy-c1-2-domain-v2-implementation`
 - Base: latest origin/main `62a425c` (PR #1, #2 and the blocked-report PR #3 merged).
-- PR: pending source commit and push.
+- PR: https://github.com/Kei-Takamizawa/Wealthy/pull/4
 
 ## Result and requirement coverage
 
@@ -138,4 +138,4 @@ Changed: WealthyCore/Sources/WealthyCore Values, Schema, Store, PersistenceRecor
 
 Local evidence: /private/tmp/wealthy-c1-2-logs/ contains core-final.log, benchmark.log/after.json, earlier integration logs, final-baseline.json and eight script logs, Simulator/Release/signed build logs and device install/launch/process logs. Cycle 1.1 comparator: /private/tmp/wealthy-c1-1-logs/after.json. Reproduce package tests and benchmark with Verification/README.md; launch commands substitute a paired device ID.
 
-No product redesign, UI switch, live CloudKit synchronization, legacy migration, speculative tax-rate reference data or extra performance optimization was undertaken. Tax/target/week assumptions and benchmark workload limits are explicit above. Source commit, feature push, PR link and final report update are verified at delivery. Original three .DS_Store modifications and Xcode project three blank-line removals remain outside task commits. No main push/merge/force push is performed. Work stops after final push verification.
+No product redesign, UI switch, live CloudKit synchronization, legacy migration, speculative tax-rate reference data or extra performance optimization was undertaken. Tax/target/week assumptions and benchmark workload limits are explicit above. Source commit 862a604fd1809c04739ea4ebf09038765a490e87 was pushed and matched the remote feature branch. PR #4 was created with base main. The final report-link commit is pushed separately and checked against both the remote branch and PR head. `git diff --stat origin/main...HEAD -- Wealthy/` is empty, confirming no committed app/project changes. Original three .DS_Store modifications and Xcode project three blank-line removals remain outside task commits. No main push/merge/force push is performed. Work stops after final push verification.
