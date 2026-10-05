@@ -7,6 +7,10 @@
 	objects = {
 
 
+/* Begin PBXBuildFile section */
+        C10000000000000000000001 /* WealthyCore in Frameworks */ = {isa = PBXBuildFile; productRef = C10000000000000000000003 /* WealthyCore */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXFileReference section */
 		84BE02D62EFFDCA6000C29F9 /* Wealthy.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Wealthy.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -37,6 +41,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+                C10000000000000000000001 /* WealthyCore in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -87,6 +92,7 @@
 			);
 			name = Wealthy;
 			packageProductDependencies = (
+                C10000000000000000000003 /* WealthyCore */,
 			);
 			productName = Wealthy;
 			productReference = 84BE02D62EFFDCA6000C29F9 /* Wealthy.app */;
@@ -127,6 +133,7 @@
 			mainGroup = 84BE02CD2EFFDCA6000C29F9;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
+                C10000000000000000000002 /* XCLocalSwiftPackageReference "../WealthyCore" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 84BE02D72EFFDCA6000C29F9 /* Products */;
@@ -380,6 +387,21 @@
 /* End XCConfigurationList section */
 
 
+
+/* Begin XCLocalSwiftPackageReference section */
+        C10000000000000000000002 /* XCLocalSwiftPackageReference "../WealthyCore" */ = {
+            isa = XCLocalSwiftPackageReference;
+            relativePath = ../WealthyCore;
+        };
+/* End XCLocalSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+        C10000000000000000000003 /* WealthyCore */ = {
+            isa = XCSwiftPackageProductDependency;
+            package = C10000000000000000000002 /* XCLocalSwiftPackageReference "../WealthyCore" */;
+            productName = WealthyCore;
+        };
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 84BE02CE2EFFDCA6000C29F9 /* Project object */;
 }
