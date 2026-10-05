@@ -5,7 +5,7 @@
 - Date: 2026-10-05 JST
 - Branch: codex/wealthy-c1-2-domain-v2
 - Base: origin/main, 46a5888cd919c4ab0296be0f5ff2dbfae77d7061; PR #2 confirmed merged.
-- PR: pending creation after the documentation commit.
+- PR: https://github.com/Kei-Takamizawa/Wealthy/pull/3 (draft; specification/report only).
 
 ## Work completed
 
