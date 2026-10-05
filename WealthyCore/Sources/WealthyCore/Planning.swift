@@ -14,13 +14,14 @@ public struct RecurringResult: Sendable, Equatable {
 public enum RecurringEngine {
     public static func occurrences(rule: RuleValue, from start: LedgerDay, through end: LedgerDay, calendar: Calendar) throws -> [LedgerDay] {
         try CoreValidation.validateSchedule(rule)
-        guard !rule.isPaused, start <= end, rule.endDay == nil || end <= rule.endDay! else { return [] }
+        let cutoff = min(end, rule.endDay ?? end)
+        guard !rule.isPaused, start <= cutoff else { return [] }
         let first = max(start, rule.startDay)
-        guard first <= end else { return [] }
+        guard first <= cutoff else { return [] }
         var days: [LedgerDay] = [], day = first
         var civil = Calendar(identifier: .gregorian)
         civil.timeZone = calendar.timeZone
-        while day <= end {
+        while day <= cutoff {
             let date = try day.date(calendar: civil)
             let count = civil.range(of: .day, in: .month, for: date)!.count
             let matches: Bool
@@ -30,7 +31,7 @@ public enum RecurringEngine {
             case let .yearly(month, n): matches = day.month == month && day.day == min(n, count)
             }
             if matches { days.append(day) }
-            if day == end { break }
+            if day == cutoff { break }
             day = try day.adding(days: 1, calendar: civil)
         }
         return days
@@ -142,18 +143,19 @@ extension LedgerCore {
     /// Consumes successful and failed occurrences in one save; this is outside undo history.
     public func postRecurring(through today: LedgerDay, now: Date) throws -> RecurringResult {
         try today.validated()
-        let before = try store.read()
+        let before = self.state
         var state = before, posted: [EntryValue] = [], failures: [RecurringFailure] = []
         for index in state.rules.indices {
             let rule = state.rules[index]
-            guard !rule.isPaused, rule.endDay == nil || today <= rule.endDay! else { continue }
+            guard !rule.isPaused else { continue }
+            let cutoff = min(today, rule.endDay ?? today)
             let cursors = [rule.lastPostedDay, rule.lastProcessedDay].compactMap { $0 }
             let start: LedgerDay
             if let cursor = cursors.max() {
-                guard cursor < today else { continue }
+                guard cursor < cutoff else { continue }
                 start = max(rule.startDay, try cursor.adding(days: 1, calendar: calendar))
             } else { start = rule.startDay }
-            for day in try RecurringEngine.occurrences(rule: rule, from: start, through: today, calendar: calendar) {
+            for day in try RecurringEngine.occurrences(rule: rule, from: start, through: cutoff, calendar: calendar) {
                 if rule.pausedPeriods.contains(where: { $0.contains(day) }) {
                     state.rules[index].lastProcessedDay = day
                     continue
@@ -174,8 +176,7 @@ extension LedgerCore {
                 state.rules[index].lastProcessedDay = day
             }
         }
-        try CoreValidation.validate(state)
-        if state != before { try store.replace(state) }
+        if state != before { try commit(state) }
         return RecurringResult(posted: posted, failures: failures)
     }
 }

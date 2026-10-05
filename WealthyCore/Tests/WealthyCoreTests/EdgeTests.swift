@@ -16,7 +16,7 @@ struct EdgeTests {
         let start = try LedgerDay(year: 2027, month: 1, day: 1)
         let due = try LedgerDay(year: 2027, month: 1, day: 31)
         let now = try due.date(calendar: calendar)
-        let core = LedgerCore(store: try LedgerStore(inMemory: true, seed: false), calendar: calendar)
+        let core = try LedgerCore(store: try LedgerStore(inMemory: true, seed: false), calendar: calendar)
         let wallet = WalletValue(name: "Cash", currencyCode: "JPY", createdAt: now)
         let stale = RuleValue(title: "Already posted", amount: 100, currencyCode: "JPY", walletID: wallet.id,
             schedule: .monthly(day: 31), startDay: start, createdAt: now)
@@ -32,6 +32,7 @@ struct EdgeTests {
         state.entries.append(existing)
         try CoreValidation.validate(state)
         try core.store.replace(state)
+        try core.reload()
         let historyCount = core.undoCount
         let result = try core.postRecurring(through: due, now: now)
         #expect(result.failures.isEmpty)
@@ -49,7 +50,7 @@ struct EdgeTests {
     func undoPreservesUnrelatedExternalChanges() throws {
         let day = try LedgerDay(year: 2027, month: 1, day: 5)
         let now = try day.date(calendar: calendar)
-        let core = LedgerCore(store: try LedgerStore(inMemory: true, seed: false), calendar: calendar)
+        let core = try LedgerCore(store: try LedgerStore(inMemory: true, seed: false), calendar: calendar)
         var wallet = WalletValue(name: "Cash", currencyCode: "JPY", createdAt: now)
         try core.run(.createWallet(wallet), now: now)
         core.clearUndoHistory()
@@ -65,6 +66,7 @@ struct EdgeTests {
         current.entries.append(externalIncome)
         try CoreValidation.validate(current)
         try core.store.replace(current)
+        try core.reload()
         var expected = current
         expected.entries.removeAll { $0.id == expense.id }
         let result = try core.undo(now: now)
@@ -90,7 +92,7 @@ struct EdgeTests {
     func metadataAndReviewCommands() throws {
         let day = try LedgerDay(year: 2027, month: 1, day: 5)
         let now = try day.date(calendar: calendar)
-        let core = LedgerCore(store: try LedgerStore(inMemory: true, seed: false), calendar: calendar)
+        let core = try LedgerCore(store: try LedgerStore(inMemory: true, seed: false), calendar: calendar)
         var wallet = WalletValue(name: "Cash", currencyCode: "JPY", createdAt: now)
         var category = CategoryValue(kind: .expense, customName: "Food")
         try core.run(.createWallet(wallet), now: now)

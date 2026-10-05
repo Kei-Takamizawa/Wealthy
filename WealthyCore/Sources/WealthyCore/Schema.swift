@@ -137,16 +137,18 @@ public enum WealthySchemaV1: VersionedSchema {
         public var id: UUID = UUID()
         public var fileName: String = ""
         public var capturedAt: Date = Date(timeIntervalSince1970: 0)
+        public var imageSHA256: String? = nil
 
         public init(_ value: ReceiptValue, order: Int = 0) {
             recordOrder = order
             id = value.id
             fileName = value.fileName
             capturedAt = value.capturedAt
+            imageSHA256 = value.imageSHA256
         }
 
         public func value() throws -> ReceiptValue {
-            return ReceiptValue(id: id, fileName: fileName, capturedAt: capturedAt)
+            return ReceiptValue(id: id, fileName: fileName, capturedAt: capturedAt, imageSHA256: imageSHA256)
         }
     }
 

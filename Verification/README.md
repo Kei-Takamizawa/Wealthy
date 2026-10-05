@@ -119,3 +119,19 @@ sh Verification/verify_core.sh
 This runs the Swift Testing suite on the Mac, without a simulator. It covers the new ledger's derived balances, command validation, previews, undo, receipts, recurring entries, budgets, queries, and versioned backups. The performance case reports median query times for 10,000 synthetic entries across ten wallets; timing is informational and has no pass/fail threshold.
 
 WealthyCore is linked to the app but no current screen uses it yet. Its separate store and receipt directory leave legacy records and images untouched. Package tests and unsigned builds do not establish physical-device behavior or CloudKit synchronization.
+
+## WealthyCore disk benchmarks (Cycle 1.1)
+
+The disk benchmark is disabled in normal tests. Run it separately in Release mode:
+
+```sh
+WEALTHY_BENCHMARK=1 WEALTHY_BENCHMARK_LABEL=current \
+WEALTHY_BENCHMARK_OUTPUT=/private/tmp/wealthy-core-benchmark.json \
+swift test --package-path WealthyCore -c release --filter BenchmarkTests
+```
+
+It creates synthetic on-disk stores with 10,000 and 50,000 entries, 10 wallets, 12 categories, 5 budgets, and 10 recurring rules. Each latency median uses 20 samples after one warm-up. Every sample opens a fresh copy of the same seeded store. It measures entry addition, update, deletion, undo of a prepared addition, preview, one month of recurring catch-up, and opening the store with its first load. Setup, copying and disposal are excluded from latency; opening includes initialization and the first snapshot. OS file caches are not flushed. Constant assertion overhead is included in both runs.
+
+The JSON contains every sample. Memory uses the process physical footprint before and after 20 additions at 10,000 entries with 20 retained undo steps. This includes SwiftData, allocator caches and undo; it does not isolate undo memory. Memory is measured before other mutation trials. Temporary synthetic stores are removed at completion.
+
+The Cycle 1.1 report in `.ai/LAST_REPORT.md` compares the Cycle 1 baseline with the same harness after incremental persistence. Its acceptance threshold is a 10,000-entry addition median at most one fifth of that measured baseline. Baseline reproduction requires the Cycle 1 source plus this test harness, without `try` on the former nonthrowing LedgerCore initializer.

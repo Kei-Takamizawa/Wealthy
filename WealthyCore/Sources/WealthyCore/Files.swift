@@ -1,5 +1,6 @@
 import Foundation
 import ImageIO
+import CryptoKit
 
 /// Receipt file operations are restricted to direct children of the new receipt directory.
 public enum ReceiptFiles {
@@ -22,21 +23,40 @@ public enum ReceiptFiles {
     /// Existing filenames may be overwritten so backup restore can replace image contents.
     @MainActor
     public static func write(_ images: [String: Data], directory: URL, removing: Set<String> = [], commit: () throws -> Void) throws {
+        try transact(images, directory: directory, removing: removing, allowOtherRegularFileNames: false, commit: commit)
+    }
+
+    /// Cleanup also handles regular orphan files with names that were never valid receipt metadata.
+    @MainActor
+    static func removeOrphans(_ names: Set<String>, directory: URL, commit: () throws -> Void) throws {
+        try transact([:], directory: directory, removing: names, allowOtherRegularFileNames: true, commit: commit)
+    }
+
+    @MainActor
+    private static func transact(_ images: [String: Data], directory: URL, removing: Set<String>,
+                                 allowOtherRegularFileNames: Bool, commit: () throws -> Void) throws {
         let names = Set(images.keys).union(removing).sorted()
         for name in names {
-            guard isSafeFilename(name) else { throw CoreError.unsafeFilename(name) }
+            let directChild = !name.isEmpty && name != "." && name != ".." && !name.contains("/")
+            guard isSafeFilename(name) || (allowOtherRegularFileNames && directChild) else { throw CoreError.unsafeFilename(name) }
             if let image = images[name], !isValidImage(image) { throw CoreError.invalidImage(name) }
         }
         try validateDirectory(directory)
 
-        // Read all originals before the first mutation, including files shared by several entries.
-        var originals: [String: Data] = [:]
+        // Originals stay on disk; transactions never retain every old image in memory.
+        let staging = directory.deletingLastPathComponent()
+            .appendingPathComponent(".WealthyReceiptTransaction-\(UUID().uuidString)", isDirectory: true)
+        do { try FileManager.default.createDirectory(at: staging, withIntermediateDirectories: false) }
+        catch { throw CoreError.fileFailure("receiptTransaction") }
+        defer { try? FileManager.default.removeItem(at: staging) }
         var existingNames = Set<String>()
         for name in names {
             let url = directory.appendingPathComponent(name)
             if try existingRegularFile(url) {
-                do { originals[name] = try Data(contentsOf: url); existingNames.insert(name) }
-                catch { throw CoreError.fileFailure(name) }
+                do {
+                    try FileManager.default.copyItem(at: url, to: staging.appendingPathComponent(name))
+                    existingNames.insert(name)
+                } catch { throw CoreError.fileFailure(name) }
             }
         }
 
@@ -64,7 +84,7 @@ public enum ReceiptFiles {
                     // Never follow a path that became a symlink while the transaction was running.
                     _ = try existingRegularFile(url)
                     if existingNames.contains(name) {
-                        try originals[name]!.write(to: url, options: .atomic)
+                        try Data(contentsOf: staging.appendingPathComponent(name)).write(to: url, options: .atomic)
                     } else if FileManager.default.fileExists(atPath: url.path) {
                         try FileManager.default.removeItem(at: url)
                     }
@@ -73,6 +93,63 @@ public enum ReceiptFiles {
             if let rollbackFailure { throw CoreError.fileFailure("rollback:\(rollbackFailure)") }
             if let error = error as? CoreError { throw error }
             throw committing ? CoreError.saveFailed : CoreError.fileFailure(currentName)
+        }
+    }
+
+    /// Lowercase SHA-256 of the saved image bytes.
+    static func imageHash(_ bytes: Data) -> String {
+        SHA256.hash(data: bytes).map { String(format: "%02x", $0) }.joined()
+    }
+
+    /// Hashes a regular file with bounded buffers; a missing image has no known hash.
+    static func imageHash(named name: String, directory: URL) throws -> String? {
+        guard isSafeFilename(name) else { throw CoreError.unsafeFilename(name) }
+        try validateDirectory(directory)
+        let url = directory.appendingPathComponent(name)
+        guard try existingRegularFile(url) else { return nil }
+        do {
+            let file = try FileHandle(forReadingFrom: url)
+            defer { try? file.close() }
+            var hash = SHA256()
+            while let chunk = try file.read(upToCount: 65_536), !chunk.isEmpty { hash.update(data: chunk) }
+            return hash.finalize().map { String(format: "%02x", $0) }.joined()
+        } catch { throw CoreError.fileFailure(name) }
+    }
+
+    /// Detects a byte change before the transaction so observers receive exactly one revision.
+    static func changes(_ images: [String: Data], directory: URL, removing: Set<String>) throws -> Bool {
+        try validateDirectory(directory)
+        var changed = false
+        for name in Set(images.keys).union(removing) {
+            guard isSafeFilename(name) else { throw CoreError.unsafeFilename(name) }
+            let url = directory.appendingPathComponent(name)
+            let exists = try existingRegularFile(url)
+            if let image = images[name] {
+                if !exists { changed = true }
+                else {
+                    do { if try Data(contentsOf: url) != image { changed = true } }
+                    catch { throw CoreError.fileFailure(name) }
+                }
+            } else if exists { changed = true }
+        }
+        return changed
+    }
+
+    /// Enumerates removable regular files without deleting them; callers combine files and metadata atomically.
+    static func orphans(referenced: Set<String>, directory: URL) throws -> [String] {
+        try validateDirectory(directory)
+        let urls: [URL]
+        do {
+            urls = try FileManager.default.contentsOfDirectory(at: directory,
+                includingPropertiesForKeys: [.isRegularFileKey, .isSymbolicLinkKey], options: [])
+        } catch { throw CoreError.fileFailure("receiptsDirectory") }
+        return try urls.sorted(by: { $0.lastPathComponent < $1.lastPathComponent }).compactMap { url in
+            let name = url.lastPathComponent
+            guard !referenced.contains(name) else { return nil }
+            let values: URLResourceValues
+            do { values = try url.resourceValues(forKeys: [.isRegularFileKey, .isSymbolicLinkKey]) }
+            catch { throw CoreError.fileFailure(name) }
+            return values.isSymbolicLink != true && values.isRegularFile == true ? name : nil
         }
     }
 

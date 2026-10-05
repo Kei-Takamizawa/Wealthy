@@ -16,7 +16,7 @@ struct UndoTests {
         Data(base64Encoded: "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGP4z8DwHwAFAAH/iZk9HQAAAABJRU5ErkJggg==")!
     }
     func core() throws -> LedgerCore {
-        LedgerCore(store: try LedgerStore(inMemory: true, seed: false), calendar: calendar)
+        try LedgerCore(store: try LedgerStore(inMemory: true, seed: false), calendar: calendar)
     }
     func wallet(_ name: String = "Cash") -> WalletValue {
         WalletValue(name: name, currencyCode: "JPY", createdAt: now)
@@ -65,6 +65,7 @@ struct UndoTests {
                                 schedule: .monthly(day: 5), startDay: day, createdAt: now)]
         state.budgets = [BudgetValue(currencyCode: "JPY", categoryID: c.id, monthlyAmount: 500)]
         try core.store.replace(state)
+        try core.reload()
         var transfer = entry(a); transfer.kind = .transfer; transfer.counterpartWalletID = b.id
         try core.run(.addEntry(transfer), now: now)
         try core.undo(now: now)
@@ -101,6 +102,7 @@ struct UndoTests {
         var state = try core.snapshot()
         state.entries.append(entry(a))
         try core.store.replace(state)
+        try core.reload()
         #expect(throws: CoreError.undoConflict) { try core.undo(now: now) }
         #expect(try core.snapshot() == state)
         #expect(core.undoCount == 1)
@@ -113,6 +115,7 @@ struct UndoTests {
         let category = BudgetValue(currencyCode: "JPY", categoryID: c.id, monthlyAmount: 400)
         let before = LedgerState(wallets: [a], categories: [c], budgets: [overall, category])
         try core.store.replace(before)
+        try core.reload()
         var e = entry(a); e.categoryID = c.id
         let preview = core.preview(.addEntry(e, receipt: receipt()), now: now)
         #expect(preview.errors.isEmpty)
@@ -136,6 +139,7 @@ struct UndoTests {
     func failedAndMetadataPreview() throws {
         let core = try core(), a = wallet()
         try core.store.replace(LedgerState(wallets: [a]))
+        try core.reload()
         let before = try core.snapshot()
         let invalid = entry(a, amount: 0)
         let preview = core.preview(.addEntry(invalid), now: now)
@@ -165,12 +169,14 @@ struct UndoTests {
         try core.run(.deleteEntry(try #require(core.snapshot().entries.first?.id)), now: now)
         core.clearUndoHistory()
         #expect(try core.cleanupOrphanReceipts() == ["receipt.png"])
+        #expect(core.state.receipts.isEmpty)
     }
 
     @Test("Save failure preserves receipt bytes state and history")
     func receiptSaveFailure() throws {
         let core = try core(), a = wallet()
         try core.store.replace(LedgerState(wallets: [a]))
+        try core.reload()
         let before = try core.snapshot()
         let receipts = core.store.receiptsDirectory
         try image.write(to: receipts.appendingPathComponent("existing.png"))
@@ -191,6 +197,7 @@ struct UndoTests {
     func receiptFileFailure() throws {
         let core = try core(), a = wallet()
         try core.store.replace(LedgerState(wallets: [a]))
+        try core.reload()
         let before = try core.snapshot(), directory = core.store.receiptsDirectory
         try FileManager.default.removeItem(at: directory)
         let blocking = Data("Blocking file".utf8)

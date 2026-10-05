@@ -177,8 +177,10 @@ public struct ReceiptValue: Codable, Sendable, Equatable, Identifiable {
     public var id: UUID
     public var fileName: String
     public var capturedAt: Date
-    public init(id: UUID = UUID(), fileName: String, capturedAt: Date = Date()) {
-        self.id = id; self.fileName = fileName; self.capturedAt = capturedAt
+    /// Lowercase SHA-256 of saved image bytes; nil means an older archive has no known hash.
+    public var imageSHA256: String?
+    public init(id: UUID = UUID(), fileName: String, capturedAt: Date = Date(), imageSHA256: String? = nil) {
+        self.id = id; self.fileName = fileName; self.capturedAt = capturedAt; self.imageSHA256 = imageSHA256
     }
 }
 public struct RuleValue: Codable, Sendable, Equatable, Identifiable {

@@ -85,17 +85,31 @@ public enum LedgerBackup {
     }
 
     /// Replaces all records only after complete validation, retaining undo history on failure.
-    /// Successful restores clear undo; old orphan images remain for later explicit cleanup.
+    /// Records-only restores retain only hash-matching local images. Successful restores clear undo.
     public static func restore(_ data: Data, into core: LedgerCore) throws {
         let archive = try decode(data)
         try validate(archive)
         let images = Dictionary(uniqueKeysWithValues: archive.images.map { ($0.fileName, $0.data) })
-        let omitted = referencedNames(in: archive.state).subtracting(images.keys)
-        // A records-only import must not associate restored metadata with unrelated existing bytes.
-        try ReceiptFiles.write(images, directory: core.store.receiptsDirectory, removing: omitted) {
-            try core.store.replace(archive.state)
+        var omitted = referencedNames(in: archive.state).subtracting(images.keys)
+        if !archive.receiptImagesIncluded {
+            let referenced = Set(archive.state.entries.compactMap(\.receiptID))
+            let receipts = Dictionary(grouping: archive.state.receipts.filter { referenced.contains($0.id) }, by: \.fileName)
+            for name in omitted.sorted() {
+                guard let archivedReceipts = receipts[name], archivedReceipts.allSatisfy({ $0.imageSHA256 != nil }) else { continue }
+                if let hash = try ReceiptFiles.imageHash(named: name, directory: core.store.receiptsDirectory),
+                   archivedReceipts.allSatisfy({ $0.imageSHA256 == hash }) {
+                    omitted.remove(name)
+                }
+            }
         }
-        core.clearUndoHistory()
+        let filesChanged = try ReceiptFiles.changes(images, directory: core.store.receiptsDirectory, removing: omitted)
+        let recordsChanged = core.state != archive.state
+        try ReceiptFiles.write(images, directory: core.store.receiptsDirectory, removing: omitted) {
+            if recordsChanged { try core.store.replace(archive.state) }
+            else { try core.commit(core.state, filesChanged: filesChanged) }
+        }
+        if recordsChanged { core.acceptRestoredState(archive.state, filesChanged: filesChanged) }
+        else { core.clearUndoHistory() }
     }
 
     private struct Header: Decodable {

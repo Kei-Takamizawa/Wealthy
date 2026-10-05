@@ -27,7 +27,7 @@ struct LedgerTests {
         #expect(try core.snapshot() == before)
     }
     func makeCore() throws -> LedgerCore {
-        LedgerCore(store: try LedgerStore(inMemory: true, seed: false), calendar: calendar)
+        try LedgerCore(store: try LedgerStore(inMemory: true, seed: false), calendar: calendar)
     }
 
     @Test("L1 every entry kind and signed opening balances")
@@ -41,8 +41,8 @@ struct LedgerTests {
         try core.run(.addEntry(entry(a, kind: .income, amount: 500)), now: now)
         try core.run(.addEntry(entry(a, amount: 100)), now: now)
         try core.run(.addEntry(entry(a, kind: .transfer, amount: 300, target: b.id)), now: now)
-        try core.run(.addEntry(entry(a, kind: .adjustment, amount: 50, direction: .increase)), now: now)
-        try core.run(.addEntry(entry(a, kind: .adjustment, amount: 25, direction: .decrease)), now: now)
+        try core.run(.reconcileWallet(a.id, actualBalance: 1_150, day: day), now: now)
+        try core.run(.reconcileWallet(a.id, actualBalance: 1_125, day: day), now: now)
         let state = try core.snapshot()
         #expect(LedgerMath.balance(a.id, in: state) == 1_125)
         #expect(LedgerMath.balance(b.id, in: state) == 300)
@@ -167,7 +167,10 @@ struct LedgerTests {
         let transfer = entry(a, kind: .transfer, category: category.id, target: b.id)
         try expectFailure(core, .addEntry(transfer), .invalidField("categoryID", transfer.id))
         let adjustment = entry(a, kind: .adjustment, category: category.id, direction: .increase)
-        try expectFailure(core, .addEntry(adjustment), .invalidField("categoryID", adjustment.id))
+        try expectFailure(core, .addEntry(adjustment), .invalidField("kind", adjustment.id))
+        var invalidHistory = core.state
+        invalidHistory.entries.append(adjustment)
+        #expect(throws: CoreError.invalidField("categoryID", adjustment.id)) { try CoreValidation.validate(invalidHistory) }
         try core.run(.addEntry(entry(a, category: category.id)), now: now)
         try core.run(.archiveCategory(category.id, archived: true), now: now)
         try expectFailure(core, .addEntry(entry(a, category: category.id)), .archivedCategory(category.id))
@@ -184,6 +187,7 @@ struct LedgerTests {
         state.budgets = [BudgetValue(currencyCode: "JPY", monthlyAmount: 1_000),
                          BudgetValue(currencyCode: "JPY", categoryID: category.id, monthlyAmount: 500)]
         try core.store.replace(state)
+        try core.reload()
         try core.run(.deleteCategory(category.id), now: now)
         let after = try core.snapshot()
         #expect(after.categories.isEmpty && after.entries.first?.categoryID == nil)
