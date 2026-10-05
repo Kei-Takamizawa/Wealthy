@@ -45,23 +45,23 @@ struct BenchmarkTests {
 
     private func fixture(entries count: Int) throws -> LedgerState {
         let start = try LedgerDay(year: 2027, month: 1, day: 1)
-        let wallets = (0..<10).map { WalletValue(name: "Wallet \($0)", currencyCode: "JPY", createdAt: now) }
+        let envelopes = [EnvelopeValue(id: EnvelopeValue.householdID, name: "Household", createdAt: now)]
         let categories = (0..<12).map { CategoryValue(kind: .expense, customName: "Category \($0)", sortOrder: $0) }
         let entries = (0..<count).map { index in
             EntryValue(kind: .expense, amount: 100 + index % 900, currencyCode: "JPY", day: start,
-                       walletID: wallets[index % 10].id, timestamp: now, categoryID: categories[index % 12].id,
+                       envelopeID: envelopes[0].id, timestamp: now, categoryID: categories[index % 12].id,
                        title: "Entry \(index)", createdAt: now, updatedAt: now)
         }
         let rules = (0..<10).map { index in
-            RuleValue(title: "Monthly \(index)", amount: 100, currencyCode: "JPY", walletID: wallets[index].id,
+            RuleValue(title: "Monthly \(index)", amount: 100, currencyCode: "JPY", envelopeID: envelopes[0].id,
                       categoryID: categories[index].id, schedule: .monthly(day: 31), startDay: start, createdAt: now)
         }
-        let budgets = (0..<5).map { BudgetValue(currencyCode: "JPY", categoryID: categories[$0].id, monthlyAmount: 100_000) }
-        return LedgerState(wallets: wallets, categories: categories, entries: entries, rules: rules, budgets: budgets)
+        let targets = (0..<5).map { TargetValue(categoryID: categories[$0].id, currencyCode: "JPY", amountMinor: 100_000, effectiveMonth: LedgerMonth(day: start)) }
+        return LedgerState(envelopes: envelopes, categories: categories, entries: entries, rules: rules, targets: targets)
     }
 
     private func newEntry(_ state: LedgerState) -> EntryValue {
-        EntryValue(kind: .expense, amount: 321, currencyCode: "JPY", day: today, walletID: state.wallets[0].id,
+        EntryValue(kind: .expense, amount: 321, currencyCode: "JPY", day: today, envelopeID: state.envelopes[0].id,
                    timestamp: now, categoryID: state.categories[0].id, title: "Benchmark addition", createdAt: now, updatedAt: now)
     }
 
@@ -115,6 +115,9 @@ struct BenchmarkTests {
             case "postRecurring":
                 let result = try core.postRecurring(through: today, now: now)
                 #expect(result.posted.count == 10 && result.failures.isEmpty)
+            case "weekTargetStatus": _ = try LedgerQueries.weekTargetStatus(in: core.state, containing: today, currencyCode: "JPY", calendar: calendar)
+            case "monthTargetStatus": _ = try LedgerQueries.monthTargetStatus(in: core.state, month: LedgerMonth(day: today), currencyCode: "JPY", calendar: calendar)
+            case "taxSummary": _ = try LedgerQueries.taxSummary(in: core.state, period: LedgerPeriod.month(containing: today, calendar: calendar))
             default: Issue.record("Unknown benchmark operation: \(operation)")
             }
         }
@@ -135,7 +138,7 @@ struct BenchmarkTests {
     func diskMeasurements() throws {
         let environment = ProcessInfo.processInfo.environment
         let label = environment["WEALTHY_BENCHMARK_LABEL"] ?? "unlabelled"
-        let output = URL(fileURLWithPath: environment["WEALTHY_BENCHMARK_OUTPUT"] ?? "/private/tmp/wealthy-c1-1-logs/\(label).json")
+        let output = URL(fileURLWithPath: environment["WEALTHY_BENCHMARK_OUTPUT"] ?? "/private/tmp/wealthy-c1-2-logs/\(label).json")
         let root = FileManager.default.temporaryDirectory.appendingPathComponent("WealthyBenchmark-\(UUID().uuidString)")
         try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: root) }
@@ -160,7 +163,7 @@ struct BenchmarkTests {
                 try saveReport()
                 print("BENCHMARK \(label) memory: \(report.memory!.growthBytes) bytes")
             }
-            for operation in ["addEntry", "updateEntry", "deleteEntry", "undo", "previewAddEntry", "postRecurring", "openStore"] {
+            for operation in ["addEntry", "updateEntry", "deleteEntry", "undo", "previewAddEntry", "postRecurring", "openStore", "weekTargetStatus", "monthTargetStatus", "taxSummary"] {
                 var milliseconds: [Double] = []
                 for iteration in 0...repetitions {
                     let working = root.appendingPathComponent("trial-\(size)-\(operation)-\(iteration)")

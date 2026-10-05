@@ -9,23 +9,23 @@ struct ChangeSetUndoTests {
     let now = Date(timeIntervalSince1970: 1_800_000_000)
     var day: LedgerDay { try! LedgerDay(year: 2027, month: 1, day: 5) }
     var image: Data { Data(base64Encoded: "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGP4z8DwHwAFAAH/iZk9HQAAAABJRU5ErkJggg==")! }
-    func entry(_ wallet: WalletValue) -> EntryValue {
+    func entry(_ envelope: EnvelopeValue) -> EntryValue {
         EntryValue(kind: .expense, amount: 100, currencyCode: "JPY", day: day,
-                   walletID: wallet.id, timestamp: now, createdAt: now, updatedAt: now)
+                   envelopeID: envelope.id, timestamp: now, createdAt: now, updatedAt: now)
     }
-    func core(wallet: WalletValue, entries: [EntryValue] = []) throws -> LedgerCore {
+    func core(envelope: EnvelopeValue, entries: [EntryValue] = []) throws -> LedgerCore {
         let store = try LedgerStore(inMemory: true, seed: false)
-        try store.replace(LedgerState(wallets: [wallet], entries: entries))
+        try store.replace(LedgerState(envelopes: [envelope], entries: entries))
         return try LedgerCore(store: store)
     }
     @Test("P5 adding an entry retains only its own record and optional attachment")
     func retainedChangedRecords() throws {
         for attached in [false, true] {
-            let wallet = WalletValue(name: "Cash", currencyCode: "JPY")
-            let core = try core(wallet: wallet, entries: [entry(wallet)])
+            let envelope = EnvelopeValue(id: EnvelopeValue.householdID, name: "Cash")
+            let core = try core(envelope: envelope, entries: [entry(envelope)])
             let before = core.state
             let receipt = attached ? ReceiptInput(metadata: ReceiptValue(fileName: "receipt.png", capturedAt: now), image: image) : nil
-            try core.run(.addEntry(entry(wallet), receipt: receipt), now: now)
+            try core.run(.addEntry(entry(envelope), receipt: receipt), now: now)
             #expect(core.latestUndoRecordCount == (attached ? 2 : 1))
             #expect(core.undoRetainedRecordCount == (attached ? 2 : 1))
             try core.undo(now: now)
@@ -35,10 +35,10 @@ struct ChangeSetUndoTests {
     }
     @Test("P5 twenty retained steps contain twenty additions regardless of ledger size")
     func boundedRecordHistory() throws {
-        let wallet = WalletValue(name: "Cash", currencyCode: "JPY")
-        let core = try core(wallet: wallet, entries: (0..<1_000).map { _ in entry(wallet) })
+        let envelope = EnvelopeValue(id: EnvelopeValue.householdID, name: "Cash")
+        let core = try core(envelope: envelope, entries: (0..<1_000).map { _ in entry(envelope) })
         for _ in 0..<21 {
-            try core.run(.addEntry(entry(wallet)), now: now)
+            try core.run(.addEntry(entry(envelope)), now: now)
             try CoreValidation.validate(core.state)
         }
         #expect(core.undoCount == 20 && core.undoRetainedRecordCount == 20)
@@ -48,9 +48,9 @@ struct ChangeSetUndoTests {
     }
     @Test("P7 undo rejects an externally changed touched recordOrder")
     func touchedOrderConflict() throws {
-        let wallet = WalletValue(name: "Cash", currencyCode: "JPY")
-        let core = try core(wallet: wallet)
-        try core.run(.addEntry(entry(wallet)), now: now)
+        let envelope = EnvelopeValue(id: EnvelopeValue.householdID, name: "Cash")
+        let core = try core(envelope: envelope)
+        try core.run(.addEntry(entry(envelope)), now: now)
         let context = ModelContext(core.store.container)
         context.autosaveEnabled = false
         let record = try #require(context.fetch(FetchDescriptor<WealthySchemaV1.LedgerEntry>()).first)
@@ -63,9 +63,9 @@ struct ChangeSetUndoTests {
     }
     @Test("P7 restoring a deleted row keeps its old order and stable UUID ordering when orders tie")
     func tiedExternalOrder() throws {
-        let wallet = WalletValue(name: "Cash", currencyCode: "JPY")
-        let first = entry(wallet), deleted = entry(wallet), external = entry(wallet)
-        let core = try core(wallet: wallet, entries: [first, deleted])
+        let envelope = EnvelopeValue(id: EnvelopeValue.householdID, name: "Cash")
+        let first = entry(envelope), deleted = entry(envelope), external = entry(envelope)
+        let core = try core(envelope: envelope, entries: [first, deleted])
         let previousOrder = core.store.orders.entries[deleted.id]
         try core.run(.deleteEntry(deleted.id), now: now)
         let context = ModelContext(core.store.container)
@@ -86,9 +86,9 @@ struct ChangeSetUndoTests {
     }
     @Test("P7 undo checks persisted touched rows even before external changes are reloaded")
     func unseenExternalConflict() throws {
-        let wallet = WalletValue(name: "Cash", currencyCode: "JPY")
-        let core = try core(wallet: wallet)
-        try core.run(.addEntry(entry(wallet)), now: now)
+        let envelope = EnvelopeValue(id: EnvelopeValue.householdID, name: "Cash")
+        let core = try core(envelope: envelope)
+        try core.run(.addEntry(entry(envelope)), now: now)
         let context = ModelContext(core.store.container)
         context.autosaveEnabled = false
         let record = try #require(context.fetch(FetchDescriptor<WealthySchemaV1.LedgerEntry>()).first)

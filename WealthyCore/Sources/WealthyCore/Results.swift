@@ -1,21 +1,17 @@
 import Foundation
 
-public struct WalletImpact: Codable, Sendable, Equatable {
-    public var walletID: UUID
-    public var before: Decimal?
-    public var after: Decimal?
-}
-public struct BudgetImpact: Codable, Sendable, Equatable {
-    public var budgetID: UUID
-    public var year: Int
-    public var month: Int
-    public var beforeRemaining: Decimal?
-    public var afterRemaining: Decimal?
+public struct TargetImpact: Codable, Sendable, Equatable {
+    public var envelopeID: UUID
+    public var categoryID: UUID?
+    public var currencyCode: String
+    public var period: LedgerPeriod
+    public var beforeRemaining: Int?
+    public var afterRemaining: Int?
 }
 /// Confirmation data contains values only, never live SwiftData models.
 public struct CommandSummary: Codable, Sendable, Equatable {
-    public var wallets: [WalletImpact]
-    public var budgets: [BudgetImpact]
+    public var targets: [TargetImpact]
+    public var taxPart: Int?
 }
 public struct CommandResult: Codable, Sendable, Equatable {
     public var affectedIDs: [UUID]
@@ -28,10 +24,10 @@ public struct CommandPreview: Sendable, Equatable {
 }
 
 extension LedgerState {
-    var allIDs: [UUID] { wallets.map(\.id) + categories.map(\.id) + entries.map(\.id) + receipts.map(\.id) + rules.map(\.id) + budgets.map(\.id) + pointCards.map(\.id) }
+    var allIDs: [UUID] { envelopes.map(\.id) + categories.map(\.id) + entries.map(\.id) + receipts.map(\.id) + rules.map(\.id) + targets.map(\.id) + noSpendMarks.map(\.id) + pointCards.map(\.id) + [settings.id] }
 }
 
-/// Snapshot differences are also used to detect whether an undo still applies.
+/// Changed record identities also feed user-facing confirmation data.
 enum StateChanges {
     static func ids<T: Identifiable & Equatable>(_ before: [T], _ after: [T]) -> Set<UUID> where T.ID == UUID {
         let a = Dictionary(uniqueKeysWithValues: before.map { ($0.id, $0) })
@@ -40,36 +36,33 @@ enum StateChanges {
     }
     static func result(before: LedgerState, after: LedgerState, today: LedgerDay, calendar: Calendar) throws -> CommandResult {
         let entries = ids(before.entries, after.entries)
-        var wallets = ids(before.wallets, after.wallets)
-        for e in before.entries + after.entries where entries.contains(e.id) {
-            wallets.insert(e.walletID); if let id = e.counterpartWalletID { wallets.insert(id) }
-        }
-        let walletSummary = wallets.sorted { $0.uuidString < $1.uuidString }.map { id in
-            WalletImpact(walletID: id, before: before.wallets.contains { $0.id == id } ? LedgerMath.balance(id, in: before) : nil,
-                         after: after.wallets.contains { $0.id == id } ? LedgerMath.balance(id, in: after) : nil)
-        }
-        let budgetChanges = ids(before.budgets, after.budgets)
-        let months = Set((before.entries + after.entries).filter { entries.contains($0.id) && $0.kind == .expense }.map { "\($0.day.year)-\($0.day.month)" })
-        var budgetSummary: [BudgetImpact] = []
-        for id in Set(before.budgets.map(\.id)).union(after.budgets.map(\.id)).sorted(by: { $0.uuidString < $1.uuidString }) {
-            let old = before.budgets.first { $0.id == id }, new = after.budgets.first { $0.id == id }
-            var periods = months
-            if budgetChanges.contains(id) { periods.insert("\(today.year)-\(today.month)") }
-            for month in periods.sorted() {
-                let parts = month.split(separator: "-").compactMap { Int($0) }
-                let year = parts[0], month = parts[1]
-                let a = try old.map { try remaining($0, year: year, month: month, state: before, calendar: calendar) }
-                let b = try new.map { try remaining($0, year: year, month: month, state: after, calendar: calendar) }
-                if a != b { budgetSummary.append(BudgetImpact(budgetID: id, year: year, month: month, beforeRemaining: a, afterRemaining: b)) }
+        var impacts: [TargetImpact] = []
+        var keys = Set<String>()
+        let relevant = (before.entries + after.entries).filter { entries.contains($0.id) && $0.kind == .expense }
+        for entry in relevant {
+            let periods = [try LedgerPeriod.week(containing: entry.day, weekStart: after.settings.weekStart, calendar: calendar), try LedgerPeriod.month(containing: entry.day, calendar: calendar)]
+            let categories: [UUID?] = entry.categoryID.map { [nil, $0] } ?? [nil]
+            for category in categories {
+                for period in periods {
+                    let key = "\(entry.envelopeID):\(category?.uuidString ?? "overall"):\(entry.currencyCode):\(period.start):\(period.end)"
+                    guard keys.insert(key).inserted else { continue }
+                    let hasTarget = (before.targets + after.targets).contains { $0.envelopeID == entry.envelopeID && $0.categoryID == category && $0.currencyCode == entry.currencyCode }
+                    var oldRemaining: Int?, newRemaining: Int?
+                    if hasTarget {
+                        oldRemaining = try LedgerQueries.targetStatus(in: before, period: period, envelopeID: entry.envelopeID, categoryID: category, currencyCode: entry.currencyCode, calendar: calendar).remaining
+                        newRemaining = try LedgerQueries.targetStatus(in: after, period: period, envelopeID: entry.envelopeID, categoryID: category, currencyCode: entry.currencyCode, calendar: calendar).remaining
+                    }
+                    impacts.append(TargetImpact(envelopeID: entry.envelopeID, categoryID: category, currencyCode: entry.currencyCode, period: period, beforeRemaining: oldRemaining, afterRemaining: newRemaining))
+                }
             }
         }
-        var affected = wallets.union(entries).union(budgetChanges)
+        var affected = entries.union(ids(before.envelopes, after.envelopes)).union(ids(before.targets, after.targets))
         affected.formUnion(ids(before.categories, after.categories)); affected.formUnion(ids(before.receipts, after.receipts))
         affected.formUnion(ids(before.rules, after.rules)); affected.formUnion(ids(before.pointCards, after.pointCards))
-        return CommandResult(affectedIDs: affected.sorted { $0.uuidString < $1.uuidString }, summary: CommandSummary(wallets: walletSummary, budgets: budgetSummary))
-    }
-    static func remaining(_ b: BudgetValue, year: Int, month: Int, state: LedgerState, calendar: Calendar) throws -> Decimal {
-        let period = try LedgerPeriod.month(containing: LedgerDay(year: year, month: month, day: 1), calendar: calendar)
-        return Decimal(b.monthlyAmount) - LedgerQueries.budgetSpent(b, in: state, period: period)
+        affected.formUnion(ids(before.noSpendMarks, after.noSpendMarks))
+        if before.settings != after.settings { affected.insert(after.settings.id) }
+        let entry = after.entries.first { entries.contains($0.id) }
+        let tax = try entry.flatMap { value in try value.taxRate.map { try TaxMath.taxPart(inclusiveMinor: value.amount, rate: $0) } }
+        return CommandResult(affectedIDs: affected.sorted { $0.uuidString < $1.uuidString }, summary: CommandSummary(targets: impacts, taxPart: tax))
     }
 }

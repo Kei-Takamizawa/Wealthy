@@ -31,11 +31,11 @@ struct FixTests {
     func makeCore() throws -> LedgerCore {
         try LedgerCore(store: LedgerStore(inMemory: true, seed: false), calendar: calendar)
     }
-    func makeWallet(_ name: String = "Cash") -> WalletValue {
-        WalletValue(name: name, currencyCode: "JPY", createdAt: now)
+    func makeEnvelope(_ name: String = "Cash") -> EnvelopeValue {
+        EnvelopeValue(id: name == "Cash" ? EnvelopeValue.householdID : UUID(), kind: name == "Cash" ? .household : .child, name: name, createdAt: Date(timeIntervalSince1970: 0))
     }
-    func entry(_ wallet: WalletValue, source: EntrySource = .manual) throws -> EntryValue {
-        EntryValue(kind: .expense, amount: 100, currencyCode: "JPY", day: try day(), walletID: wallet.id,
+    func entry(_ envelope: EnvelopeValue, source: EntrySource = .manual) throws -> EntryValue {
+        EntryValue(kind: .expense, amount: 100, currencyCode: "JPY", day: try day(), envelopeID: envelope.id,
                    timestamp: now, title: "Test", source: source, createdAt: now, updatedAt: now)
     }
     @discardableResult
@@ -62,55 +62,51 @@ struct FixTests {
     func receipt(_ name: String = "receipt.png") -> ReceiptInput {
         ReceiptInput(metadata: ReceiptValue(fileName: name, capturedAt: now), image: image)
     }
-    func addReceipt(_ core: LedgerCore, name: String = "receipt.png") throws -> (WalletValue, EntryValue) {
-        let wallet = makeWallet()
-        try execute(core, .createWallet(wallet))
-        let entry = try entry(wallet)
+    func addReceipt(_ core: LedgerCore, name: String = "receipt.png") throws -> (EnvelopeValue, EntryValue) {
+        let envelope = makeEnvelope()
+        try execute(core, .updateEnvelope(envelope))
+        let entry = try entry(envelope)
         try execute(core, .addEntry(entry, receipt: receipt(name)))
-        return (wallet, try #require(core.state.entries.first { $0.id == entry.id }))
+        return (envelope, try #require(core.state.entries.first { $0.id == entry.id }))
     }
     func recordsArchive(_ state: LedgerState) -> LedgerBackupArchive {
         LedgerBackupArchive(exportDate: now, appVersion: "test", coreVersion: "1", state: state)
     }
 
-    @Test("C1 add rejects adjustment kind, every system source, and either recurring link field")
+    @Test("C1 add rejects the system source and either recurring link field")
     func addCommandRestrictions() throws {
-        let core = try makeCore(), wallet = makeWallet()
-        try execute(core, .createWallet(wallet))
-        let rule = RuleValue(amount: 100, currencyCode: "JPY", walletID: wallet.id,
+        let core = try makeCore(), envelope = makeEnvelope()
+        try execute(core, .updateEnvelope(envelope))
+        let rule = RuleValue(amount: 100, currencyCode: "JPY", envelopeID: envelope.id,
             schedule: .monthly(day: 5), startDay: try day(), createdAt: now)
         try execute(core, .createRule(rule))
-        var adjustment = try entry(wallet); adjustment.kind = .adjustment; adjustment.direction = .increase
-        try rejectsInvalidField(core, .addEntry(adjustment))
-        for source in [EntrySource.recurring, .openingBalance, .reconciliation] {
-            var candidate = try entry(wallet); candidate.source = source
+        for source in [EntrySource.recurring] {
+            var candidate = try entry(envelope); candidate.source = source
             try rejectsInvalidField(core, .addEntry(candidate))
         }
-        var ruleOnly = try entry(wallet); ruleOnly.recurringRuleID = rule.id
+        var ruleOnly = try entry(envelope); ruleOnly.recurringRuleID = rule.id
         try rejectsInvalidField(core, .addEntry(ruleOnly))
-        var dayOnly = try entry(wallet); dayOnly.occurrenceDay = try day()
+        var dayOnly = try entry(envelope); dayOnly.occurrenceDay = try day()
         try rejectsInvalidField(core, .addEntry(dayOnly))
-        var both = try entry(wallet); both.recurringRuleID = rule.id; both.occurrenceDay = try day()
+        var both = try entry(envelope); both.recurringRuleID = rule.id; both.occurrenceDay = try day()
         try rejectsInvalidField(core, .addEntry(both))
         for source in [EntrySource.manual, .receipt, .voice] {
-            try execute(core, .addEntry(entry(wallet, source: source)))
+            try execute(core, .addEntry(entry(envelope, source: source)))
         }
         #expect(core.state.entries.map(\.source) == [.manual, .receipt, .voice])
     }
 
-    @Test("C1 update protects source and recurring provenance, permits amount and non-adjustment kind edits")
+    @Test("C1 update protects source and recurring provenance and permits amount edits")
     func updateProvenanceRestrictions() throws {
-        let core = try makeCore(), wallet = makeWallet(), target = makeWallet("Bank")
-        try execute(core, .createWallet(wallet)); try execute(core, .createWallet(target))
-        let expense = try entry(wallet)
+        let core = try makeCore(), envelope = makeEnvelope(), target = makeEnvelope("Bank")
+        try execute(core, .updateEnvelope(envelope)); try execute(core, .createEnvelope(target))
+        let expense = try entry(envelope)
         try execute(core, .addEntry(expense))
         var source = expense; source.source = .voice
         try rejectsInvalidField(core, .updateEntry(source))
-        var adjustment = expense; adjustment.kind = .adjustment; adjustment.direction = .increase
-        try rejectsInvalidField(core, .updateEntry(adjustment))
-        let rule = RuleValue(amount: 100, currencyCode: "JPY", walletID: wallet.id,
+        let rule = RuleValue(amount: 100, currencyCode: "JPY", envelopeID: envelope.id,
             schedule: .monthly(day: 5), startDay: try day(), createdAt: now)
-        let otherRule = RuleValue(amount: 50, currencyCode: "JPY", walletID: wallet.id,
+        let otherRule = RuleValue(amount: 50, currencyCode: "JPY", envelopeID: envelope.id,
             schedule: .monthly(day: 6), startDay: try day(), createdAt: now)
         try execute(core, .createRule(rule)); try execute(core, .createRule(otherRule))
         _ = try core.postRecurring(through: day(), now: now)
@@ -127,31 +123,32 @@ struct FixTests {
         try execute(core, .updateEntry(changedAmount))
         let saved = try #require(core.state.entries.first { $0.id == recurring.id })
         #expect(saved.amount == 110 && saved.source == .recurring && saved.recurringRuleID == rule.id && saved.occurrenceDay == recurring.occurrenceDay)
-        var transfer = expense; transfer.kind = .transfer; transfer.counterpartWalletID = target.id
-        try execute(core, .updateEntry(transfer))
-        #expect(LedgerMath.balance(target.id, in: core.state) == 100)
+        var moved = expense; moved.envelopeID = target.id
+        try execute(core, .updateEntry(moved))
+        #expect(core.state.entries.first { $0.id == expense.id }?.envelopeID == target.id)
     }
 
-    @Test("C1 adjustment entries can be edited without changing kind, but cannot become an expense")
-    func adjustmentKindRestrictions() throws {
-        let core = try makeCore(), wallet = makeWallet()
-        try execute(core, .createWallet(wallet, openingBalance: 100, openingDay: day()))
-        let original = try #require(core.state.entries.first)
-        var expense = original; expense.kind = .expense; expense.direction = nil
-        try rejectsInvalidField(core, .updateEntry(expense))
-        var edited = original; edited.amount = 150; edited.title = "Opening corrected"
-        try execute(core, .updateEntry(edited))
-        #expect(LedgerMath.balance(wallet.id, in: core.state) == 150)
-        #expect(core.state.entries.first?.source == .openingBalance)
+    @Test("C1 manual fixed-cost classification remains editable and undoable")
+    func fixedCostEdits() throws {
+        let core = try makeCore(), envelope = makeEnvelope()
+        try execute(core, .updateEnvelope(envelope))
+        var value = try entry(envelope)
+        try execute(core, .addEntry(value))
+        let before = core.state
+        value.isFixedCost = true; value.amount = 150
+        try execute(core, .updateEntry(value))
+        #expect(core.state.entries.first?.isFixedCost == true)
+        try core.undo(now: now)
+        #expect(core.state == before)
     }
 
     @Test("Q2 last recorded uses createdAt before civil day, then timestamp and stable ID")
     func lastRecordedOrdering() throws {
-        let wallet = makeWallet()
-        var newerDay = try entry(wallet); newerDay.day = try day(1, 31); newerDay.createdAt = now
-        var laterRecorded = try entry(wallet); laterRecorded.day = try day(1, 1); laterRecorded.createdAt = now.addingTimeInterval(1)
+        let envelope = makeEnvelope()
+        var newerDay = try entry(envelope); newerDay.day = try day(1, 31); newerDay.createdAt = now
+        var laterRecorded = try entry(envelope); laterRecorded.day = try day(1, 1); laterRecorded.createdAt = now.addingTimeInterval(1)
         laterRecorded.timestamp = now.addingTimeInterval(-100); laterRecorded.source = .receipt
-        var state = LedgerState(wallets: [wallet], entries: [newerDay, laterRecorded])
+        var state = LedgerState(envelopes: [envelope], entries: [newerDay, laterRecorded])
         #expect(LedgerQueries.mostRecentEntry(in: state)?.id == laterRecorded.id)
         #expect(LedgerQueries.mostRecentEntry(in: state, source: .manual)?.id == newerDay.id)
         var timestampWinner = laterRecorded; timestampWinner.id = UUID(); timestampWinner.timestamp = now
@@ -166,9 +163,9 @@ struct FixTests {
 
     @Test("R6 ended monthly rule catches up through its inclusive end, once")
     func endedRuleCatchUp() throws {
-        let core = try makeCore(), wallet = makeWallet()
-        try execute(core, .createWallet(wallet))
-        let rule = RuleValue(amount: 100, currencyCode: "JPY", walletID: wallet.id,
+        let core = try makeCore(), envelope = makeEnvelope()
+        try execute(core, .updateEnvelope(envelope))
+        let rule = RuleValue(amount: 100, currencyCode: "JPY", envelopeID: envelope.id,
             schedule: .monthly(day: 31), startDay: try day(1, 1), endDay: try day(1, 31), createdAt: now)
         try execute(core, .createRule(rule))
         let occurrences = try RecurringEngine.occurrences(rule: rule, from: day(1, 1), through: day(2, 28), calendar: calendar)
@@ -184,9 +181,9 @@ struct FixTests {
     @Test("R7 posting after the end catches February and March and honors a February pause")
     func cursorAndPausedEndCatchUp() throws {
         for paused in [false, true] {
-            let core = try makeCore(), wallet = makeWallet()
-            try execute(core, .createWallet(wallet))
-            let rule = RuleValue(amount: 100, currencyCode: "JPY", walletID: wallet.id,
+            let core = try makeCore(), envelope = makeEnvelope()
+            try execute(core, .updateEnvelope(envelope))
+            let rule = RuleValue(amount: 100, currencyCode: "JPY", envelopeID: envelope.id,
                 schedule: .monthly(day: 31), startDay: try day(1, 1), endDay: try day(3, 31), createdAt: now)
             try execute(core, .createRule(rule))
             #expect(try core.postRecurring(through: day(1, 31), now: now).posted.map(\.day) == [try day(1, 31)])
@@ -269,8 +266,8 @@ struct FixTests {
     @Test("K3 images-inclusive archive preserves hash, IDs, relationships and shared image bytes")
     func imageInclusiveRoundTrip() throws {
         let source = try makeCore()
-        let (wallet, attached) = try addReceipt(source)
-        var shared = try entry(wallet); shared.receiptID = attached.receiptID
+        let (envelope, attached) = try addReceipt(source)
+        var shared = try entry(envelope); shared.receiptID = attached.receiptID
         try execute(source, .addEntry(shared))
         let encoded = try LedgerBackup.export(source, includeImages: true, now: now, appVersion: "test", coreVersion: "1")
         let archive = try JSONDecoder().decode(LedgerBackupArchive.self, from: encoded)
@@ -279,7 +276,7 @@ struct FixTests {
         try LedgerBackup.restore(encoded, into: destination)
         #expect(destination.state == source.state)
         #expect(try Data(contentsOf: destination.store.receiptsDirectory.appendingPathComponent("receipt.png")) == image)
-        #expect(LedgerQueries.totalBalances(in: destination.state) == LedgerQueries.totalBalances(in: source.state))
+        #expect(destination.state.entries.map(\.amount) == source.state.entries.map(\.amount))
     }
 
     @Test("S3 deleting retains metadata for undo; cleanup removes both orphan record and file")
@@ -313,10 +310,10 @@ struct FixTests {
     @Test("S3 cleanup preserves shared referenced image and metadata while removing its unreferenced alias")
     func sharedReceiptCleanup() throws {
         let core = try makeCore()
-        let (wallet, first) = try addReceipt(core)
+        let (envelope, first) = try addReceipt(core)
         var alias = ReceiptValue(fileName: "receipt.png", capturedAt: now)
         alias.imageSHA256 = core.state.receipts.first?.imageSHA256
-        var second = try entry(wallet)
+        var second = try entry(envelope)
         try execute(core, .addEntry(second, receipt: ReceiptInput(metadata: alias, image: image)))
         second = try #require(core.state.entries.first { $0.id == second.id })
         try execute(core, .deleteEntry(first.id))
@@ -364,8 +361,8 @@ struct FixTests {
 
     @Test("P6 Observation tracks cached state and revision without firing for preview, failure or no-op")
     func observableStateAndRevision() throws {
-        let core = try makeCore(), wallet = makeWallet()
-        try execute(core, .createWallet(wallet))
+        let core = try makeCore(), envelope = makeEnvelope()
+        try execute(core, .updateEnvelope(envelope))
         core.clearUndoHistory()
         let counter = FixObservationCounter()
         withObservationTracking {
@@ -374,9 +371,9 @@ struct FixTests {
         } onChange: {
             counter.increment()
         }
-        let candidate = try entry(wallet)
+        let candidate = try entry(envelope)
         #expect(core.preview(.addEntry(candidate), now: now).isValid)
-        try execute(core, .archiveWallet(wallet.id, archived: false))
+        try execute(core, .archiveEnvelope(envelope.id, archived: false))
         try core.reload()
         #expect(counter.value == 0)
         core.store.failNextSave = true
@@ -404,10 +401,10 @@ struct FixTests {
         #expect(try core.cleanupOrphanReceipts() == [name])
         #expect(!FileManager.default.fileExists(atPath: file.path))
         #expect(core.state == state && core.revision == revision + 1)
-        let wallet = makeWallet()
-        try execute(core, .createWallet(wallet))
+        let envelope = makeEnvelope()
+        try execute(core, .updateEnvelope(envelope))
         let invalid = ReceiptInput(metadata: ReceiptValue(fileName: name, capturedAt: now), image: image)
-        #expect(throws: CoreError.unsafeFilename(name)) { try core.run(.addEntry(entry(wallet), receipt: invalid), now: now) }
+        #expect(throws: CoreError.unsafeFilename(name)) { try core.run(.addEntry(entry(envelope), receipt: invalid), now: now) }
         #expect(core.state.receipts.isEmpty)
     }
 }

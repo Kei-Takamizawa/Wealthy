@@ -34,13 +34,16 @@ public final class LedgerStore {
             configuration = ModelConfiguration("WealthyLedger", schema: schema, url: url, cloudKitDatabase: .none)
         }
         container = try ModelContainer(for: schema, migrationPlan: WealthyMigrationPlan.self, configurations: [configuration])
-        if seed && isNew { try seedDefaults() }
+        if isNew {
+            try replace(LedgerState())
+            if seed { try seedDefaults() }
+        }
     }
 
     /// Returns detached values in their persisted sequence order.
     public func read() throws -> LedgerState {
         let context = makeContext()
-        let wallets = try context.fetch(FetchDescriptor<WealthySchemaV1.Wallet>(sortBy: [SortDescriptor(\.recordOrder)]))
+        let envelopes = try context.fetch(FetchDescriptor<WealthySchemaV1.Envelope>(sortBy: [SortDescriptor(\.recordOrder)]))
             .sorted { $0.recordOrder == $1.recordOrder ? $0.id.uuidString < $1.id.uuidString : $0.recordOrder < $1.recordOrder }
         let categories = try context.fetch(FetchDescriptor<WealthySchemaV1.Category>(sortBy: [SortDescriptor(\.recordOrder)]))
             .sorted { $0.recordOrder == $1.recordOrder ? $0.id.uuidString < $1.id.uuidString : $0.recordOrder < $1.recordOrder }
@@ -50,20 +53,29 @@ public final class LedgerStore {
             .sorted { $0.recordOrder == $1.recordOrder ? $0.id.uuidString < $1.id.uuidString : $0.recordOrder < $1.recordOrder }
         let rules = try context.fetch(FetchDescriptor<WealthySchemaV1.RecurringRule>(sortBy: [SortDescriptor(\.recordOrder)]))
             .sorted { $0.recordOrder == $1.recordOrder ? $0.id.uuidString < $1.id.uuidString : $0.recordOrder < $1.recordOrder }
-        let budgets = try context.fetch(FetchDescriptor<WealthySchemaV1.Budget>(sortBy: [SortDescriptor(\.recordOrder)]))
+        let targets = try context.fetch(FetchDescriptor<WealthySchemaV1.Target>(sortBy: [SortDescriptor(\.recordOrder)]))
             .sorted { $0.recordOrder == $1.recordOrder ? $0.id.uuidString < $1.id.uuidString : $0.recordOrder < $1.recordOrder }
+        let noSpendMarks = try context.fetch(FetchDescriptor<WealthySchemaV1.NoSpendMark>(sortBy: [SortDescriptor(\.recordOrder)]))
+            .sorted { $0.recordOrder == $1.recordOrder ? $0.id.uuidString < $1.id.uuidString : $0.recordOrder < $1.recordOrder }
+        let settings = try context.fetch(FetchDescriptor<WealthySchemaV1.Settings>(sortBy: [SortDescriptor(\.recordOrder)]))
+            .sorted { $0.recordOrder == $1.recordOrder ? $0.id.uuidString < $1.id.uuidString : $0.recordOrder < $1.recordOrder }
+        guard settings.count <= 1 else { throw CoreError.invalidField("duplicateSettings", LedgerSettings.defaultID) }
         let pointCards = try context.fetch(FetchDescriptor<WealthySchemaV1.PointCard>(sortBy: [SortDescriptor(\.recordOrder)]))
             .sorted { $0.recordOrder == $1.recordOrder ? $0.id.uuidString < $1.id.uuidString : $0.recordOrder < $1.recordOrder }
-        let state = try LedgerState(wallets: wallets.map { try $0.value() }, categories: categories.map { try $0.value() },
+        let state = try LedgerState(envelopes: envelopes.map { try $0.value() }, categories: categories.map { try $0.value() },
                                entries: entries.map { try $0.value() }, receipts: receipts.map { try $0.value() },
-                               rules: rules.map { try $0.value() }, budgets: budgets.map { try $0.value() },
+                               rules: rules.map { try $0.value() }, targets: targets.map { try $0.value() },
+                               noSpendMarks: noSpendMarks.map { try $0.value() },
+                               settings: try settings.first?.value() ?? LedgerSettings(),
                                pointCards: pointCards.map { try $0.value() })
-        orders.wallets = Dictionary(wallets.map { ($0.id, $0.recordOrder) }, uniquingKeysWith: { first, _ in first })
+        orders.envelopes = Dictionary(envelopes.map { ($0.id, $0.recordOrder) }, uniquingKeysWith: { first, _ in first })
         orders.categories = Dictionary(categories.map { ($0.id, $0.recordOrder) }, uniquingKeysWith: { first, _ in first })
         orders.entries = Dictionary(entries.map { ($0.id, $0.recordOrder) }, uniquingKeysWith: { first, _ in first })
         orders.receipts = Dictionary(receipts.map { ($0.id, $0.recordOrder) }, uniquingKeysWith: { first, _ in first })
         orders.rules = Dictionary(rules.map { ($0.id, $0.recordOrder) }, uniquingKeysWith: { first, _ in first })
-        orders.budgets = Dictionary(budgets.map { ($0.id, $0.recordOrder) }, uniquingKeysWith: { first, _ in first })
+        orders.targets = Dictionary(targets.map { ($0.id, $0.recordOrder) }, uniquingKeysWith: { first, _ in first })
+        orders.noSpendMarks = Dictionary(noSpendMarks.map { ($0.id, $0.recordOrder) }, uniquingKeysWith: { first, _ in first })
+        orders.settings = Dictionary(settings.map { ($0.id, $0.recordOrder) }, uniquingKeysWith: { first, _ in first })
         orders.pointCards = Dictionary(pointCards.map { ($0.id, $0.recordOrder) }, uniquingKeysWith: { first, _ in first })
         return state
     }
@@ -72,28 +84,34 @@ public final class LedgerStore {
     func replace(_ state: LedgerState) throws {
         let context = makeContext()
         do {
-            for item in try context.fetch(FetchDescriptor<WealthySchemaV1.Wallet>()) { context.delete(item) }
+            for item in try context.fetch(FetchDescriptor<WealthySchemaV1.Envelope>()) { context.delete(item) }
             for item in try context.fetch(FetchDescriptor<WealthySchemaV1.Category>()) { context.delete(item) }
             for item in try context.fetch(FetchDescriptor<WealthySchemaV1.LedgerEntry>()) { context.delete(item) }
             for item in try context.fetch(FetchDescriptor<WealthySchemaV1.ReceiptAttachment>()) { context.delete(item) }
             for item in try context.fetch(FetchDescriptor<WealthySchemaV1.RecurringRule>()) { context.delete(item) }
-            for item in try context.fetch(FetchDescriptor<WealthySchemaV1.Budget>()) { context.delete(item) }
+            for item in try context.fetch(FetchDescriptor<WealthySchemaV1.Target>()) { context.delete(item) }
+            for item in try context.fetch(FetchDescriptor<WealthySchemaV1.NoSpendMark>()) { context.delete(item) }
+            for item in try context.fetch(FetchDescriptor<WealthySchemaV1.Settings>()) { context.delete(item) }
             for item in try context.fetch(FetchDescriptor<WealthySchemaV1.PointCard>()) { context.delete(item) }
-            for (index, item) in state.wallets.enumerated() { context.insert(WealthySchemaV1.Wallet(item, order: index)) }
+            for (index, item) in state.envelopes.enumerated() { context.insert(WealthySchemaV1.Envelope(item, order: index)) }
             for (index, item) in state.categories.enumerated() { context.insert(WealthySchemaV1.Category(item, order: index)) }
             for (index, item) in state.entries.enumerated() { context.insert(WealthySchemaV1.LedgerEntry(item, order: index)) }
             for (index, item) in state.receipts.enumerated() { context.insert(WealthySchemaV1.ReceiptAttachment(item, order: index)) }
             for (index, item) in state.rules.enumerated() { context.insert(WealthySchemaV1.RecurringRule(item, order: index)) }
-            for (index, item) in state.budgets.enumerated() { context.insert(WealthySchemaV1.Budget(item, order: index)) }
+            for (index, item) in state.targets.enumerated() { context.insert(WealthySchemaV1.Target(item, order: index)) }
+            for (index, item) in state.noSpendMarks.enumerated() { context.insert(WealthySchemaV1.NoSpendMark(item, order: index)) }
+            for (index, item) in [state.settings].enumerated() { context.insert(WealthySchemaV1.Settings(item, order: index)) }
             for (index, item) in state.pointCards.enumerated() { context.insert(WealthySchemaV1.PointCard(item, order: index)) }
             if failNextSave { failNextSave = false; throw CoreError.saveFailed }
             try context.save()
-            orders.wallets = Dictionary(state.wallets.enumerated().map { ($0.element.id, $0.offset) }, uniquingKeysWith: { first, _ in first })
+            orders.envelopes = Dictionary(state.envelopes.enumerated().map { ($0.element.id, $0.offset) }, uniquingKeysWith: { first, _ in first })
             orders.categories = Dictionary(state.categories.enumerated().map { ($0.element.id, $0.offset) }, uniquingKeysWith: { first, _ in first })
             orders.entries = Dictionary(state.entries.enumerated().map { ($0.element.id, $0.offset) }, uniquingKeysWith: { first, _ in first })
             orders.receipts = Dictionary(state.receipts.enumerated().map { ($0.element.id, $0.offset) }, uniquingKeysWith: { first, _ in first })
             orders.rules = Dictionary(state.rules.enumerated().map { ($0.element.id, $0.offset) }, uniquingKeysWith: { first, _ in first })
-            orders.budgets = Dictionary(state.budgets.enumerated().map { ($0.element.id, $0.offset) }, uniquingKeysWith: { first, _ in first })
+            orders.targets = Dictionary(state.targets.enumerated().map { ($0.element.id, $0.offset) }, uniquingKeysWith: { first, _ in first })
+            orders.noSpendMarks = Dictionary(state.noSpendMarks.enumerated().map { ($0.element.id, $0.offset) }, uniquingKeysWith: { first, _ in first })
+            orders.settings = [state.settings.id: 0]
             orders.pointCards = Dictionary(state.pointCards.enumerated().map { ($0.element.id, $0.offset) }, uniquingKeysWith: { first, _ in first })
         } catch {
             context.rollback()
@@ -102,18 +120,17 @@ public final class LedgerStore {
         }
     }
 
-    /// Inserts the ten initial categories by stable system key, never a wallet.
+    /// Seeds the default household and its reference categories.
     public func seedDefaults() throws {
         let before = try read()
         var state = before
-        let defaults: [(CategoryKind, String)] = [
-            (.expense, "catFood"), (.expense, "catTransport"), (.expense, "catDaily"),
-            (.expense, "catHobby"), (.expense, "catClothing"), (.expense, "catOthers"),
-            (.expense, "categoryFixedCosts"), (.income, "incomeSalary"), (.income, "incomeBonus"), (.income, "incomeOther")
-        ]
-        for (index, item) in defaults.enumerated() where !state.categories.contains(where: { $0.kind == item.0 && $0.systemKey == item.1 }) {
-            state.categories.append(CategoryValue(kind: item.0, systemKey: item.1, sortOrder: index))
+        if !state.envelopes.contains(where: { $0.kind == .household }) {
+            state.envelopes.append(EnvelopeValue(id: EnvelopeValue.householdID, name: "Household"))
         }
+        let envelopeID = state.envelopes.first(where: { $0.kind == .household })!.id
+        for category in CategoryPresets.household(envelopeID: envelopeID) where !state.categories.contains(where: {
+            $0.envelopeID == envelopeID && $0.kind == category.kind && $0.systemKey == category.systemKey
+        }) { state.categories.append(category) }
         if before != state { try apply(LedgerChanges(before: before, after: state, orders: orders)) }
     }
 
@@ -130,12 +147,14 @@ public final class LedgerStore {
         var writes = PersistenceWrites()
         var nextOrders = orders
         do {
-            try persist(changes.wallets, as: WealthySchemaV1.Wallet.self, orders: &nextOrders.wallets, context: context, writes: &writes, checkingUndo: checkingUndo)
+            try persist(changes.envelopes, as: WealthySchemaV1.Envelope.self, orders: &nextOrders.envelopes, context: context, writes: &writes, checkingUndo: checkingUndo)
             try persist(changes.categories, as: WealthySchemaV1.Category.self, orders: &nextOrders.categories, context: context, writes: &writes, checkingUndo: checkingUndo)
             try persist(changes.entries, as: WealthySchemaV1.LedgerEntry.self, orders: &nextOrders.entries, context: context, writes: &writes, checkingUndo: checkingUndo)
             try persist(changes.receipts, as: WealthySchemaV1.ReceiptAttachment.self, orders: &nextOrders.receipts, context: context, writes: &writes, checkingUndo: checkingUndo)
             try persist(changes.rules, as: WealthySchemaV1.RecurringRule.self, orders: &nextOrders.rules, context: context, writes: &writes, checkingUndo: checkingUndo)
-            try persist(changes.budgets, as: WealthySchemaV1.Budget.self, orders: &nextOrders.budgets, context: context, writes: &writes, checkingUndo: checkingUndo)
+            try persist(changes.targets, as: WealthySchemaV1.Target.self, orders: &nextOrders.targets, context: context, writes: &writes, checkingUndo: checkingUndo)
+            try persist(changes.noSpendMarks, as: WealthySchemaV1.NoSpendMark.self, orders: &nextOrders.noSpendMarks, context: context, writes: &writes, checkingUndo: checkingUndo)
+            try persist(changes.settings, as: WealthySchemaV1.Settings.self, orders: &nextOrders.settings, context: context, writes: &writes, checkingUndo: checkingUndo)
             try persist(changes.pointCards, as: WealthySchemaV1.PointCard.self, orders: &nextOrders.pointCards, context: context, writes: &writes, checkingUndo: checkingUndo)
             if failNextSave { failNextSave = false; throw CoreError.saveFailed }
             try context.save()

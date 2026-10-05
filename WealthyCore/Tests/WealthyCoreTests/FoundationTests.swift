@@ -5,14 +5,15 @@ import Testing
 @MainActor
 @Suite("Foundation and isolated persistence")
 struct FoundationTests {
-    @Test("S1: ten default categories are seeded once without wallets")
+    @Test("S1: ten default categories and one household are seeded once")
     func seedingIsIdempotent() throws {
         let store = try LedgerStore()
         let before = try store.read()
         #expect(before.categories.count == 10)
         #expect(before.categories.filter { $0.kind == .expense }.count == 7)
         #expect(before.categories.filter { $0.kind == .income }.count == 3)
-        #expect(before.wallets.isEmpty)
+        #expect(before.envelopes.count == 1 && before.envelopes[0].id == EnvelopeValue.householdID)
+        #expect(before.settings == LedgerSettings())
         try store.seedDefaults()
         #expect(try store.read() == before)
     }
@@ -33,7 +34,7 @@ struct FoundationTests {
         #expect(store.storeURL?.lastPathComponent == "WealthyLedger.store")
         #expect(store.storeURL != legacyStore)
         #expect(store.receiptsDirectory != legacyReceipts)
-        let state = LedgerState(wallets: [WalletValue(name: "Bank", currencyCode: "USD")])
+        let state = LedgerState(envelopes: [EnvelopeValue(id: EnvelopeValue.householdID, name: "Household")])
         try store.replace(state)
         let reopened = try LedgerStore(inMemory: false, directory: directory, seed: false)
         #expect(try reopened.read() == state)
@@ -41,21 +42,23 @@ struct FoundationTests {
         #expect(try Data(contentsOf: legacyImage) == bytes)
     }
 
-    @Test("All seven V1 models preserve every value through persistence")
+    @Test("All nine V1 models preserve every value through persistence")
     func allRecordsRoundTrip() throws {
         let day = try LedgerDay(year: 2026, month: 10, day: 5)
-        let wallet = WalletValue(name: "Cash", currencyCode: "JPY", paymentMethodKey: "cash", isProvisional: true)
+        let envelope = EnvelopeValue(id: EnvelopeValue.householdID, name: "Household")
         let category = CategoryValue(kind: .expense, systemKey: "catFood", customName: "Meals")
         let receipt = ReceiptValue(fileName: "receipt.jpg")
-        let rule = RuleValue(title: "Lunch", amount: 100, currencyCode: "JPY", walletID: wallet.id,
+        let rule = RuleValue(title: "Lunch", amount: 100, currencyCode: "JPY", envelopeID: envelope.id,
                              categoryID: category.id, schedule: .weekly(weekday: 2), startDay: day,
                              endDay: day, lastPostedDay: day, lastProcessedDay: day)
-        let entry = EntryValue(kind: .expense, amount: 100, currencyCode: "JPY", day: day, walletID: wallet.id,
-                               categoryID: category.id, title: "Lunch", note: "Note", source: .recurring,
+        let entry = EntryValue(kind: .expense, amount: 100, currencyCode: "JPY", day: day, envelopeID: envelope.id,
+                               taxRate: .reduced, serviceMode: .takeout, isFixedCost: true, categoryID: category.id, title: "Lunch", note: "Note", source: .recurring,
                                reviewFlags: [.amountUncertain, .dateFromCaptureTime], receiptID: receipt.id,
                                recurringRuleID: rule.id, occurrenceDay: day)
-        let state = LedgerState(wallets: [wallet], categories: [category], entries: [entry], receipts: [receipt],
-                                rules: [rule], budgets: [BudgetValue(currencyCode: "JPY", categoryID: category.id, monthlyAmount: 1000)],
+        let state = LedgerState(envelopes: [envelope], categories: [category], entries: [entry], receipts: [receipt],
+                                rules: [rule], targets: [TargetValue(categoryID: category.id, currencyCode: "JPY", amountMinor: 1000, effectiveMonth: LedgerMonth(day: day))],
+                                noSpendMarks: [NoSpendMarkValue(day: try LedgerDay(year: 2026, month: 10, day: 4))],
+                                settings: LedgerSettings(includeFixedCostsInTargets: true, weekStart: 1),
                                 pointCards: [PointCardValue(name: "Points", memberNumber: "1234", points: 99, expiryDay: day)])
         let store = try LedgerStore(seed: false)
         try store.replace(state)
@@ -65,11 +68,11 @@ struct FoundationTests {
     @Test("L12: failure injection rolls back an entire replacement")
     func replacementFailureIsAtomic() throws {
         let store = try LedgerStore(seed: false)
-        let original = LedgerState(wallets: [WalletValue(name: "Original", currencyCode: "JPY")])
+        let original = LedgerState(envelopes: [EnvelopeValue(id: EnvelopeValue.householdID, name: "Original")])
         try store.replace(original)
         store.failNextSave = true
         #expect(throws: CoreError.saveFailed) {
-            try store.replace(LedgerState(wallets: [WalletValue(name: "Other", currencyCode: "USD")]))
+            try store.replace(LedgerState(envelopes: [EnvelopeValue(id: EnvelopeValue.householdID, name: "Other")]))
         }
         #expect(try store.read() == original)
         #expect(!store.failNextSave)
