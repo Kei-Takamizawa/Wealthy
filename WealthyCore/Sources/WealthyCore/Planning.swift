@@ -56,24 +56,31 @@ extension CoreValidation {
         }
     }
     static func validateRule(_ rule: RuleValue, in state: LedgerState, active: Bool) throws {
-        guard rule.kind != .adjustment else { throw CoreError.invalidField("kind", rule.id) }
         try validateSchedule(rule)
         let e = EntryValue(id: rule.id, kind: rule.kind, amount: rule.amount, currencyCode: rule.currencyCode,
-                           day: rule.startDay, walletID: rule.walletID, counterpartWalletID: rule.counterpartWalletID, categoryID: rule.categoryID)
+                           day: rule.startDay, envelopeID: rule.envelopeID, taxRate: rule.taxRate, serviceMode: rule.serviceMode, isFixedCost: rule.isFixedCost, categoryID: rule.categoryID)
         try validateEntry(e, in: state, active: active)
     }
     static func validatePlanning(_ state: LedgerState) throws {
         for rule in state.rules { try validateRule(rule, in: state, active: false) }
-        var budgetKeys = Set<String>()
-        for b in state.budgets {
-            guard try CoreCurrency.normalizedCode(b.currencyCode) == b.currencyCode else { throw CoreError.invalidField("currencyCode", b.id) }
-            guard b.monthlyAmount > 0 else { throw CoreError.invalidField("monthlyAmount", b.id) }
-            if let id = b.categoryID {
-                guard let c = state.categories.first(where: { $0.id == id }) else { throw CoreError.danglingReference("categoryID", id) }
-                guard c.kind == .expense else { throw CoreError.categoryKindMismatch(id) }
+        var targetKeys = Set<String>()
+        for target in state.targets {
+            guard try CoreCurrency.normalizedCode(target.currencyCode) == target.currencyCode else { throw CoreError.invalidField("currencyCode", target.id) }
+            guard target.amountMinor >= 0 else { throw CoreError.invalidField("amountMinor", target.id) }
+            guard state.envelopes.contains(where: { $0.id == target.envelopeID }) else { throw CoreError.danglingReference("envelopeID", target.envelopeID) }
+            try target.effectiveMonth.validated()
+            if let id = target.categoryID {
+                guard let category = state.categories.first(where: { $0.id == id }) else { throw CoreError.danglingReference("categoryID", id) }
+                guard category.kind == .expense, category.envelopeID == target.envelopeID else { throw CoreError.categoryKindMismatch(id) }
             }
-            let key = b.currencyCode + ":" + (b.categoryID?.uuidString ?? "overall")
-            guard budgetKeys.insert(key).inserted else { throw CoreError.invalidField("duplicateBudget", b.id) }
+            let key = "\(target.envelopeID):\(target.currencyCode):\(target.categoryID?.uuidString ?? "overall"):\(target.effectiveMonth.year)-\(target.effectiveMonth.month)"
+            guard targetKeys.insert(key).inserted else { throw CoreError.invalidField("duplicateTarget", target.id) }
+        }
+        var markKeys = Set<String>()
+        for mark in state.noSpendMarks {
+            try mark.day.validated()
+            guard state.envelopes.contains(where: { $0.id == mark.envelopeID }) else { throw CoreError.danglingReference("envelopeID", mark.envelopeID) }
+            guard markKeys.insert("\(mark.envelopeID):\(mark.day)").inserted else { throw CoreError.invalidField("duplicateNoSpendMark", mark.id) }
         }
         for card in state.pointCards {
             guard card.points >= 0 else { throw CoreError.invalidField("points", card.id) }
@@ -120,17 +127,32 @@ extension LedgerCore {
             state.rules[i].isPaused = paused
         case let .deleteRule(id):
             let i = try index(id, in: state.rules.map(\.id), type: "rule"); state.rules.remove(at: i)
-            for n in state.entries.indices where state.entries[n].recurringRuleID == id {
-                state.entries[n].recurringRuleID = nil; state.entries[n].occurrenceDay = nil
-            }
-        case let .setBudget(value):
-            var value = value; value.currencyCode = try CoreCurrency.normalizedCode(value.currencyCode)
+        case let .setTarget(value):
+            var value = value
+            value.currencyCode = try CoreCurrency.normalizedCode(value.currencyCode)
+            let current = try LedgerDay(date: now, calendar: calendar)
+            guard value.effectiveMonth.year == current.year, value.effectiveMonth.month == current.month else { throw CoreError.invalidField("effectiveMonth", value.id) }
             if let id = value.categoryID, state.categories.first(where: { $0.id == id })?.isArchived == true { throw CoreError.archivedCategory(id) }
-            if let i = state.budgets.firstIndex(where: { $0.currencyCode == value.currencyCode && $0.categoryID == value.categoryID }) {
-                value.id = state.budgets[i].id; state.budgets[i] = value
-            } else { state.budgets.append(value) }
-        case let .removeBudget(id):
-            let i = try index(id, in: state.budgets.map(\.id), type: "budget"); state.budgets.remove(at: i)
+            if let i = state.targets.firstIndex(where: { $0.envelopeID == value.envelopeID && $0.currencyCode == value.currencyCode && $0.categoryID == value.categoryID && $0.effectiveMonth == value.effectiveMonth }) {
+                value.id = state.targets[i].id; state.targets[i] = value
+            } else { state.targets.append(value) }
+        case let .removeTarget(id):
+            let i = try index(id, in: state.targets.map(\.id), type: "target")
+            let current = try LedgerDay(date: now, calendar: calendar)
+            guard state.targets[i].effectiveMonth.year == current.year, state.targets[i].effectiveMonth.month == current.month else { throw CoreError.invalidField("effectiveMonth", id) }
+            state.targets.remove(at: i)
+        case let .markNoSpend(day, envelopeID):
+            try day.validated()
+            guard let envelope = state.envelopes.first(where: { $0.id == envelopeID }) else { throw CoreError.danglingReference("envelopeID", envelopeID) }
+            guard !envelope.isArchived else { throw CoreError.invalidField("archivedEnvelope", envelopeID) }
+            if !state.noSpendMarks.contains(where: { $0.envelopeID == envelopeID && $0.day == day }) { state.noSpendMarks.append(NoSpendMarkValue(envelopeID: envelopeID, day: day)) }
+        case let .unmarkNoSpend(day, envelopeID):
+            try day.validated()
+            guard state.envelopes.contains(where: { $0.id == envelopeID }) else { throw CoreError.danglingReference("envelopeID", envelopeID) }
+            state.noSpendMarks.removeAll { $0.envelopeID == envelopeID && $0.day == day }
+        case let .updateSettings(settings):
+            guard settings.id == state.settings.id else { throw CoreError.invalidField("settingsID", settings.id) }
+            state.settings = settings
         case let .createPointCard(card): state.pointCards.append(card)
         case let .updatePointCard(card):
             let i = try index(card.id, in: state.pointCards.map(\.id), type: "pointCard"); state.pointCards[i] = card
@@ -166,7 +188,8 @@ extension LedgerCore {
                     continue
                 }
                 let e = EntryValue(kind: rule.kind, amount: rule.amount, currencyCode: rule.currencyCode, day: day,
-                    walletID: rule.walletID, timestamp: try day.date(calendar: calendar), counterpartWalletID: rule.counterpartWalletID,
+                    envelopeID: rule.envelopeID, timestamp: try day.date(calendar: calendar),
+                    taxRate: rule.currencyCode == "JPY" && TaxRuleBook().rule(on: day) != nil ? rule.taxRate : nil, serviceMode: rule.serviceMode, isFixedCost: rule.isFixedCost,
                     categoryID: rule.categoryID, title: rule.title, source: .recurring, recurringRuleID: rule.id,
                     occurrenceDay: day, createdAt: now, updatedAt: now)
                 do {

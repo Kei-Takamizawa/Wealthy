@@ -1,7 +1,6 @@
 import Foundation
 import SwiftData
 
-/// Successful record writes, exposed internally for persistence regression tests.
 struct PersistenceWrites: Equatable {
     var inserts = 0
     var updates = 0
@@ -10,12 +9,14 @@ struct PersistenceWrites: Equatable {
 }
 
 struct RecordOrders {
-    var wallets: [UUID: Int] = [:]
+    var envelopes: [UUID: Int] = [:]
     var categories: [UUID: Int] = [:]
     var entries: [UUID: Int] = [:]
     var receipts: [UUID: Int] = [:]
     var rules: [UUID: Int] = [:]
-    var budgets: [UUID: Int] = [:]
+    var targets: [UUID: Int] = [:]
+    var noSpendMarks: [UUID: Int] = [:]
+    var settings: [UUID: Int] = [:]
     var pointCards: [UUID: Int] = [:]
 }
 
@@ -28,23 +29,17 @@ protocol LedgerRecord: PersistentModel {
     static func fetch(_ id: UUID, in context: ModelContext) throws -> Self?
 }
 
-extension WealthySchemaV1.Wallet: LedgerRecord {
-    typealias Value = WalletValue
-    func update(_ value: WalletValue) {
+extension WealthySchemaV1.Envelope: LedgerRecord {
+    typealias Value = EnvelopeValue
+    func update(_ value: EnvelopeValue) {
             id = value.id
-            name = value.name
             kindRaw = value.kind.rawValue
-            currencyCode = value.currencyCode
-            paymentMethodKey = value.paymentMethodKey
-            colorKey = value.colorKey
-            iconKey = value.iconKey
-            sortOrder = value.sortOrder
+            name = value.name
             isArchived = value.isArchived
             createdAt = value.createdAt
-            isProvisional = value.isProvisional
     }
-    static func fetch(_ id: UUID, in context: ModelContext) throws -> WealthySchemaV1.Wallet? {
-        var descriptor = FetchDescriptor<WealthySchemaV1.Wallet>(predicate: #Predicate { $0.id == id })
+    static func fetch(_ id: UUID, in context: ModelContext) throws -> WealthySchemaV1.Envelope? {
+        var descriptor = FetchDescriptor<WealthySchemaV1.Envelope>(predicate: #Predicate { $0.id == id })
         descriptor.fetchLimit = 1
         return try context.fetch(descriptor).first
     }
@@ -55,6 +50,8 @@ extension WealthySchemaV1.Category: LedgerRecord {
     func update(_ value: CategoryValue) {
             id = value.id
             kindRaw = value.kind.rawValue
+            envelopeID = value.envelopeID
+            taxHintRaw = value.taxHint.rawValue
             systemKey = value.systemKey
             customName = value.customName
             iconKey = value.iconKey
@@ -75,12 +72,10 @@ extension WealthySchemaV1.LedgerEntry: LedgerRecord {
             id = value.id
             kindRaw = value.kind.rawValue
             amount = value.amount
-            directionRaw = value.direction?.rawValue
             currencyCode = value.currencyCode
             day = value.day
             timestamp = value.timestamp
-            walletID = value.walletID
-            counterpartWalletID = value.counterpartWalletID
+            envelopeID = value.envelopeID
             categoryID = value.categoryID
             title = value.title
             note = value.note
@@ -91,6 +86,9 @@ extension WealthySchemaV1.LedgerEntry: LedgerRecord {
             occurrenceDay = value.occurrenceDay
             createdAt = value.createdAt
             updatedAt = value.updatedAt
+            taxRateRaw = value.taxRate?.rawValue
+            serviceModeRaw = value.serviceMode?.rawValue
+            isFixedCost = value.isFixedCost
     }
     static func fetch(_ id: UUID, in context: ModelContext) throws -> WealthySchemaV1.LedgerEntry? {
         var descriptor = FetchDescriptor<WealthySchemaV1.LedgerEntry>(predicate: #Predicate { $0.id == id })
@@ -122,8 +120,7 @@ extension WealthySchemaV1.RecurringRule: LedgerRecord {
             kindRaw = value.kind.rawValue
             amount = value.amount
             currencyCode = value.currencyCode
-            walletID = value.walletID
-            counterpartWalletID = value.counterpartWalletID
+            envelopeID = value.envelopeID
             categoryID = value.categoryID
             schedule = value.schedule
             startDay = value.startDay
@@ -134,6 +131,9 @@ extension WealthySchemaV1.RecurringRule: LedgerRecord {
             pauseStartedDay = value.pauseStartedDay
             pausedPeriods = value.pausedPeriods
             createdAt = value.createdAt
+            taxRateRaw = value.taxRate?.rawValue
+            serviceModeRaw = value.serviceMode?.rawValue
+            isFixedCost = value.isFixedCost
     }
     static func fetch(_ id: UUID, in context: ModelContext) throws -> WealthySchemaV1.RecurringRule? {
         var descriptor = FetchDescriptor<WealthySchemaV1.RecurringRule>(predicate: #Predicate { $0.id == id })
@@ -142,16 +142,46 @@ extension WealthySchemaV1.RecurringRule: LedgerRecord {
     }
 }
 
-extension WealthySchemaV1.Budget: LedgerRecord {
-    typealias Value = BudgetValue
-    func update(_ value: BudgetValue) {
+extension WealthySchemaV1.Target: LedgerRecord {
+    typealias Value = TargetValue
+    func update(_ value: TargetValue) {
             id = value.id
-            currencyCode = value.currencyCode
+            envelopeID = value.envelopeID
             categoryID = value.categoryID
-            monthlyAmount = value.monthlyAmount
+            currencyCode = value.currencyCode
+            amountMinor = value.amountMinor
+            effectiveMonth = value.effectiveMonth
     }
-    static func fetch(_ id: UUID, in context: ModelContext) throws -> WealthySchemaV1.Budget? {
-        var descriptor = FetchDescriptor<WealthySchemaV1.Budget>(predicate: #Predicate { $0.id == id })
+    static func fetch(_ id: UUID, in context: ModelContext) throws -> WealthySchemaV1.Target? {
+        var descriptor = FetchDescriptor<WealthySchemaV1.Target>(predicate: #Predicate { $0.id == id })
+        descriptor.fetchLimit = 1
+        return try context.fetch(descriptor).first
+    }
+}
+
+extension WealthySchemaV1.NoSpendMark: LedgerRecord {
+    typealias Value = NoSpendMarkValue
+    func update(_ value: NoSpendMarkValue) {
+            id = value.id
+            envelopeID = value.envelopeID
+            day = value.day
+    }
+    static func fetch(_ id: UUID, in context: ModelContext) throws -> WealthySchemaV1.NoSpendMark? {
+        var descriptor = FetchDescriptor<WealthySchemaV1.NoSpendMark>(predicate: #Predicate { $0.id == id })
+        descriptor.fetchLimit = 1
+        return try context.fetch(descriptor).first
+    }
+}
+
+extension WealthySchemaV1.Settings: LedgerRecord {
+    typealias Value = LedgerSettings
+    func update(_ value: LedgerSettings) {
+            id = value.id
+            includeFixedCostsInTargets = value.includeFixedCostsInTargets
+            weekStart = value.weekStart
+    }
+    static func fetch(_ id: UUID, in context: ModelContext) throws -> WealthySchemaV1.Settings? {
+        var descriptor = FetchDescriptor<WealthySchemaV1.Settings>(predicate: #Predicate { $0.id == id })
         descriptor.fetchLimit = 1
         return try context.fetch(descriptor).first
     }

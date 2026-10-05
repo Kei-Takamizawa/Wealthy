@@ -10,16 +10,18 @@ struct RecordChange<Value: Identifiable & Equatable> where Value.ID == UUID {
 }
 
 struct LedgerChanges {
-    var wallets: [RecordChange<WalletValue>] = []
+    var envelopes: [RecordChange<EnvelopeValue>] = []
     var categories: [RecordChange<CategoryValue>] = []
     var entries: [RecordChange<EntryValue>] = []
     var receipts: [RecordChange<ReceiptValue>] = []
     var rules: [RecordChange<RuleValue>] = []
-    var budgets: [RecordChange<BudgetValue>] = []
+    var targets: [RecordChange<TargetValue>] = []
+    var noSpendMarks: [RecordChange<NoSpendMarkValue>] = []
+    var settings: [RecordChange<LedgerSettings>] = []
     var pointCards: [RecordChange<PointCardValue>] = []
 
-    var isEmpty: Bool { wallets.isEmpty && categories.isEmpty && entries.isEmpty && receipts.isEmpty && rules.isEmpty && budgets.isEmpty && pointCards.isEmpty }
-    var recordCount: Int { wallets.count + categories.count + entries.count + receipts.count + rules.count + budgets.count + pointCards.count }
+    var isEmpty: Bool { envelopes.isEmpty && categories.isEmpty && entries.isEmpty && receipts.isEmpty && rules.isEmpty && targets.isEmpty && noSpendMarks.isEmpty && settings.isEmpty && pointCards.isEmpty }
+    var recordCount: Int { envelopes.count + categories.count + entries.count + receipts.count + rules.count + targets.count + noSpendMarks.count + settings.count + pointCards.count }
 
     static func records<Value: Identifiable & Equatable>(_ before: [Value], _ after: [Value],
         orders: [UUID: Int], restoring: [RecordChange<Value>]) -> [RecordChange<Value>] where Value.ID == UUID {
@@ -45,12 +47,14 @@ struct LedgerChanges {
     }
 
     init(before: LedgerState, after: LedgerState, orders: RecordOrders, restoring: LedgerChanges? = nil) {
-        wallets = Self.records(before.wallets, after.wallets, orders: orders.wallets, restoring: restoring?.wallets ?? [])
+        envelopes = Self.records(before.envelopes, after.envelopes, orders: orders.envelopes, restoring: restoring?.envelopes ?? [])
         categories = Self.records(before.categories, after.categories, orders: orders.categories, restoring: restoring?.categories ?? [])
         entries = Self.records(before.entries, after.entries, orders: orders.entries, restoring: restoring?.entries ?? [])
         receipts = Self.records(before.receipts, after.receipts, orders: orders.receipts, restoring: restoring?.receipts ?? [])
         rules = Self.records(before.rules, after.rules, orders: orders.rules, restoring: restoring?.rules ?? [])
-        budgets = Self.records(before.budgets, after.budgets, orders: orders.budgets, restoring: restoring?.budgets ?? [])
+        targets = Self.records(before.targets, after.targets, orders: orders.targets, restoring: restoring?.targets ?? [])
+        noSpendMarks = Self.records(before.noSpendMarks, after.noSpendMarks, orders: orders.noSpendMarks, restoring: restoring?.noSpendMarks ?? [])
+        settings = Self.records(orders.settings.isEmpty ? [] : [before.settings], [after.settings], orders: orders.settings, restoring: restoring?.settings ?? [])
         pointCards = Self.records(before.pointCards, after.pointCards, orders: orders.pointCards, restoring: restoring?.pointCards ?? [])
     }
 
@@ -77,12 +81,14 @@ struct LedgerChanges {
 
     func inverse(current: LedgerState, orders: RecordOrders) throws -> LedgerState {
         try LedgerState(
-            wallets: Self.inverse(wallets, current: current.wallets, orders: orders.wallets),
+            envelopes: Self.inverse(envelopes, current: current.envelopes, orders: orders.envelopes),
             categories: Self.inverse(categories, current: current.categories, orders: orders.categories),
             entries: Self.inverse(entries, current: current.entries, orders: orders.entries),
             receipts: Self.inverse(receipts, current: current.receipts, orders: orders.receipts),
             rules: Self.inverse(rules, current: current.rules, orders: orders.rules),
-            budgets: Self.inverse(budgets, current: current.budgets, orders: orders.budgets),
+            targets: Self.inverse(targets, current: current.targets, orders: orders.targets),
+            noSpendMarks: Self.inverse(noSpendMarks, current: current.noSpendMarks, orders: orders.noSpendMarks),
+            settings: Self.inverse(settings, current: [current.settings], orders: orders.settings).first ?? LedgerSettings(),
             pointCards: Self.inverse(pointCards, current: current.pointCards, orders: orders.pointCards)
         )
     }

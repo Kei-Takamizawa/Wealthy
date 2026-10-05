@@ -9,7 +9,7 @@ public struct LedgerPeriod: Codable, Sendable, Equatable {
         self.start = start; self.end = end
     }
     public func contains(_ day: LedgerDay) -> Bool { start <= day && day <= end }
-    /// All budget and monthly query boundaries come from this function.
+    /// All target and monthly query boundaries come from this function.
     public static func month(containing day: LedgerDay, calendar: Calendar = .current) throws -> LedgerPeriod {
         var civilCalendar = Calendar(identifier: .gregorian)
         civilCalendar.timeZone = calendar.timeZone
@@ -31,29 +31,24 @@ public enum CategoryFilter: Codable, Sendable, Equatable {
     case all, uncategorized, category(UUID)
 }
 
-/// All filters are combined; wallet matches either side of a transfer.
+/// All filters are combined; envelope isolates household and child records.
 public struct LedgerEntryFilter: Codable, Sendable, Equatable {
     public var period: LedgerPeriod?
-    public var walletID: UUID?
+    public var envelopeID: UUID?
     public var category: CategoryFilter
     public var kind: EntryKind?
     public var currencyCode: String?
     public var needsReview: Bool?
     public var search: String?
     public var limit: Int?
-    public init(period: LedgerPeriod? = nil, walletID: UUID? = nil, category: CategoryFilter = .all,
+    public init(period: LedgerPeriod? = nil, envelopeID: UUID? = nil, category: CategoryFilter = .all,
                 kind: EntryKind? = nil, currencyCode: String? = nil, needsReview: Bool? = nil,
                 search: String? = nil, limit: Int? = nil) {
-        self.period = period; self.walletID = walletID; self.category = category; self.kind = kind
+        self.period = period; self.envelopeID = envelopeID; self.category = category; self.kind = kind
         self.currencyCode = currencyCode; self.needsReview = needsReview; self.search = search; self.limit = limit
     }
 }
 
-public struct WalletBalance: Codable, Sendable, Equatable {
-    public var walletID: UUID
-    public var currencyCode: String
-    public var balance: Decimal
-}
 public struct PeriodSummary: Codable, Sendable, Equatable {
     public var currencyCode: String
     public var income: Decimal
@@ -72,60 +67,24 @@ public struct CategoryBreakdown: Codable, Sendable, Equatable {
     public var amount: Decimal
     public var previousAmount: Decimal
 }
-public struct WalletPeriodTotals: Codable, Sendable, Equatable {
-    public var walletID: UUID
-    public var currencyCode: String
-    public var income: Decimal
-    public var expense: Decimal
-}
-public struct BudgetStatus: Codable, Sendable, Equatable {
-    public var budgetID: UUID
-    public var categoryID: UUID?
-    public var currencyCode: String
-    public var period: LedgerPeriod
-    public var budget: Decimal
-    public var spent: Decimal
-    public var remaining: Decimal { budget - spent }
-    /// Spending divided by budget, with 1 representing exactly the budget amount.
-    public var ratio: Decimal { spent / budget }
-}
 public struct UpcomingOccurrence: Codable, Sendable, Equatable {
     public var ruleID: UUID
     public var day: LedgerDay
     public var kind: EntryKind
     public var amount: Int
     public var currencyCode: String
-    public var walletID: UUID
-    public var counterpartWalletID: UUID?
+    public var envelopeID: UUID
     public var categoryID: UUID?
     public var title: String
 }
 
 /// Pure read functions work on detached snapshots, including archived history.
 public enum LedgerQueries {
-    public static func walletBalances(in state: LedgerState, through day: LedgerDay? = nil) -> [WalletBalance] {
-        var balances = Dictionary(uniqueKeysWithValues: state.wallets.map { ($0.id, Decimal.zero) })
-        for entry in state.entries where day == nil || entry.day <= day! {
-            let amount = Decimal(entry.amount)
-            switch entry.kind {
-            case .expense: balances[entry.walletID, default: .zero] -= amount
-            case .income: balances[entry.walletID, default: .zero] += amount
-            case .adjustment: balances[entry.walletID, default: .zero] += entry.direction == .increase ? amount : -amount
-            case .transfer:
-                balances[entry.walletID, default: .zero] -= amount
-                if let id = entry.counterpartWalletID { balances[id, default: .zero] += amount }
-            }
-        }
-        return state.wallets.map { WalletBalance(walletID: $0.id, currencyCode: $0.currencyCode, balance: balances[$0.id] ?? .zero) }
-    }
-    public static func totalBalances(in state: LedgerState, through day: LedgerDay? = nil) -> [String: Decimal] {
-        walletBalances(in: state, through: day).reduce(into: [:]) { $0[$1.currencyCode, default: .zero] += $1.balance }
-    }
     public static func entries(in state: LedgerState, filter: LedgerEntryFilter = LedgerEntryFilter()) -> [EntryValue] {
         let search = filter.search.map(CoreValidation.normalizedName) ?? ""
         let matches = state.entries.filter { entry in
             if let period = filter.period, !period.contains(entry.day) { return false }
-            if let id = filter.walletID, entry.walletID != id && entry.counterpartWalletID != id { return false }
+            if let id = filter.envelopeID, entry.envelopeID != id { return false }
             switch filter.category {
             case .all: break
             case .uncategorized: if entry.categoryID != nil { return false }
@@ -140,9 +99,9 @@ public enum LedgerQueries {
         }.sorted(by: ordered)
         return filter.limit.map { Array(matches.prefix(max(0, $0))) } ?? matches
     }
-    public static func periodSummary(in state: LedgerState, period: LedgerPeriod, currencyCode: String) -> PeriodSummary {
+    public static func periodSummary(in state: LedgerState, period: LedgerPeriod, currencyCode: String, envelopeID: UUID = EnvelopeValue.householdID) -> PeriodSummary {
         var result = PeriodSummary(currencyCode: currencyCode, income: .zero, expense: .zero, incomeCount: 0, expenseCount: 0)
-        for entry in state.entries where entry.currencyCode == currencyCode && period.contains(entry.day) {
+        for entry in state.entries where entry.envelopeID == envelopeID && entry.currencyCode == currencyCode && period.contains(entry.day) {
             if entry.kind == .income { result.income += Decimal(entry.amount); result.incomeCount += 1 }
             if entry.kind == .expense { result.expense += Decimal(entry.amount); result.expenseCount += 1 }
         }
@@ -150,10 +109,10 @@ public enum LedgerQueries {
     }
     /// Includes zero-spending days and groups by stored day, never by timestamp.
     public static func dailyTotals(in state: LedgerState, monthContaining day: LedgerDay, currencyCode: String,
-                                   calendar: Calendar = .current) throws -> [DailyTotal] {
+                                   calendar: Calendar = .current, envelopeID: UUID = EnvelopeValue.householdID) throws -> [DailyTotal] {
         let period = try LedgerPeriod.month(containing: day, calendar: calendar)
         var totals: [LedgerDay: DailyTotal] = [:]
-        for entry in state.entries where entry.currencyCode == currencyCode && period.contains(entry.day) {
+        for entry in state.entries where entry.envelopeID == envelopeID && entry.currencyCode == currencyCode && period.contains(entry.day) {
             var total = totals[entry.day] ?? DailyTotal(day: entry.day, income: .zero, expense: .zero)
             if entry.kind == .income { total.income += Decimal(entry.amount) }
             if entry.kind == .expense { total.expense += Decimal(entry.amount) }
@@ -166,9 +125,9 @@ public enum LedgerQueries {
     }
     /// Returns current and previous-period buckets, including an uncategorized bucket.
     public static func categoryBreakdown(in state: LedgerState, period: LedgerPeriod, previousPeriod: LedgerPeriod,
-                                         currencyCode: String, kind: CategoryKind = .expense) -> [CategoryBreakdown] {
+                                         currencyCode: String, kind: CategoryKind = .expense, envelopeID: UUID = EnvelopeValue.householdID) -> [CategoryBreakdown] {
         var totals: [UUID?: Decimal] = [nil: .zero], previous: [UUID?: Decimal] = [nil: .zero]
-        for entry in state.entries where entry.currencyCode == currencyCode && entry.kind.rawValue == kind.rawValue {
+        for entry in state.entries where entry.envelopeID == envelopeID && entry.currencyCode == currencyCode && entry.kind.rawValue == kind.rawValue {
             if period.contains(entry.day) { totals[entry.categoryID, default: .zero] += Decimal(entry.amount) }
             if previousPeriod.contains(entry.day) { previous[entry.categoryID, default: .zero] += Decimal(entry.amount) }
         }
@@ -177,35 +136,6 @@ public enum LedgerQueries {
         }.sorted {
             if $0.amount != $1.amount { return $0.amount > $1.amount }
             return ($0.categoryID?.uuidString ?? "") < ($1.categoryID?.uuidString ?? "")
-        }
-    }
-    public static func walletTotals(in state: LedgerState, period: LedgerPeriod? = nil) -> [WalletPeriodTotals] {
-        var income: [UUID: Decimal] = [:], expense: [UUID: Decimal] = [:]
-        for entry in state.entries where period == nil || period!.contains(entry.day) {
-            if entry.kind == .income { income[entry.walletID, default: .zero] += Decimal(entry.amount) }
-            if entry.kind == .expense { expense[entry.walletID, default: .zero] += Decimal(entry.amount) }
-        }
-        return state.wallets.map { WalletPeriodTotals(walletID: $0.id, currencyCode: $0.currencyCode,
-            income: income[$0.id] ?? .zero, expense: expense[$0.id] ?? .zero) }
-    }
-    /// Shared spending rule for previews and budget status. Category budgets are independent.
-    public static func budgetSpent(_ budget: BudgetValue, in state: LedgerState, period: LedgerPeriod) -> Decimal {
-        state.entries.reduce(Decimal.zero) { total, entry in
-            guard entry.kind == .expense, entry.currencyCode == budget.currencyCode, period.contains(entry.day),
-                  budget.categoryID == nil || entry.categoryID == budget.categoryID else { return total }
-            return total + Decimal(entry.amount)
-        }
-    }
-    public static func budgetStatuses(in state: LedgerState, monthContaining day: LedgerDay, currencyCode: String,
-                                      calendar: Calendar = .current) throws -> [BudgetStatus] {
-        let period = try LedgerPeriod.month(containing: day, calendar: calendar)
-        return state.budgets.filter { $0.currencyCode == currencyCode }.map {
-            BudgetStatus(budgetID: $0.id, categoryID: $0.categoryID, currencyCode: $0.currencyCode,
-                         period: period, budget: Decimal($0.monthlyAmount), spent: budgetSpent($0, in: state, period: period))
-        }.sorted {
-            if $0.categoryID == nil { return $1.categoryID != nil }
-            if $1.categoryID == nil { return false }
-            return $0.budgetID.uuidString < $1.budgetID.uuidString
         }
     }
     /// Predicts unprocessed occurrences in the next N civil days, starting tomorrow.
@@ -228,7 +158,7 @@ public enum LedgerQueries {
             for day in try RecurringEngine.occurrences(rule: rule, from: from, through: through, calendar: calendar) {
                 if rule.pausedPeriods.contains(where: { $0.contains(day) }) { continue }
                 result.append(UpcomingOccurrence(ruleID: rule.id, day: day, kind: rule.kind, amount: rule.amount,
-                    currencyCode: rule.currencyCode, walletID: rule.walletID, counterpartWalletID: rule.counterpartWalletID,
+                    currencyCode: rule.currencyCode, envelopeID: rule.envelopeID,
                     categoryID: rule.categoryID, title: rule.title))
             }
         }
@@ -243,8 +173,8 @@ public enum LedgerQueries {
         }
     }
     public static func currenciesInUse(in state: LedgerState) -> [String] {
-        Set(state.wallets.map(\.currencyCode) + state.entries.map(\.currencyCode)
-            + state.rules.map(\.currencyCode) + state.budgets.map(\.currencyCode)).sorted()
+        Set(state.entries.map(\.currencyCode)
+            + state.rules.map(\.currencyCode) + state.targets.map(\.currencyCode)).sorted()
     }
     private static func ordered(_ lhs: EntryValue, _ rhs: EntryValue) -> Bool {
         if lhs.day != rhs.day { return lhs.day > rhs.day }

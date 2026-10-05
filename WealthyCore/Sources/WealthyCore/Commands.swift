@@ -10,11 +10,10 @@ public struct ReceiptInput: Codable, Sendable, Equatable {
 
 /// Every user mutation uses stable IDs and serializable, framework-independent values.
 public enum LedgerCommand: Codable, Sendable, Equatable {
-    case createWallet(WalletValue, openingBalance: Int = 0, openingDay: LedgerDay? = nil)
-    case updateWallet(WalletValue)
-    case reconcileWallet(UUID, actualBalance: Int, day: LedgerDay)
-    case archiveWallet(UUID, archived: Bool)
-    case deleteWallet(UUID)
+    case createEnvelope(EnvelopeValue)
+    case updateEnvelope(EnvelopeValue)
+    case archiveEnvelope(UUID, archived: Bool)
+    case deleteEnvelope(UUID)
     case addEntry(EntryValue, receipt: ReceiptInput? = nil)
     case updateEntry(EntryValue, receipt: ReceiptInput? = nil)
     case deleteEntry(UUID)
@@ -27,8 +26,11 @@ public enum LedgerCommand: Codable, Sendable, Equatable {
     case updateRule(RuleValue)
     case pauseRule(UUID, paused: Bool)
     case deleteRule(UUID)
-    case setBudget(BudgetValue)
-    case removeBudget(UUID)
+    case setTarget(TargetValue)
+    case removeTarget(UUID)
+    case markNoSpend(LedgerDay, envelopeID: UUID = EnvelopeValue.householdID)
+    case unmarkNoSpend(LedgerDay, envelopeID: UUID = EnvelopeValue.householdID)
+    case updateSettings(LedgerSettings)
     case createPointCard(PointCardValue)
     case updatePointCard(PointCardValue)
     case deletePointCard(UUID)
@@ -42,29 +44,27 @@ public enum CoreValidation {
     }
     public static func validate(_ state: LedgerState) throws {
         var ids = Set<UUID>()
-        for id in state.wallets.map(\.id) + state.categories.map(\.id) + state.entries.map(\.id)
-            + state.receipts.map(\.id) + state.rules.map(\.id) + state.budgets.map(\.id) + state.pointCards.map(\.id) {
+        for id in state.allIDs {
             guard ids.insert(id).inserted else { throw CoreError.duplicateID(id) }
         }
-        var walletNames = Set<String>()
-        for wallet in state.wallets {
-            guard try CoreCurrency.normalizedCode(wallet.currencyCode) == wallet.currencyCode else { throw CoreError.invalidField("currencyCode", wallet.id) }
-            guard !normalizedName(wallet.name).isEmpty else { throw CoreError.invalidField("name", wallet.id) }
-            if !wallet.isArchived, !walletNames.insert(normalizedName(wallet.name)).inserted { throw CoreError.duplicateName(wallet.name) }
-            if let method = wallet.paymentMethodKey {
-                guard paymentMethods.contains(method) || (method.hasPrefix("custom:") && !normalizedName(String(method.dropFirst(7))).isEmpty)
-                else { throw CoreError.invalidField("paymentMethodKey", wallet.id) }
-            }
+        guard (1...7).contains(state.settings.weekStart) else { throw CoreError.invalidField("weekStart", state.settings.id) }
+        var kinds = Set<EnvelopeKind>()
+        for envelope in state.envelopes {
+            guard !normalizedName(envelope.name).isEmpty else { throw CoreError.invalidField("name", envelope.id) }
+            guard kinds.insert(envelope.kind).inserted else { throw CoreError.invalidField("duplicateEnvelopeKind", envelope.id) }
         }
+        guard state.envelopes.contains(where: { $0.id == EnvelopeValue.householdID && $0.kind == .household }) else { throw CoreError.danglingReference("householdEnvelope", EnvelopeValue.householdID) }
         var categoryNames = Set<String>(), systemKeys = Set<String>()
         for category in state.categories {
+            guard state.envelopes.contains(where: { $0.id == category.envelopeID }) else { throw CoreError.danglingReference("envelopeID", category.envelopeID) }
+
             guard category.customName != nil || category.systemKey != nil else { throw CoreError.invalidField("categoryName", category.id) }
             if let name = category.customName {
                 guard !normalizedName(name).isEmpty else { throw CoreError.invalidField("customName", category.id) }
-                if !category.isArchived, !categoryNames.insert(category.kind.rawValue + ":" + normalizedName(name)).inserted { throw CoreError.duplicateName(name) }
+                if !category.isArchived, !categoryNames.insert(category.envelopeID.uuidString + ":" + category.kind.rawValue + ":" + normalizedName(name)).inserted { throw CoreError.duplicateName(name) }
             }
             if let key = category.systemKey {
-                guard !key.isEmpty, systemKeys.insert(category.kind.rawValue + ":" + key).inserted else { throw CoreError.invalidField("systemKey", category.id) }
+                guard !key.isEmpty, systemKeys.insert(category.envelopeID.uuidString + ":" + category.kind.rawValue + ":" + key).inserted else { throw CoreError.invalidField("systemKey", category.id) }
             }
         }
         for receipt in state.receipts {
@@ -77,58 +77,27 @@ public enum CoreValidation {
         for entry in state.entries { try validateEntry(entry, in: state, active: false) }
         try validatePlanning(state)
     }
-    static let paymentMethods = ["cash", "sbiShinsei", "docomoSMTB", "paypay", "paypayCredit", "rakutenPay", "rakutenCard", "suica", "pasmo", "icoca", "waon", "nanaco", "quicpay", "id", "auPay", "dPay", "merpay", "visa", "mastercard", "jcb", "amex", "creditCard", "debitCard", "bankTransfer"]
     public static func safeFilename(_ name: String) -> Bool {
         let allowed = CharacterSet.alphanumerics.union(CharacterSet(charactersIn: "-_."))
         return !name.isEmpty && name.utf8.count <= 255 && name != "." && name != ".." && name.unicodeScalars.allSatisfy { allowed.contains($0) }
     }
     static func validateEntry(_ e: EntryValue, in state: LedgerState, active: Bool) throws {
         guard e.amount > 0 else { throw CoreError.invalidField("amount", e.id) }
-        if e.source == .openingBalance || e.source == .reconciliation {
-            guard e.kind == .adjustment else { throw CoreError.invalidField("source", e.id) }
-        }
         _ = try LedgerDay(year: e.day.year, month: e.day.month, day: e.day.day)
-        let code = try CoreCurrency.normalizedCode(e.currencyCode)
-        guard code == e.currencyCode else { throw CoreError.invalidField("currencyCode", e.id) }
-        guard let w = state.wallets.first(where: { $0.id == e.walletID }) else { throw CoreError.danglingReference("walletID", e.walletID) }
-        guard w.currencyCode == code else { throw CoreError.currencyMismatch(w.id) }
-        if active && w.isArchived { throw CoreError.archivedWallet(w.id) }
-        if e.kind == .transfer {
-            guard let target = e.counterpartWalletID else { throw CoreError.invalidField("counterpartWalletID", e.id) }
-            guard target != w.id else { throw CoreError.sameWalletTransfer(w.id) }
-            guard let other = state.wallets.first(where: { $0.id == target }) else { throw CoreError.danglingReference("counterpartWalletID", target) }
-            guard other.currencyCode == code else { throw CoreError.crossCurrencyTransfer(w.id, other.id) }
-            if active && other.isArchived { throw CoreError.archivedWallet(other.id) }
-        } else if e.counterpartWalletID != nil { throw CoreError.invalidField("counterpartWalletID", e.id) }
-        if e.kind == .adjustment {
-            guard e.direction != nil else { throw CoreError.invalidField("direction", e.id) }
-        } else if e.direction != nil { throw CoreError.invalidField("direction", e.id) }
+        guard try CoreCurrency.normalizedCode(e.currencyCode) == e.currencyCode else { throw CoreError.invalidField("currencyCode", e.id) }
+        guard let envelope = state.envelopes.first(where: { $0.id == e.envelopeID }) else { throw CoreError.danglingReference("envelopeID", e.envelopeID) }
+        if active && envelope.isArchived { throw CoreError.invalidField("archivedEnvelope", envelope.id) }
+        if (e.currencyCode != "JPY" || TaxRuleBook().rule(on: e.day) == nil), e.taxRate != nil { throw CoreError.invalidField("taxRate", e.id) }
         if let id = e.categoryID {
             guard e.kind == .expense || e.kind == .income else { throw CoreError.invalidField("categoryID", e.id) }
             guard let c = state.categories.first(where: { $0.id == id }) else { throw CoreError.danglingReference("categoryID", id) }
+            guard c.envelopeID == e.envelopeID else { throw CoreError.invalidField("categoryEnvelope", id) }
             guard c.kind.rawValue == e.kind.rawValue else { throw CoreError.categoryKindMismatch(id) }
             if active && c.isArchived { throw CoreError.archivedCategory(id) }
         }
         if let id = e.receiptID, !state.receipts.contains(where: { $0.id == id }) { throw CoreError.danglingReference("receiptID", id) }
-        if let id = e.recurringRuleID, !state.rules.contains(where: { $0.id == id }) { throw CoreError.danglingReference("recurringRuleID", id) }
         if (e.recurringRuleID == nil) != (e.occurrenceDay == nil) { throw CoreError.invalidField("occurrenceDay", e.id) }
-    }
-}
-
-/// Decimal accumulation preserves totals beyond a single entry's integer range.
-public enum LedgerMath {
-    public static func balance(_ walletID: UUID, in state: LedgerState, through day: LedgerDay? = nil) -> Decimal {
-        state.entries.reduce(Decimal.zero) { total, e in
-            guard day == nil || e.day <= day! else { return total }
-            let amount = Decimal(e.amount)
-            if e.kind == .transfer && e.counterpartWalletID == walletID { return total + amount }
-            guard e.walletID == walletID else { return total }
-            switch e.kind {
-            case .expense, .transfer: return total - amount
-            case .income: return total + amount
-            case .adjustment: return total + (e.direction == .increase ? amount : -amount)
-            }
-        }
+        if e.source != .recurring && e.recurringRuleID != nil { throw CoreError.invalidField("source", e.id) }
     }
 }
 
@@ -256,40 +225,25 @@ public enum LedgerMath {
     }
     func apply(_ command: LedgerCommand, to state: inout LedgerState, now: Date) throws {
         switch command {
-        case let .createWallet(wallet, opening, openingDay):
-            var wallet = wallet
-            wallet.currencyCode = try CoreCurrency.normalizedCode(wallet.currencyCode)
-            state.wallets.append(wallet)
-            if opening != 0 {
-                guard opening != Int.min else { throw CoreError.invalidField("openingBalance", wallet.id) }
-                let day = try openingDay ?? LedgerDay(date: wallet.createdAt, calendar: calendar)
-                state.entries.append(EntryValue(kind: .adjustment, amount: abs(opening), currencyCode: wallet.currencyCode, day: day, walletID: wallet.id, direction: opening > 0 ? .increase : .decrease, timestamp: now, source: .openingBalance, createdAt: now, updatedAt: now))
-            }
-        case let .updateWallet(wallet):
-            let i = try index(wallet.id, in: state.wallets.map(\.id), type: "wallet")
-            guard wallet.currencyCode == state.wallets[i].currencyCode else { throw CoreError.invalidField("currencyCode", wallet.id) }
-            guard wallet.isProvisional == state.wallets[i].isProvisional, wallet.isArchived == state.wallets[i].isArchived, wallet.createdAt == state.wallets[i].createdAt else { throw CoreError.invalidField("walletMetadata", wallet.id) }
-            state.wallets[i] = wallet
-        case let .reconcileWallet(id, actual, day):
-            let i = try index(id, in: state.wallets.map(\.id), type: "wallet")
-            guard !state.wallets[i].isArchived else { throw CoreError.archivedWallet(id) }
-            let diff = Decimal(actual) - LedgerMath.balance(id, in: state, through: day)
-            if diff != 0 {
-                let absolute = diff < 0 ? -diff : diff
-                guard absolute <= Decimal(Int.max) else { throw CoreError.invalidField("reconciliationAmount", id) }
-                let amount = NSDecimalNumber(decimal: absolute).intValue
-                state.entries.append(EntryValue(kind: .adjustment, amount: amount, currencyCode: state.wallets[i].currencyCode, day: day, walletID: id, direction: diff > 0 ? .increase : .decrease, timestamp: now, source: .reconciliation, createdAt: now, updatedAt: now))
-            }
-            state.wallets[i].isProvisional = false
-        case let .archiveWallet(id, archived):
-            let i = try index(id, in: state.wallets.map(\.id), type: "wallet"); state.wallets[i].isArchived = archived
-        case let .deleteWallet(id):
-            let i = try index(id, in: state.wallets.map(\.id), type: "wallet")
-            guard !state.entries.contains(where: { ($0.walletID == id || $0.counterpartWalletID == id) && $0.source != .openingBalance }),
-                  !state.rules.contains(where: { $0.walletID == id || $0.counterpartWalletID == id }) else { throw CoreError.walletHasHistory(id) }
-            state.entries.removeAll { $0.walletID == id }; state.wallets.remove(at: i)
+        case let .createEnvelope(envelope):
+            state.envelopes.append(envelope)
+            if envelope.kind == .child { state.categories.append(contentsOf: CategoryPresets.child(envelopeID: envelope.id)) }
+        case let .updateEnvelope(envelope):
+            let i = try index(envelope.id, in: state.envelopes.map(\.id), type: "envelope")
+            let old = state.envelopes[i]
+            guard envelope.kind == old.kind, envelope.createdAt == old.createdAt, envelope.isArchived == old.isArchived else { throw CoreError.invalidField("envelopeMetadata", envelope.id) }
+            state.envelopes[i] = envelope
+        case let .archiveEnvelope(id, archived):
+            let i = try index(id, in: state.envelopes.map(\.id), type: "envelope")
+            state.envelopes[i].isArchived = archived
+        case let .deleteEnvelope(id):
+            let i = try index(id, in: state.envelopes.map(\.id), type: "envelope")
+            guard id != EnvelopeValue.householdID, !state.entries.contains(where: { $0.envelopeID == id }), !state.rules.contains(where: { $0.envelopeID == id }) else { throw CoreError.invalidField("envelopeHasHistory", id) }
+            state.envelopes.remove(at: i)
+            state.categories.removeAll { $0.envelopeID == id }
+            state.targets.removeAll { $0.envelopeID == id }
+            state.noSpendMarks.removeAll { $0.envelopeID == id }
         case let .addEntry(entry, receipt):
-            guard entry.kind != .adjustment else { throw CoreError.invalidField("kind", entry.id) }
             guard [.manual, .receipt, .voice].contains(entry.source) else { throw CoreError.invalidField("source", entry.id) }
             guard entry.recurringRuleID == nil else { throw CoreError.invalidField("recurringRuleID", entry.id) }
             guard entry.occurrenceDay == nil else { throw CoreError.invalidField("occurrenceDay", entry.id) }
@@ -303,7 +257,6 @@ public enum LedgerMath {
             guard entry.source == stored.source else { throw CoreError.invalidField("source", entry.id) }
             guard entry.recurringRuleID == stored.recurringRuleID else { throw CoreError.invalidField("recurringRuleID", entry.id) }
             guard entry.occurrenceDay == stored.occurrenceDay else { throw CoreError.invalidField("occurrenceDay", entry.id) }
-            guard (entry.kind == .adjustment) == (stored.kind == .adjustment) else { throw CoreError.invalidField("kind", entry.id) }
             var entry = entry
             try attach(receipt, to: &entry, state: &state)
             try CoreValidation.validateEntry(entry, in: state, active: true)
@@ -316,14 +269,20 @@ public enum LedgerMath {
         case let .createCategory(category): state.categories.append(category)
         case let .updateCategory(category):
             let i = try index(category.id, in: state.categories.map(\.id), type: "category")
-            guard category.kind == state.categories[i].kind, category.isArchived == state.categories[i].isArchived, category.systemKey == state.categories[i].systemKey else { throw CoreError.invalidField("categoryMetadata", category.id) }
+            guard category.envelopeID == state.categories[i].envelopeID, category.kind == state.categories[i].kind, category.isArchived == state.categories[i].isArchived, category.systemKey == state.categories[i].systemKey else { throw CoreError.invalidField("categoryMetadata", category.id) }
             state.categories[i] = category
         case let .archiveCategory(id, archived):
             let i = try index(id, in: state.categories.map(\.id), type: "category"); state.categories[i].isArchived = archived
         case let .deleteCategory(id):
-            let i = try index(id, in: state.categories.map(\.id), type: "category"); state.categories.remove(at: i)
+            let i = try index(id, in: state.categories.map(\.id), type: "category")
+            if state.categories[i].systemKey != nil && (state.entries.contains(where: { $0.categoryID == id }) || state.rules.contains(where: { $0.categoryID == id }) || state.targets.contains(where: { $0.categoryID == id })) { throw CoreError.invalidField("usedSystemCategory", id) }
+            let currentMonth = LedgerMonth(day: try LedgerDay(date: now, calendar: calendar))
+            guard !state.targets.contains(where: { $0.categoryID == id && $0.effectiveMonth != currentMonth }) else {
+                throw CoreError.invalidField("historicalCategoryTarget", id)
+            }
+            state.categories.remove(at: i)
             for n in state.entries.indices where state.entries[n].categoryID == id { state.entries[n].categoryID = nil }
-            state.budgets.removeAll { $0.categoryID == id }
+            state.targets.removeAll { $0.categoryID == id }
             for n in state.rules.indices where state.rules[n].categoryID == id { state.rules[n].categoryID = nil }
         default: try applyPlanning(command, to: &state, now: now)
         }

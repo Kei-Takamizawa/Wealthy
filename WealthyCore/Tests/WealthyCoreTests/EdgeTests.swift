@@ -17,16 +17,16 @@ struct EdgeTests {
         let due = try LedgerDay(year: 2027, month: 1, day: 31)
         let now = try due.date(calendar: calendar)
         let core = try LedgerCore(store: try LedgerStore(inMemory: true, seed: false), calendar: calendar)
-        let wallet = WalletValue(name: "Cash", currencyCode: "JPY", createdAt: now)
-        let stale = RuleValue(title: "Already posted", amount: 100, currencyCode: "JPY", walletID: wallet.id,
+        let envelope = EnvelopeValue(id: EnvelopeValue.householdID, name: "Cash", createdAt: Date(timeIntervalSince1970: 0))
+        let stale = RuleValue(title: "Already posted", amount: 100, currencyCode: "JPY", envelopeID: envelope.id,
             schedule: .monthly(day: 31), startDay: start, createdAt: now)
-        let other = RuleValue(title: "Other rule", amount: 50, currencyCode: "JPY", walletID: wallet.id,
+        let other = RuleValue(title: "Other rule", amount: 50, currencyCode: "JPY", envelopeID: envelope.id,
             schedule: .monthly(day: 31), startDay: start, createdAt: now)
-        try core.run(.createWallet(wallet), now: now)
+        try core.run(.updateEnvelope(envelope), now: now)
         try core.run(.createRule(stale), now: now)
         try core.run(.createRule(other), now: now)
         let existing = EntryValue(kind: .expense, amount: 100, currencyCode: "JPY", day: due,
-            walletID: wallet.id, timestamp: now, title: "Already posted", source: .recurring,
+            envelopeID: envelope.id, timestamp: now, title: "Already posted", source: .recurring,
             recurringRuleID: stale.id, occurrenceDay: due, createdAt: now, updatedAt: now)
         var state = try core.snapshot()
         state.entries.append(existing)
@@ -51,18 +51,18 @@ struct EdgeTests {
         let day = try LedgerDay(year: 2027, month: 1, day: 5)
         let now = try day.date(calendar: calendar)
         let core = try LedgerCore(store: try LedgerStore(inMemory: true, seed: false), calendar: calendar)
-        var wallet = WalletValue(name: "Cash", currencyCode: "JPY", createdAt: now)
-        try core.run(.createWallet(wallet), now: now)
+        var envelope = EnvelopeValue(id: EnvelopeValue.householdID, name: "Cash", createdAt: Date(timeIntervalSince1970: 0))
+        try core.run(.updateEnvelope(envelope), now: now)
         core.clearUndoHistory()
         let expense = EntryValue(kind: .expense, amount: 100, currencyCode: "JPY", day: day,
-            walletID: wallet.id, timestamp: now, createdAt: now, updatedAt: now)
+            envelopeID: envelope.id, timestamp: now, createdAt: now, updatedAt: now)
         try core.run(.addEntry(expense), now: now)
-        let externalWallet = WalletValue(name: "External", currencyCode: "USD", createdAt: now)
+        let externalEnvelope = EnvelopeValue(kind: .child, name: "External", createdAt: now)
         let externalIncome = EntryValue(kind: .income, amount: 500, currencyCode: "USD", day: day,
-            walletID: externalWallet.id, timestamp: now, createdAt: now, updatedAt: now)
-        wallet.name = "Externally renamed"
+            envelopeID: externalEnvelope.id, timestamp: now, createdAt: now, updatedAt: now)
+        envelope.name = "Externally renamed"
         var current = try core.snapshot()
-        current.wallets = [wallet, externalWallet]
+        current.envelopes = [envelope, externalEnvelope]
         current.entries.append(externalIncome)
         try CoreValidation.validate(current)
         try core.store.replace(current)
@@ -79,9 +79,8 @@ struct EdgeTests {
     @Test("Command payloads remain Codable and Sendable across actor boundaries")
     func commandCrossActorRoundTrip() async throws {
         let now = Date(timeIntervalSince1970: 1_800_000_000)
-        let wallet = WalletValue(name: "Voice wallet", currencyCode: "USD", paymentMethodKey: "custom:Voice", createdAt: now)
-        let command = LedgerCommand.createWallet(wallet, openingBalance: -123,
-            openingDay: try LedgerDay(year: 2027, month: 1, day: 5))
+        let envelope = EnvelopeValue(name: "Voice envelope", createdAt: now)
+        let command = LedgerCommand.updateEnvelope(envelope)
         let decoded = try await Task.detached {
             try JSONDecoder().decode(LedgerCommand.self, from: JSONEncoder().encode(command))
         }.value
@@ -93,23 +92,22 @@ struct EdgeTests {
         let day = try LedgerDay(year: 2027, month: 1, day: 5)
         let now = try day.date(calendar: calendar)
         let core = try LedgerCore(store: try LedgerStore(inMemory: true, seed: false), calendar: calendar)
-        var wallet = WalletValue(name: "Cash", currencyCode: "JPY", createdAt: now)
+        var envelope = EnvelopeValue(id: EnvelopeValue.householdID, name: "Cash", createdAt: Date(timeIntervalSince1970: 0))
         var category = CategoryValue(kind: .expense, customName: "Food")
-        try core.run(.createWallet(wallet), now: now)
+        try core.run(.updateEnvelope(envelope), now: now)
         try core.run(.createCategory(category), now: now)
         let expense = EntryValue(kind: .expense, amount: 100, currencyCode: "JPY", day: day,
-            walletID: wallet.id, timestamp: now, categoryID: category.id, reviewFlags: [.amountUncertain, .dateFromCaptureTime],
+            envelopeID: envelope.id, timestamp: now, categoryID: category.id, reviewFlags: [.amountUncertain, .dateFromCaptureTime],
             createdAt: now, updatedAt: now)
         try core.run(.addEntry(expense), now: now)
         let original = try core.snapshot()
-        wallet.name = "Bank"; wallet.kind = .bankAccount; wallet.colorKey = "blue"
-        wallet.iconKey = "building.columns"; wallet.paymentMethodKey = "bankTransfer"; wallet.sortOrder = 4
-        try core.run(.updateWallet(wallet), now: now)
+        envelope.name = "Household renamed"
+        try core.run(.updateEnvelope(envelope), now: now)
         category.customName = "Meals"; category.colorKey = "orange"; category.iconKey = "fork.knife"; category.sortOrder = 2
         try core.run(.updateCategory(category), now: now)
         let renamed = try core.snapshot()
-        #expect(renamed.wallets == [wallet] && renamed.categories == [category])
-        #expect(renamed.entries == [expense] && LedgerMath.balance(wallet.id, in: renamed) == -100)
+        #expect(renamed.envelopes == [envelope] && renamed.categories == [category])
+        #expect(renamed.entries == [expense])
         let reviewPreview = core.preview(.markReviewed(expense.id), now: now)
         #expect(reviewPreview.isValid)
         #expect(try core.snapshot() == renamed)

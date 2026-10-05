@@ -49,6 +49,11 @@ Wallet, transfer, adjustment, derived balance, everything that references them (
 - Keep: recurring back-fill through min(today, endDay), records-only restore hash matching, orphan receipt cleanup, addEntry/updateEntry provenance restrictions (now without adjustments), mostRecentEntry by createdAt.
 - Performance: re-run the disk benchmark at 10,000 and 50,000 entries; do not regress add/update/delete/undo medians by more than 20% versus PR #2 numbers (36 ms add at 10k, 338 ms at 50k). Opening got slower in PR #2 (651 ms at 10k, 2,805 ms at 50k); do not make it worse, and if you find a cheap improvement (e.g. cheaper validation at load), report it. Report numbers for target/tax queries at 50k entries too (week/month status, taxSummary).
 
+### 3.7 Decisions on open questions (final)
+1. Tax rate before the first rule-book date (2019-10-01): the lookup returns nil ("unknown"), not an error and not extra historical data. Entries on such days keep `taxRate` nil; `taxSummary` excludes them from totals and reports `unknownTaxEntryCount`. Do not seed pre-2019 rates.
+2. Month with no target: `TargetStatus` returns an explicit not-set state (e.g. `allowance`/`remaining` nil), never allowance = 0. `spent`, `loggedDays` and `noSpendDays` are still reported. `isRewardEligible` is false when not set. Use nil/optional values, not a magic zero, so a UI can show "no target set".
+3. Fixed-cost classification is a snapshot: the entry stores its own `isFixedCost` (default false), copied from the rule when the recurring engine posts it (and settable on manually added entries). Changing a rule's flag affects only entries posted afterwards; deleting a rule leaves past entries untouched. Past weeks/months are never re-evaluated by later rule edits. Add the field to the schema, backup, change sets and tests.
+
 ## 4. Technical constraints
 - Swift 6 strict concurrency, no external dependencies, no UI imports. Money is integer minor units. Days are `LedgerDay` civil dates.
 - All new fields CloudKit-compatible (optional or defaulted, UUID references, no unique constraints), matching the existing schema rules.

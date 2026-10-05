@@ -18,10 +18,7 @@ struct RecurringTests {
         try LedgerCore(store: try LedgerStore(inMemory: true, seed: false), calendar: calendar)
     }
     func setup(_ core: LedgerCore, start: LedgerDay, schedule: RecurringSchedule = .monthly(day: 31)) throws -> RuleValue {
-        let wallet = WalletValue(name: "Cash", currencyCode: "JPY", createdAt: try now(start))
-        let rule = RuleValue(title: "Rent", amount: 100, currencyCode: "JPY", walletID: wallet.id,
-                             schedule: schedule, startDay: start, createdAt: try now(start))
-        try core.run(.createWallet(wallet), now: now(start))
+        let rule = RuleValue(title: "Rent", amount: 100, currencyCode: "JPY",                              schedule: schedule, startDay: start, createdAt: try now(start))
         try core.run(.createRule(rule), now: now(start))
         return rule
     }
@@ -92,15 +89,15 @@ struct RecurringTests {
     func deletionAndFailures() throws {
         let core = try core(), start = day(2027, 1, 1), end = day(2027, 3, 31)
         let bad = try setup(core, start: start)
-        let goodWallet = WalletValue(name: "Bank", currencyCode: "JPY", createdAt: try now(start))
-        try core.run(.createWallet(goodWallet), now: now(start))
-        let good = RuleValue(amount: 50, currencyCode: "JPY", walletID: goodWallet.id,
+        let child = EnvelopeValue(kind: .child, name: "Child")
+        try core.run(.createEnvelope(child), now: now(start))
+        let good = RuleValue(amount: 50, currencyCode: "JPY", envelopeID: child.id,
                              schedule: .monthly(day: 31), startDay: start, createdAt: try now(start))
         try core.run(.createRule(good), now: now(start))
-        try core.run(.archiveWallet(bad.walletID, archived: true), now: now(start))
+        try core.run(.archiveEnvelope(bad.envelopeID, archived: true), now: now(start))
         let result = try core.postRecurring(through: end, now: now(end))
         #expect(result.posted.count == 3 && result.failures.count == 3)
-        #expect(result.failures.allSatisfy { $0.ruleID == bad.id && $0.error == .archivedWallet(bad.walletID) })
+        #expect(result.failures.allSatisfy { $0.ruleID == bad.id && $0.error == .invalidField("archivedEnvelope", bad.envelopeID) })
         #expect(result.failures.map(\.day) == [day(2027, 1, 31), day(2027, 2, 28), end])
         let firstID = try #require(result.posted.first?.id)
         try core.run(.deleteEntry(firstID), now: now(end))
@@ -109,7 +106,7 @@ struct RecurringTests {
         #expect(try core.snapshot().entries.count == 2)
     }
 
-    @Test("U2 recurring bypasses undo history and conflicts with wallet creation undo")
+    @Test("U2 recurring bypasses undo history and conflicts with envelope creation undo")
     func recurringHistory() throws {
         let core = try core(), start = day(2027, 1, 1), end = day(2027, 1, 31)
         let rule = try setup(core, start: start)
@@ -119,10 +116,10 @@ struct RecurringTests {
         #expect(core.undoCount == beforeCount)
         #expect(try core.undo(now: now(end)) == nil)
         let other = try self.core()
-        let wallet = WalletValue(name: "Cash", currencyCode: "JPY", createdAt: try now(start))
-        try other.run(.createWallet(wallet), now: now(start))
+        let child = EnvelopeValue(kind: .child, name: "Child")
+        try other.run(.createEnvelope(child), now: now(start))
         var state = try other.snapshot()
-        var injected = rule; injected.id = UUID(); injected.walletID = wallet.id
+        var injected = rule; injected.id = UUID(); injected.envelopeID = child.id
         state.rules = [injected]
         try other.store.replace(state)
         try other.reload()
@@ -160,20 +157,20 @@ struct RecurringTests {
         let state = try core.snapshot()
         #expect(state.rules.isEmpty)
         #expect(state.entries.first?.id == posted.posted.first?.id)
-        #expect(state.entries.first?.recurringRuleID == nil)
+        #expect(state.entries.first == posted.posted.first)
     }
 
-    @Test("Budget upsert preserves IDs and point-card CRUD preserves integer points")
-    func budgetAndPointCardCRUD() throws {
+    @Test("Target upsert preserves IDs and point-card CRUD preserves integer points")
+    func targetAndPointCardCRUD() throws {
         let core = try core(), today = day(2027, 1, 1)
-        let budget = BudgetValue(currencyCode: "JPY", monthlyAmount: 1_000)
-        try core.run(.setBudget(budget), now: now(today))
-        try core.run(.setBudget(BudgetValue(currencyCode: "JPY", monthlyAmount: 2_000)), now: now(today))
-        let stored = try #require(core.snapshot().budgets.first)
-        #expect(stored.id == budget.id && stored.monthlyAmount == 2_000)
-        #expect(try core.snapshot().budgets.count == 1)
-        try core.run(.removeBudget(stored.id), now: now(today))
-        #expect(try core.snapshot().budgets.isEmpty)
+        let target = TargetValue(currencyCode: "JPY", amountMinor: 1_000, effectiveMonth: LedgerMonth(day: today))
+        try core.run(.setTarget(target), now: now(today))
+        try core.run(.setTarget(TargetValue(currencyCode: "JPY", amountMinor: 2_000, effectiveMonth: LedgerMonth(day: today))), now: now(today))
+        let stored = try #require(core.snapshot().targets.first)
+        #expect(stored.id == target.id && stored.amountMinor == 2_000)
+        #expect(try core.snapshot().targets.count == 1)
+        try core.run(.removeTarget(stored.id), now: now(today))
+        #expect(try core.snapshot().targets.isEmpty)
         var card = PointCardValue(name: "Rewards", memberNumber: "000123", points: 0)
         try core.run(.createPointCard(card), now: now(today))
         card.points = 42; card.expiryDay = day(2028, 1, 1)
@@ -184,7 +181,7 @@ struct RecurringTests {
         #expect(try core.snapshot().pointCards.isEmpty)
     }
 
-    @Test("Invalid rule budget and points commands reject atomically")
+    @Test("Invalid rule target and points commands reject atomically")
     func supportingCommandValidation() throws {
         let core = try core(), start = day(2027, 1, 1)
         var rule = try setup(core, start: start)
@@ -192,8 +189,8 @@ struct RecurringTests {
         rule.id = UUID(); rule.amount = 0
         #expect(throws: CoreError.invalidField("amount", rule.id)) { try core.run(.createRule(rule), now: now(start)) }
         #expect(try core.snapshot() == before)
-        let budget = BudgetValue(currencyCode: "JPY", monthlyAmount: 0)
-        #expect(throws: CoreError.invalidField("monthlyAmount", budget.id)) { try core.run(.setBudget(budget), now: now(start)) }
+        let target = TargetValue(currencyCode: "JPY", amountMinor: -1, effectiveMonth: LedgerMonth(day: start))
+        #expect(throws: CoreError.invalidField("amountMinor", target.id)) { try core.run(.setTarget(target), now: now(start)) }
         let card = PointCardValue(name: "Bad", points: -1)
         #expect(throws: CoreError.invalidField("points", card.id)) { try core.run(.createPointCard(card), now: now(start)) }
         #expect(try core.snapshot() == before)
@@ -230,6 +227,25 @@ struct RecurringTests {
         #expect(result.failures.isEmpty)
         #expect(result.posted.map(\.day) == [start, day(2027, 4, 1)])
         #expect(try core.postRecurring(through: day(2027, 4, 1), now: now(day(2027, 4, 1))).posted.isEmpty)
+    }
+
+    @Test("Fixed-cost classification is copied at posting and survives rule edit and deletion")
+    func fixedCostSnapshot() throws {
+        let core = try core(), start = day(2027, 1, 1)
+        var rule = try setup(core, start: start)
+        rule.isFixedCost = true
+        try core.run(.updateRule(rule), now: now(start))
+        let first = try core.postRecurring(through: day(2027, 1, 31), now: now(day(2027, 1, 31)))
+        #expect(first.posted.first?.isFixedCost == true)
+        rule = try #require(core.state.rules.first); rule.isFixedCost = false
+        try core.run(.updateRule(rule), now: now(day(2027, 2, 1)))
+        let second = try core.postRecurring(through: day(2027, 2, 28), now: now(day(2027, 2, 28)))
+        #expect(second.posted.first?.isFixedCost == false)
+        let records = core.state.entries
+        try core.run(.deleteRule(rule.id), now: now(day(2027, 2, 28)))
+        #expect(core.state.entries == records)
+        try CoreValidation.validate(core.state)
+        #expect(try core.store.read().entries == records)
     }
 
 }
