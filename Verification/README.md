@@ -109,3 +109,13 @@ On an Apple Intelligence-capable iPhone or iPad:
 6. Request money tips after changing income, spending, and assets. Check the moving ticker in light/dark system appearance, with Reduce Motion and VoiceOver, and when a new sentence replaces an active one.
 
 The [physical-device results](DeviceUI/RESULTS.md) identify the 11 completed iPhone cases and their limits. Items above that are outside those cases remain unverified. Mac component rendering and animation checks do not substitute for phone screenshots or device interaction.
+
+## New ledger foundation (WealthyCore)
+
+```sh
+sh Verification/verify_core.sh
+```
+
+This runs the Swift Testing suite on the Mac, without a simulator. It covers the new ledger's derived balances, command validation, previews, undo, receipts, recurring entries, budgets, queries, and versioned backups. The performance case reports median query times for 10,000 synthetic entries across ten wallets; timing is informational and has no pass/fail threshold.
+
+WealthyCore is linked to the app but no current screen uses it yet. Its separate store and receipt directory leave legacy records and images untouched. Package tests and unsigned builds do not establish physical-device behavior or CloudKit synchronization.

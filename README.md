@@ -1,6 +1,6 @@
 # Wealthy
 
-[English](README.md) · [日本語](README.ja.md) · [简体中文](README.zh-Hans.md) · [हिन्दी](README.hi.md) · [Español](README.es.md) · [العربية](README.ar.md) · [Français](README.fr.md) · [Bahasa Indonesia](README.id.md) · [한국어](README.ko.md) · [Русский](README.ru.md) · [Português](README.pt.md)
+[English](README.md)
 
 Wealthy is an iPhone and iPad app for recording expenses, income, and wallet balances. Receipt scanning, spending summaries, and on-device AI help you review your finances.
 
