@@ -6,7 +6,7 @@
 - Status: COMPLETED (implementation and required verification); Git delivery recorded below.
 - Branch: `codex/wealthy-c1-core`
 - Base: `main` / `origin/main` at `5bcea8d35b289e0f37f2a90164745742772eb526`
-- Pull request: pending creation after the source commit and branch push.
+- Pull request: [#1 — Add WealthyCore ledger foundation for Cycle 1](https://github.com/Kei-Takamizawa/Wealthy/pull/1)
 
 ## Outcome and milestones
 
@@ -234,4 +234,11 @@ No unresolved implementation or acceptance blocker remains. Designer review item
 
 ## Git delivery
 
-Initial source commit, verified branch push, PR creation, and report-link update are part of this same cycle. The user's pre-existing changes remain outside the commits. Stop after the final branch push is verified; do not start Cycle 2 or extra improvements.
+- Implementation commit: `f521e47614f172c99b0fe4773ed546aecf3078c6` (`Add WealthyCore ledger foundation for cycle 1`).
+- `git push -u origin codex/wealthy-c1-core`: PASS. `git ls-remote origin refs/heads/codex/wealthy-c1-core` confirmed the implementation commit on origin.
+- PR #1: created successfully against `main` and attached to this chat. No merge was performed.
+- `git diff --stat main...HEAD -- Wealthy/Wealthy/`: empty after the source commit, confirming no app-source changes.
+- This report-link update is committed and pushed separately within the same delivery cycle.
+- The user's original three `.DS_Store` changes and three removed blank lines in the Xcode project remain outside the commits.
+
+Stop after verifying the final report commit on origin. Cycle 2 and extra improvements are intentionally not started.
