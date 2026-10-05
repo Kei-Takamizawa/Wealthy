@@ -15,7 +15,7 @@ struct RecurringTests {
     }
     func now(_ day: LedgerDay) throws -> Date { try day.date(calendar: calendar) }
     func core() throws -> LedgerCore {
-        LedgerCore(store: try LedgerStore(inMemory: true, seed: false), calendar: calendar)
+        try LedgerCore(store: try LedgerStore(inMemory: true, seed: false), calendar: calendar)
     }
     func setup(_ core: LedgerCore, start: LedgerDay, schedule: RecurringSchedule = .monthly(day: 31)) throws -> RuleValue {
         let wallet = WalletValue(name: "Cash", currencyCode: "JPY", createdAt: try now(start))
@@ -47,7 +47,7 @@ struct RecurringTests {
         let result = try core.postRecurring(through: end, now: now(end))
         #expect(result.posted.map(\.day) == [day(2027, 1, 31), day(2027, 2, 28), end])
         #expect(result.failures.isEmpty)
-        let newSession = LedgerCore(store: core.store, calendar: calendar)
+        let newSession = try LedgerCore(store: core.store, calendar: calendar)
         let repeated = try newSession.postRecurring(through: end, now: now(end))
         #expect(repeated.posted.isEmpty && repeated.failures.isEmpty)
         #expect(try newSession.snapshot().rules.first { $0.id == rule.id }?.lastPostedDay == end)
@@ -73,7 +73,7 @@ struct RecurringTests {
         var expiredRule = try setup(expired, start: start)
         expiredRule.endDay = day(2027, 1, 31)
         try expired.run(.updateRule(expiredRule), now: now(start))
-        #expect(try expired.postRecurring(through: day(2027, 2, 28), now: now(day(2027, 2, 28))).posted.isEmpty)
+        #expect(try expired.postRecurring(through: day(2027, 2, 28), now: now(day(2027, 2, 28))).posted.map(\.day) == [day(2027, 1, 31)])
     }
 
     @Test("R4 yearly leap-day fallback and weekly weekday")
@@ -125,6 +125,7 @@ struct RecurringTests {
         var injected = rule; injected.id = UUID(); injected.walletID = wallet.id
         state.rules = [injected]
         try other.store.replace(state)
+        try other.reload()
         _ = try other.postRecurring(through: end, now: now(end))
         let postedState = try other.snapshot()
         #expect(throws: CoreError.undoConflict) { try other.undo(now: now(end)) }
@@ -205,12 +206,12 @@ struct RecurringTests {
         let posted: LedgerState
         let ruleID: UUID
         do {
-            let session = LedgerCore(store: try LedgerStore(inMemory: false, directory: directory, seed: false), calendar: calendar)
+            let session = try LedgerCore(store: try LedgerStore(inMemory: false, directory: directory, seed: false), calendar: calendar)
             ruleID = try setup(session, start: start).id
             #expect(try session.postRecurring(through: end, now: now(end)).posted.count == 3)
             posted = try session.snapshot()
         }
-        let reopened = LedgerCore(store: try LedgerStore(inMemory: false, directory: directory, seed: false), calendar: calendar)
+        let reopened = try LedgerCore(store: try LedgerStore(inMemory: false, directory: directory, seed: false), calendar: calendar)
         #expect(try reopened.snapshot() == posted)
         #expect(try reopened.snapshot().rules.first { $0.id == ruleID }?.lastPostedDay == end)
         let repeated = try reopened.postRecurring(through: end, now: now(end))

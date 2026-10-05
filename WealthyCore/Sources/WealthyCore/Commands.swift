@@ -1,4 +1,5 @@
 import Foundation
+import Observation
 
 /// A draft attachment remains a value until its entry command commits.
 public struct ReceiptInput: Codable, Sendable, Equatable {
@@ -68,6 +69,10 @@ public enum CoreValidation {
         }
         for receipt in state.receipts {
             guard safeFilename(receipt.fileName) else { throw CoreError.unsafeFilename(receipt.fileName) }
+            if let hash = receipt.imageSHA256 {
+                guard hash.utf8.count == 64, hash.utf8.allSatisfy({ (48...57).contains($0) || (97...102).contains($0) })
+                else { throw CoreError.invalidField("imageSHA256", receipt.id) }
+            }
         }
         for entry in state.entries { try validateEntry(entry, in: state, active: false) }
         try validatePlanning(state)
@@ -128,37 +133,77 @@ public enum LedgerMath {
 }
 
 /// Main-actor isolation matches the app while keeping all API results Sendable.
-@MainActor public final class LedgerCore {
+@Observable @MainActor public final class LedgerCore {
     public let store: LedgerStore
     public var calendar: Calendar
-    public init(store: LedgerStore, calendar: Calendar = .current) { self.store = store; self.calendar = calendar }
-    public func snapshot() throws -> LedgerState { try store.read() }
-    private var history: [(before: LedgerState, after: LedgerState)] = []
+    /// The validated working state; reading it never fetches SwiftData models.
+    public private(set) var state: LedgerState
+    /// Increases once after successful persisted changes or a changed external reload.
+    public private(set) var revision = 0
+    private var history: [LedgerChanges] = []
+
+    /// Loads and fully validates the initial store before exposing observable state.
+    public init(store: LedgerStore, calendar: Calendar = .current) throws {
+        let initial = try store.read()
+        try CoreValidation.validate(initial)
+        self.store = store; self.calendar = calendar; state = initial
+    }
+    /// Returns the cached detached state without fetching from persistence.
+    public func snapshot() throws -> LedgerState { state }
+    /// Number of retained command changes available to undo.
     public var undoCount: Int { history.count }
+    var undoRetainedRecordCount: Int { history.reduce(0) { $0 + $1.recordCount } }
+    var latestUndoRecordCount: Int { history.last?.recordCount ?? 0 }
+    /// Discards undo history without changing persisted records or revision.
     public func clearUndoHistory() { history.removeAll() }
+
+    /// Reloads external writes without discarding undo history; touched records remain conflict checked.
+    public func reload() throws {
+        let loaded = try store.read()
+        try CoreValidation.validate(loaded)
+        if loaded != state { state = loaded; revision += 1 }
+    }
+
+    /// Commits a validated candidate without creating undo history, for recurring and cleanup operations.
+    func commit(_ candidate: LedgerState, filesChanged: Bool = false, restoring: LedgerChanges? = nil) throws {
+        try CoreValidation.validateChanges(before: state, after: candidate)
+        let changes = LedgerChanges(before: state, after: candidate, orders: store.orders, restoring: restoring)
+        try store.apply(changes, forceSave: filesChanged, checkingUndo: restoring != nil)
+        if !changes.isEmpty || filesChanged { state = candidate; revision += 1 }
+    }
+
+    /// Accepts already validated replacement data only after the restore transaction has succeeded.
+    func acceptRestoredState(_ value: LedgerState, filesChanged: Bool) {
+        if value != state || filesChanged { state = value; revision += 1 }
+        clearUndoHistory()
+    }
 
     /// Validates a draft using the same rules as execution without writing records or images.
     public func preview(_ command: LedgerCommand, now: Date) -> CommandPreview {
         do {
-            let before = try store.read()
+            let before = state
             var after = before
             try apply(command, to: &after, now: now)
-            try CoreValidation.validate(after)
+            try CoreValidation.validateChanges(before: before, after: after)
             try validateImages(command)
             let summary = try StateChanges.result(before: before, after: after, today: try LedgerDay(date: now, calendar: calendar), calendar: calendar).summary
             return CommandPreview(errors: [], summary: summary)
         } catch { return CommandPreview(errors: [error as? CoreError ?? .saveFailed], summary: nil) }
     }
+    /// Validates and commits one command, publishing state only after the transaction succeeds.
     @discardableResult public func run(_ command: LedgerCommand, now: Date) throws -> CommandResult {
-        let before = try store.read()
+        let before = state
         var after = before
         try apply(command, to: &after, now: now)
-        try CoreValidation.validate(after)
+        try CoreValidation.validateChanges(before: before, after: after)
         try validateImages(command)
         let result = try StateChanges.result(before: before, after: after, today: try LedgerDay(date: now, calendar: calendar), calendar: calendar)
-        try ReceiptFiles.write(images(command), directory: store.receiptsDirectory) { try store.replace(after) }
+        let changes = LedgerChanges(before: before, after: after, orders: store.orders)
+        let fileChanges = try ReceiptFiles.changes(images(command), directory: store.receiptsDirectory, removing: [])
+        try ReceiptFiles.write(images(command), directory: store.receiptsDirectory) { try store.apply(changes, forceSave: fileChanges) }
+        if !changes.isEmpty || fileChanges { state = after; revision += 1 }
         if before != after {
-            history.append((before, after))
+            history.append(changes)
             if history.count > 20 { history.removeFirst(history.count - 20) }
         }
         return result
@@ -166,24 +211,29 @@ public enum LedgerMath {
     /// Undoes changed records while preserving unrelated externally added records.
     @discardableResult public func undo(now: Date) throws -> CommandResult? {
         guard let step = history.last else { return nil }
-        let current = try store.read()
+        let current = state
         let previous: LedgerState
         do {
-            previous = try StateChanges.inverse(before: step.before, after: step.after, current: current)
-            try CoreValidation.validate(previous)
+            previous = try step.inverse(current: current, orders: store.orders)
+            try CoreValidation.validateChanges(before: current, after: previous)
         } catch { throw CoreError.undoConflict }
         let result = try StateChanges.result(before: current, after: previous, today: try LedgerDay(date: now, calendar: calendar), calendar: calendar)
-        try store.replace(previous)
+        try commit(previous, restoring: step)
         history.removeLast()
         return result
     }
-    /// Run only after abandoning undo history, for example at launch.
+    /// Atomically removes unreferenced receipt metadata and files, only after abandoning undo history.
     public func cleanupOrphanReceipts() throws -> [String] {
         guard history.isEmpty else { throw CoreError.historyNotEmpty }
-        let state = try store.read()
-        let referencedIDs = Set(state.entries.compactMap(\.receiptID))
-        let names = Set(state.receipts.filter { referencedIDs.contains($0.id) }.map(\.fileName))
-        return try ReceiptFiles.cleanup(referenced: names, directory: store.receiptsDirectory)
+        var candidate = state
+        let referencedIDs = Set(candidate.entries.compactMap(\.receiptID))
+        candidate.receipts.removeAll { !referencedIDs.contains($0.id) }
+        let names = Set(candidate.receipts.map(\.fileName))
+        let orphanFiles = try ReceiptFiles.orphans(referenced: names, directory: store.receiptsDirectory)
+        try ReceiptFiles.removeOrphans(Set(orphanFiles), directory: store.receiptsDirectory) {
+            try commit(candidate, filesChanged: !orphanFiles.isEmpty)
+        }
+        return orphanFiles
     }
     private func images(_ command: LedgerCommand) -> [String: Data] {
         switch command {
@@ -239,12 +289,21 @@ public enum LedgerMath {
                   !state.rules.contains(where: { $0.walletID == id || $0.counterpartWalletID == id }) else { throw CoreError.walletHasHistory(id) }
             state.entries.removeAll { $0.walletID == id }; state.wallets.remove(at: i)
         case let .addEntry(entry, receipt):
+            guard entry.kind != .adjustment else { throw CoreError.invalidField("kind", entry.id) }
+            guard [.manual, .receipt, .voice].contains(entry.source) else { throw CoreError.invalidField("source", entry.id) }
+            guard entry.recurringRuleID == nil else { throw CoreError.invalidField("recurringRuleID", entry.id) }
+            guard entry.occurrenceDay == nil else { throw CoreError.invalidField("occurrenceDay", entry.id) }
             var entry = entry
             try attach(receipt, to: &entry, state: &state)
             try CoreValidation.validateEntry(entry, in: state, active: true)
             state.entries.append(entry)
         case let .updateEntry(entry, receipt):
             let i = try index(entry.id, in: state.entries.map(\.id), type: "entry")
+            let stored = state.entries[i]
+            guard entry.source == stored.source else { throw CoreError.invalidField("source", entry.id) }
+            guard entry.recurringRuleID == stored.recurringRuleID else { throw CoreError.invalidField("recurringRuleID", entry.id) }
+            guard entry.occurrenceDay == stored.occurrenceDay else { throw CoreError.invalidField("occurrenceDay", entry.id) }
+            guard (entry.kind == .adjustment) == (stored.kind == .adjustment) else { throw CoreError.invalidField("kind", entry.id) }
             var entry = entry
             try attach(receipt, to: &entry, state: &state)
             try CoreValidation.validateEntry(entry, in: state, active: true)
@@ -270,7 +329,8 @@ public enum LedgerMath {
         }
     }
     func attach(_ receipt: ReceiptInput?, to entry: inout EntryValue, state: inout LedgerState) throws {
-        guard let receipt else { return }
+        guard var receipt else { return }
+        receipt.metadata.imageSHA256 = ReceiptFiles.imageHash(receipt.image)
         if let existing = state.receipts.first(where: { $0.id == receipt.metadata.id }) {
             guard existing == receipt.metadata else { throw CoreError.duplicateID(existing.id) }
         } else { state.receipts.append(receipt.metadata) }

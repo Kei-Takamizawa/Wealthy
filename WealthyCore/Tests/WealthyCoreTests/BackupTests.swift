@@ -14,7 +14,7 @@ struct BackupTests {
     func core() throws -> LedgerCore {
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = TimeZone(secondsFromGMT: 0)!
-        return LedgerCore(store: try LedgerStore(inMemory: true, seed: false), calendar: calendar)
+        return try LedgerCore(store: try LedgerStore(inMemory: true, seed: false), calendar: calendar)
     }
     func fixture() -> LedgerState {
         let cash = WalletValue(name: "Cash", currencyCode: "JPY", kind: .cash,
@@ -85,6 +85,7 @@ struct BackupTests {
         for included in [false, true] {
             let source = try core(), state = fixture()
             try source.store.replace(state)
+            try source.reload()
             try image.write(to: source.store.receiptsDirectory.appendingPathComponent("shared.png"))
             let size = try LedgerBackup.size(in: source)
             #expect(size.count == 1 && size.bytes == image.count)

@@ -38,25 +38,6 @@ enum StateChanges {
         let b = Dictionary(uniqueKeysWithValues: after.map { ($0.id, $0) })
         return Set(a.keys).union(b.keys).filter { a[$0] != b[$0] }
     }
-    static func inverse<T: Identifiable & Equatable>(before: [T], after: [T], current: [T]) throws -> [T] where T.ID == UUID {
-        let changed = ids(before, after)
-        for id in changed {
-            guard current.first(where: { $0.id == id }) == after.first(where: { $0.id == id }) else { throw CoreError.undoConflict }
-        }
-        var result = current.filter { !changed.contains($0.id) }
-        for (index, value) in before.enumerated() where changed.contains(value.id) { result.insert(value, at: min(index, result.count)) }
-        return result
-    }
-    static func inverse(before: LedgerState, after: LedgerState, current: LedgerState) throws -> LedgerState {
-        if current == after { return before }
-        return try LedgerState(wallets: inverse(before: before.wallets, after: after.wallets, current: current.wallets),
-            categories: inverse(before: before.categories, after: after.categories, current: current.categories),
-            entries: inverse(before: before.entries, after: after.entries, current: current.entries),
-            receipts: inverse(before: before.receipts, after: after.receipts, current: current.receipts),
-            rules: inverse(before: before.rules, after: after.rules, current: current.rules),
-            budgets: inverse(before: before.budgets, after: after.budgets, current: current.budgets),
-            pointCards: inverse(before: before.pointCards, after: after.pointCards, current: current.pointCards))
-    }
     static func result(before: LedgerState, after: LedgerState, today: LedgerDay, calendar: Calendar) throws -> CommandResult {
         let entries = ids(before.entries, after.entries)
         var wallets = ids(before.wallets, after.wallets)

@@ -1,167 +1,155 @@
-# WealthyCore — Cycle 1 implementation report
+# WealthyCore — Cycle 1.1 implementation report
 
-- Task ID: WEALTHY-C1-CORE
-- Cycle: 1
+- Task ID: WEALTHY-C1.1-STORE
+- Cycle: 1.1
 - Date: 2026-10-05 JST
-- Status: COMPLETED (implementation and required verification); Git delivery recorded below.
-- Branch: `codex/wealthy-c1-core`
-- Base: `main` / `origin/main` at `5bcea8d35b289e0f37f2a90164745742772eb526`
-- Pull request: [#1 — Add WealthyCore ledger foundation for Cycle 1](https://github.com/Kei-Takamizawa/Wealthy/pull/1)
+- Status: COMPLETED.
+- Branch: `codex/wealthy-c1-1-store`
+- Base: latest `origin/main`, `9b86de2`, which already contains PR #1 / `ebe6fbd`.
+- Pull request: https://github.com/Kei-Takamizawa/Wealthy/pull/2
 
 ## Outcome and milestones
 
-The separate WealthyCore package implements the new ledger, commands, previews, 20-step undo, receipts, recurring rules, budgets, queries, point cards, and versioned JSON backup. It is linked into the app. No app source imports it, and the existing UI continues to use the legacy store.
+Commands, undo, recurring posting, seeding and orphan cleanup now persist changed rows only. LedgerCore holds observable cached values; undo retains changed records only. The requested recurring, image, cleanup, provenance and last-recorded fixes are complete. Current app screens still use the legacy store.
 
-| Milestone | Status | Green gate |
+| Milestone | Status | Evidence |
 | --- | --- | --- |
-| M1: package, V1 schema/store/seeds, rules, wallet/entry/category commands | COMPLETED | 19 tests, 0 failures, 0 warnings |
-| M2: preview/results, undo, attachment writes and cleanup | COMPLETED | 28 tests, 0 failures, 0 warnings |
-| M3: recurring, budgets, queries | COMPLETED | 46 tests, 0 failures, 0 warnings |
-| M4: backups, project linking, script/docs, final regression verification | COMPLETED | 62 tests, 0 failures, 0 warnings; both unsigned builds and physical-device test PASS |
+| M1 | COMPLETED | Harness and Cycle 1 baseline; 62 passed, 1 opt-in benchmark skipped, 0 failures, 0.810 s |
+| M2 | COMPLETED | Incremental persistence, cache, Observation, revision, reload; 68 passed, 1 opt-in benchmark skipped, 0 failures, 0.636 s |
+| M3 | COMPLETED | Bounded change-set undo; 72 passed, 1 opt-in benchmark skipped, 0 failures, 1.175 s |
+| M4 | COMPLETED | Correctness fixes and command restrictions; 89 passed, 1 opt-in benchmark skipped, 0 failures, 1.379 s |
+| M5 | COMPLETED | Both disk sizes benchmarked before/after; documentation, app builds, existing scripts and device smoke passed |
 
-There is no stored balance or persisted draft. Integer entry amounts are accumulated using Decimal. All references are UUIDs. Days are explicit Gregorian civil dates; calendar arguments supply the time zone for conversion/arithmetic without moving stored days.
+The 10,000-entry add median is 36.285 ms versus 2134.099 ms: 58.82x faster, below the 426.820 ms PERF threshold. Opening regressed at both sizes; measurements and limits are reported below.
 
-## Changes and package layout
+## Persistence, state, order and rollback
 
-```text
-WealthyCore/
-  Package.swift
-  Sources/WealthyCore/Backup.swift
-  Sources/WealthyCore/Commands.swift
-  Sources/WealthyCore/Currency.swift
-  Sources/WealthyCore/Files.swift
-  Sources/WealthyCore/Planning.swift
-  Sources/WealthyCore/Queries.swift
-  Sources/WealthyCore/Results.swift
-  Sources/WealthyCore/Schema.swift
-  Sources/WealthyCore/Store.swift
-  Sources/WealthyCore/Values.swift
-  Tests/WealthyCoreTests/BackupTests.swift
-  Tests/WealthyCoreTests/EdgeTests.swift
-  Tests/WealthyCoreTests/FoundationTests.swift
-  Tests/WealthyCoreTests/LedgerTests.swift
-  Tests/WealthyCoreTests/QueryTests.swift
-  Tests/WealthyCoreTests/RecurringTests.swift
-  Tests/WealthyCoreTests/UndoTests.swift
+LedgerCore loads and fully validates one detached LedgerState at initialization. `state` and `snapshot()` return cached values without database access. Each operation applies to a copy, validates changed records and their dependencies, then builds per-model UUID change sets. Global UUID and recurring-occurrence uniqueness are still checked. Small planning/wallet/category metadata is validated; unchanged receipt metadata and unchanged entry invariants are not repeatedly revalidated. A dedicated test runs full CoreValidation after every command case and each undo.
+
+LedgerStore uses a fresh autosave-disabled ModelContext for each read/transaction. Updates and deletes fetch only their UUID with predicates; updates assign fields in place. One successful save publishes both order maps and internal write counters. No-op operations perform no save. File-only changes perform one empty model save so injected save failures still roll back files and revision. Seeding inserts only missing defaults.
+
+Record order is separate from presentation sortOrder. Unchanged rows keep recordOrder, new rows receive max existing order plus one, and deletion undo restores the previous order. Reads and undo break tied orders by ascending UUID for stable external-write ordering. Surviving rows retain persistentModelID. A restored deleted row is a new SwiftData identity with the original domain UUID/order, as expected.
+
+Each undo step stores only before/after values and orders of touched records, with a 20-step limit. Unrelated rows are preserved. The conflict check compares touched values/orders in the cache, then checks their actual persisted rows before writing, so an unseen external edit to a touched row also fails safely. Inverse relationship validation rejects dependent-state conflicts. Recurring posting and cleanup create no history; successful restore clears it.
+
+Candidate state/history/revision are published only after successful database and file transactions. Failed validation, file writes and injected saves leave persisted rows, cached values, history, revision, order maps and previous successful write diagnostics unchanged. Receipt rollback originals are staged on disk and restored one at a time. Backup restore validates all data first, replaces records only when values differ, then refreshes the working state from the validated values it saved; a file-only restore uses an incremental empty-row save. Exact no-op restores still clear history but do not change revision or row identities.
+
+External writers use `reload()` to refresh cached values and all relationships. It reads through a fresh context, fully validates, retains history and increases revision once if the detached state differs. Live iCloud synchronization is not implemented or tested here.
+
+Public API additions/changes:
+
+```swift
+@Observable @MainActor public final class LedgerCore
+public init(store: LedgerStore, calendar: Calendar = .current) throws
+public private(set) var state: LedgerState
+public private(set) var revision: Int
+public func reload() throws
+public func snapshot() throws -> LedgerState // existing signature, now cached
+public func cleanupOrphanReceipts() throws -> [String] // now removes metadata and files atomically
+public var imageSHA256: String? // ReceiptValue and ReceiptAttachment
+public init(id: UUID = UUID(), fileName: String, capturedAt: Date = Date(), imageSHA256: String? = nil) // ReceiptValue
 ```
 
-Added `.ai/CURRENT_TASK.md`, this report, and `Verification/verify_core.sh`. Updated `Verification/README.md` with the package test instructions. Changed `Wealthy/Wealthy.xcodeproj/project.pbxproj` only to reference and link the local package. Removed ten root translations: `README.ar.md`, `README.es.md`, `README.fr.md`, `README.hi.md`, `README.id.md`, `README.ja.md`, `README.ko.md`, `README.pt.md`, `README.ru.md`, `README.zh-Hans.md`. The English `README.md` remains; its obsolete translation links were removed.
+The throwing initializer is an intentional API adjustment to propagate initial load/validation errors. Revision increases once for persisted value or image-byte changes; previews, failures, empty undo and exact no-ops leave it unchanged. Undo history itself does not change revision. No screen needs SwiftData @Query to consume the observable state.
 
-The three pre-existing modified `.DS_Store` files and the user's Xcode-project blank-line changes are preserved outside the commits. No build products, caches, images, videos, or private device screenshots are committed.
+## Schema and correctness changes
 
-## Public API
+Only ReceiptAttachment adds `imageSHA256: String? = nil`, mirrored by ReceiptValue and its backward-compatible Codable optional field. Wallet, Category, LedgerEntry, RecurringRule, Budget and PointCard fields are unchanged. V1 stays `1.0.0`; no migration stage is added because this store has not shipped. Backup remains `wealthy-ledger`, version 1. New saved receipt inputs compute lowercase CryptoKit SHA-256. Unknown hashes decode as nil; known hashes must be 64 lowercase hexadecimal characters.
 
-- `WalletValue`, `CategoryValue`, `EntryValue`, `ReceiptValue`, `RuleValue`, `BudgetValue`, `PointCardValue`, and `LedgerState` are detached Codable/Sendable values. `LedgerDay`, `LedgerPeriod`, and the domain enums describe days and stable reason/type keys.
-- `LedgerStore(inMemory:directory:seed:)` provides isolated memory/disk storage. Disk defaults are Application Support/`WealthyLedger.store` and `WealthyLedgerReceipts/`. Ten default categories are seeded by system key, with no wallet. Low-level replacement, save-failure injection, and the ModelContainer are internal.
-- `@MainActor LedgerCore` is the mutation boundary. `run(_:now:)`, `preview(_:now:)`, `undo(now:)`, `snapshot()`, `undoCount`, `clearUndoHistory()`, and `cleanupOrphanReceipts()` expose commands and transferable results.
-- `LedgerCommand` is Codable/Sendable: create/update/reconcile/archive/delete wallet; add/update/delete/review entry; create/update/archive/delete category; create/update/pause/resume/delete recurring rule; set/remove budget; create/update/delete point card. Archive and pause Boolean commands cover both directions. The generic entry command covers expense, income, and transfer with kind-specific validation.
-- `CommandResult(affectedIDs, summary)` and `CommandPreview(errors, summary)` contain `WalletImpact` and monthly `BudgetImpact` values. A preview shares execution validation and writes neither records nor files. Before/after nil values indicate creation or removal.
-- Undo stores a bounded 20-step in-memory history. It restores exact UUIDs/values/references, preserves unrelated external changes, and refuses conflicting inverses. Failed commands do not alter history. Recurring posting is excluded; restore clears history only on success.
-- `ReceiptInput` keeps image bytes and metadata outside persistence until confirmation. `ReceiptFiles` validates single-frame complete images, performs rollback-safe writes/removals, and cleans only unreferenced direct regular files. Deleted entries retain files for undo.
-- `postRecurring(through:now:)` returns `RecurringResult(posted, failures)`. Each failure identifies rule/day/error. Persisted processed cursors prevent retry/repost, and pause intervals skip only paused days while retaining earlier missed occurrences.
-- Pure `LedgerQueries`: `walletBalances`, `totalBalances`, `entries`, `periodSummary`, `dailyTotals`, `categoryBreakdown`, `walletTotals`, `budgetStatuses`, `upcoming`, `mostRecentEntry`, `currenciesInUse`. `LedgerPeriod.month` centralizes budget/month boundaries; `budgetSpent` is shared with previews. Upcoming means tomorrow through the next N days.
-- `LedgerBackup.size(in:)`, `export(_:includeImages:now:appVersion:coreVersion:)`, and `restore(_:into:)` use `LedgerBackupArchive`, `BackupImage`, and `ImageSize`. Format is `wealthy-ledger`, version 1, with an explicit image-inclusion flag. Numeric Date encoding preserves fractional timestamps. Legacy schemas 1–4 are rejected. All records and images are validated before writes. Records-only restore removes colliding omitted image filenames so stale bytes cannot become attached to imported entries; unrelated old images remain for explicit orphan cleanup.
-- `CoreCurrency` copies the existing 155-code table and exact parsing/formatting behavior while throwing for unsupported currency codes. It never falls back to JPY.
-- `CoreError` identifies invalid fields/record IDs, missing/dangling references, duplicate IDs/names, unsupported or mismatched currencies, transfer restrictions, archived assignments, category kinds, wallet history, undo conflicts, persistence/file failures, legacy/invalid/versioned backup errors, unsafe filenames, invalid images, and cleanup attempted with undo history. It contains no localized UI messages.
+All seven models still have optional/defaulted stored properties, no unique attributes, no relationships, no deny delete rules and no ordered relationships. No #Index was added: Apple documents local query indexes in [WWDC24](https://developer.apple.com/videos/play/wwdc2024/10137/), but explicit support for SwiftData #Index with a CloudKit-mirrored store was not verified, so the task's condition was not met.
 
-## Final persisted V1 schema
+- Recurring ranges clip to min(today, endDay), inclusive; missed occurrences before the end are posted later. Paused intervals, future dates, existing occurrences and consumed cursors retain their protections.
+- Records-only restore hashes each referenced local file in 65,536-byte buffers, one file at a time. A file is retained only when every referenced metadata record naming it has a known matching hash; unknown or mismatching files are removed transactionally. Included-image round trips remain exact.
+- DeleteEntry retains receipt metadata for undo; cleanup removes unreferenced records and files in one transaction, while history blocks cleanup. Shared referenced filenames survive; ordinary orphan filenames containing spaces can be removed safely as direct children.
+- AddEntry rejects adjustments, system sources and either recurring link field. UpdateEntry rejects source/link/occurrence changes and transitions to or from adjustment. Expense/income/transfer transitions remain allowed.
+- MostRecentEntry selects createdAt descending, timestamp descending, then ascending UUID, retaining the optional source filter. Civil day no longer decides "last recorded".
 
-`WealthySchemaV1` contains seven models and `WealthyMigrationPlan` declares V1 with no migration stage yet. Every persisted property is optional or has a default. There are no SwiftData relationships, ordered relationships, unique attributes, or deny rules: UUID reference fields are used as explicitly permitted by the task. The schema follows the stated [Apple CloudKit compatibility restrictions](https://developer.apple.com/documentation/swiftdata/syncing-model-data-across-a-persons-devices); actual synchronization is disabled and was not tested.
+CloudKit composite status: **unverified for the exact SwiftData LedgerDay, associated-value RecurringSchedule, [LedgerPeriod] and [String] schema types**. Apple [documents SwiftData Codable value support](https://developer.apple.com/documentation/swiftdata/preserving-your-apps-model-data-across-launches) and [Core Data composite/nested-composite support with NSPersistentCloudKitContainer on SQLite](https://developer.apple.com/documentation/coredata/nscompositeattributedescription). Its [CloudKit mapping documentation](https://developer.apple.com/documentation/coredata/reading-cloudkit-records-for-core-data) also describes transformable data. Those general capabilities and local round trips do not establish live synchronization of these exact types. No schema serialization redesign was introduced.
 
-`recordOrder` preserves detached-array ordering for exact undo and backup round trips; it is an integer attribute, not an ordered relationship. Raw string fields map to the domain enums through validated decoding. Stored days and periods are Codable civil-date values.
+## Tests and scenario coverage
 
-### Wallet
+Final command: `sh Verification/verify_core.sh`.
 
-`recordOrder: Int`, `id: UUID`, `name: String`, `kindRaw: String`, `currencyCode: String`, `paymentMethodKey: String?`, `colorKey: String`, `iconKey: String`, `sortOrder: Int`, `isArchived: Bool`, `createdAt: Date`, `isProvisional: Bool`.
+**89 passed, 1 opt-in disk benchmark skipped, 0 failed, 1.349 seconds**. Final Core compiler/concurrency warnings: **0**. Each enabled disk benchmark run independently passed its single test with 20 measured samples per metric: baseline 2,392.146 seconds; after 654.218 seconds. The PERF comparison of raw medians also passed.
 
-### Category
-
-`recordOrder: Int`, `id: UUID`, `kindRaw: String`, `systemKey: String?`, `customName: String?`, `iconKey: String`, `colorKey: String`, `sortOrder: Int`, `isArchived: Bool`.
-
-### LedgerEntry
-
-`recordOrder: Int`, `id: UUID`, `kindRaw: String`, `amount: Int`, `directionRaw: String?`, `currencyCode: String`, `day: LedgerDay`, `timestamp: Date`, `walletID: UUID`, `counterpartWalletID: UUID?`, `categoryID: UUID?`, `title: String`, `note: String`, `sourceRaw: String`, `reviewFlagsRaw: [String]`, `receiptID: UUID?`, `recurringRuleID: UUID?`, `occurrenceDay: LedgerDay?`, `createdAt: Date`, `updatedAt: Date`.
-
-### ReceiptAttachment
-
-`recordOrder: Int`, `id: UUID`, `fileName: String`, `capturedAt: Date`.
-
-### RecurringRule
-
-`recordOrder: Int`, `id: UUID`, `title: String`, `kindRaw: String`, `amount: Int`, `currencyCode: String`, `walletID: UUID`, `counterpartWalletID: UUID?`, `categoryID: UUID?`, `schedule: RecurringSchedule`, `startDay: LedgerDay`, `endDay: LedgerDay?`, `isPaused: Bool`, `lastPostedDay: LedgerDay?`, `lastProcessedDay: LedgerDay?`, `pauseStartedDay: LedgerDay?`, `pausedPeriods: [LedgerPeriod]`, `createdAt: Date`.
-
-### Budget
-
-`recordOrder: Int`, `id: UUID`, `currencyCode: String`, `categoryID: UUID?`, `monthlyAmount: Int`.
-
-### PointCard
-
-`recordOrder: Int`, `id: UUID`, `name: String`, `memberNumber: String`, `points: Int`, `expiryDay: LedgerDay?`, `colorKey: String`, `sortOrder: Int`.
-
-## Implementation choices and deviations
-
-1. The later user instruction explicitly extended scope to delete non-English README files. Broken translation navigation was consequently removed from the remaining English README; its product content was not rewritten.
-2. Platforms are iOS 26 and macOS 26; development used macOS 27.0.1. Swift 6 language mode provides strict concurrency. MainActor execution is one of the task's allowed choices and matches the Swift 5 app's isolation.
-3. UUID reference fields, detached value APIs, and raw enum keys are permitted choices. The extra internal recurring fields `lastProcessedDay`, `pauseStartedDay`, and `pausedPeriods` preserve skipped failures/pauses without falsely labeling skipped dates as posted occurrences.
-4. Wallet deletion also refuses a live recurring-rule reference to prevent a dangling wallet; archive remains available. Expired rules post nothing when today is after endDay, following the document's explicit wording. Resume's pause interval is inclusive of its civil day.
-5. The GUI check used XCTest UI automation and a temporary project instead of a native desktop Computer Use surface. The test targeted the actual production bundle `com.harrison.Wealthy`, used no preference/launch overrides, and did not run the existing destructive DeviceTest suite. Only a uniquely named one-yen expense was created and removed.
-6. No required feature was omitted. No app source file, app translation catalog, asset, entitlement, signing setting, deployment target, gate, existing verification script, or legacy backup implementation was changed.
-
-## Tests and required scenario coverage
-
-Environment: Apple M4, 24 GiB RAM, macOS 27.0.1, Xcode 27.0 (27A266a), Swift 6.4, iOS/Simulator SDK 27.0.
-
-Final command: `sh Verification/verify_core.sh` (runs `swift test --package-path WealthyCore`). **PASS: 62 tests in seven suites, 0 failed, 0 compiler warnings.** Reported test duration: **0.871 seconds**; incremental build: **0.98 seconds**. Timings are the tool-reported test/build durations, not total process startup time.
-
-| Scenario | Test functions |
+| Scenario | Test names / evidence |
 | --- | --- |
-| L1 | `LedgerTests.derivedBalancesAndOpening` |
-| L2 | `LedgerTests.transferValidation`, `derivedBalancesAndOpening` |
-| L3 | `LedgerTests.reconcile` |
-| L4 | `LedgerTests.currencies`, `FoundationTests.currencyPrimitives` |
-| L5 | `LedgerTests.amounts`, `QueryTests.balancesAndCurrencies` |
-| L6 | `LedgerTests.archiveWallet` |
-| L7 | `LedgerTests.updateEntry` |
-| L8 | `LedgerTests.deleteWallet` |
-| L9 | `LedgerTests.categoryValidation` |
-| L10 | `LedgerTests.deleteCategory`, `UndoTests.relationalUndoExact` |
-| L11 | `LedgerTests.normalizedNames` |
-| L12 | `LedgerTests.saveFailure`, `FoundationTests.replacementFailureIsAtomic`, `UndoTests.receiptSaveFailure` |
-| U1 | `UndoTests.entryUndoExact`, `relationalUndoExact`, `EdgeTests.metadataAndReviewCommands` |
-| U2 | `UndoTests.boundedHistory`, `undoConflict`, `RecurringTests.recurringHistory`, `BackupTests.restoreClearsHistory`, `EdgeTests.undoPreservesUnrelatedExternalChanges` |
-| U3 | `UndoTests.previewBudgetAndReceipt`, `failedAndMetadataPreview`, `EdgeTests.metadataAndReviewCommands` |
-| R1 | `RecurringTests.monthEndClamping` |
-| R2 | `RecurringTests.catchUpAndRelaunch`, `persistedRelaunch` (new disk container after closing the previous one) |
-| R3 | `RecurringTests.pauseResumeAndEnd`, `pausePreservesEarlierBacklog` |
-| R4 | `RecurringTests.yearlyAndWeekly` |
-| R5 | `RecurringTests.deletionAndFailures`, `EdgeTests.existingOccurrenceAndOtherRules` |
-| B1 | `QueryTests.independentBudgets` |
-| B2 | `QueryTests.monthAcrossTimeZones` |
-| Q1 | `QueryTests.balancesAndCurrencies`, `summaryBreakdownAndWalletTotals`, `filtersAndRecent`, `upcomingRules`, `periodBoundaries` |
-| K1 | `BackupTests.roundTrip`, `FoundationTests.allRecordsRoundTrip` |
-| K2 | `BackupTests.headers`, `records`, `unsafeNames`, `invalidImages`, `imageMembership`, `planningRecords`, `restoreSaveFailure`, `recordsOnlyCollision` |
-| S1 | `FoundationTests.seedingIsIdempotent`, `diskStoreIsSeparateAndPersists` |
-| S2 | `UndoTests.orphanCleanup` |
+| P1 | PersistenceTests.singleEntryWrites: exactly one insert/update/delete and one save per entry operation |
+| P2 | singleEntryWrites; relationalWritesAndIdentity; ChangeSetUndoTests.tiedExternalOrder; untouched persistent IDs retained |
+| P3 | relationalWritesAndIdentity: category cascade exactly 2 updates + 2 deletes, other records unchanged |
+| P4 | revisionAndFailure; FixTests.fileOnlyEntryUpdate; orphanMetadataCleanup; mismatchingAndUnknownImages; existing receipt/save failure tests |
+| P5 | ChangeSetUndoTests.retainedChangedRecords; boundedRecordHistory: one entry, or entry+receipt; 20 additions retain 20 records |
+| P6 | revisionAndFailure; externalContextReload; observableStateAndRevision; fileOnlyEntryUpdate; fileOnlyCleanupRevision; matchingImageRecordsRestore |
+| P7 | All original undo cases; sparseOrderUndo; touchedOrderConflict; tiedExternalOrder; unseenExternalConflict; exact state/order restored |
+| R6 | FixTests.endedRuleCatchUp: engine and posting include Jan31 after Feb28, then no repeat |
+| R7 | cursorAndPausedEndCatchUp: Jan cursor, Feb28/Mar31 catch-up after May10; Feb pause skipped; inclusive end |
+| K3 | matchingImageRecordsRestore; mismatchingAndUnknownImages; omittedHashArchiveDecodes; imageInclusiveRoundTrip; original backup tests |
+| S3 | orphanMetadataCleanup; sharedReceiptCleanup; cleanupNonMetadataFilename; original orphanCleanup |
+| C1 | addCommandRestrictions; updateProvenanceRestrictions; adjustmentKindRestrictions |
+| Q2 | lastRecordedOrdering: newer recording with earlier civil day wins; timestamp/UUID/source filters |
+| PERF | BenchmarkTests.diskMeasurements and raw JSON median comparison; 36.285 <= 426.820 ms |
 
-Additional tests cover rule/budget/point-card CRUD, invalid command atomicity, recurring-batch save failure, cross-actor command Codable/Sendable values, review clearing, and ID-based rename preservation.
+Existing tests changed, none deleted:
 
-Existing scripts were run before changes and again on the final tree. Final results:
+- LedgerTests.derivedBalancesAndOpening: creates +50/-25 adjustments via reconciliation instead of now-forbidden addEntry, retaining all balance/direction checks.
+- LedgerTests.categoryValidation: addAdjustment now fails kind first; a direct invalid historical state still verifies adjustment category rejection.
+- RecurringTests.pauseResumeAndEnd: an expired but unprocessed rule now expects Jan31 catch-up rather than no entries.
+- QueryTests.filtersAndRecent: explicitly gives the next-day row a newer createdAt for the last-recorded expectation; entry-list day ordering remains unchanged.
+- UndoTests.orphanCleanup: additionally asserts receipt metadata is removed.
+- Constructors in BackupTests.core, LedgerTests.makeCore, UndoTests.core, RecurringTests.core/catchUpAndRelaunch/persistedRelaunch, and the three Core-using EdgeTests now use the throwing initializer. The benchmark differs from its baseline harness only by the same required `try` at three constructors; measurement boundaries/fixtures are unchanged.
+- Direct raw store fixture/external writes now explicitly call reload in LedgerTests.deleteCategory; UndoTests.relationalUndoExact/undoConflict/previewBudgetAndReceipt/failedAndMetadataPreview/receiptSaveFailure/receiptFileFailure; RecurringTests.recurringHistory; BackupTests.roundTrip; EdgeTests.existingOccurrenceAndOtherRules/undoPreservesUnrelatedExternalChanges. This synchronizes the new cache contract; conflict and exact-state assertions are retained.
 
-| Command | PASS checks | FAIL | Duration |
+## Disk benchmark results
+
+Host: Apple M4, 10 CPU cores, 24 GiB RAM, macOS 27.0.1; Xcode 27.0 (27A266a), Swift 6.4. Release configuration, arm64. The baseline used unchanged Cycle 1 source from the merged main before production edits. No builds/tests ran in parallel with the timing runs.
+
+Exact after command:
+
+```sh
+WEALTHY_BENCHMARK=1 WEALTHY_BENCHMARK_LABEL=after \
+WEALTHY_BENCHMARK_OUTPUT=/private/tmp/wealthy-c1-1-logs/after.json \
+swift test --package-path WealthyCore -c release --filter BenchmarkTests
+```
+
+Every store has 10 wallets, 12 categories, 5 budgets and 10 rules. Each metric uses 20 samples after one warm-up, fresh copies of a closed seeded disk store, UTC Gregorian January 2027. Setup/copy/disposal are outside timing; opening includes store initialization and first load. Undo reverses one prepared addition, with the preparation excluded. Recurring posts exactly one month/10 occurrences. OS file caches are not flushed. Constant assertion overhead is included. Raw samples are retained locally in baseline.json/after.json.
+
+### 10,000 entries
+
+| Operation | Cycle 1 median ms | Cycle 1.1 median ms | Before / after speed |
 | --- | ---: | ---: | ---: |
-| `python3 Verification/verify_receipt_ocr.py` | 91, plus compile/SDK/type checking | 0 | 7.010 s |
-| `sh Verification/verify_backup.sh` | 114 | 0 | 6.302 s |
-| `sh Verification/verify_localization.sh` | 6,634 | 0 | 3.252 s |
-| `sh Verification/verify_payments.sh` | 96 | 0 | 3.850 s |
-| `sh Verification/verify_migration.sh` | 11 | 0 | 2.789 s |
-| `sh Verification/verify_currency.sh` | 40 | 0 | 1.658 s |
-| `sh Verification/verify_policies.sh` | 73 | 0 | 2.572 s |
-| `sh Verification/verify_money_tip.sh` | 1,524 | 0 | 3.259 s |
-| Total | 8,583 | 0 | 30.692 s |
+| `addEntry` | 2134.099 | 36.285 | 58.82x |
+| `updateEntry` | 2135.784 | 43.577 | 49.01x |
+| `deleteEntry` | 2133.847 | 45.645 | 46.75x |
+| `undo` | 2129.915 | 109.208 | 19.50x |
+| `previewAddEntry` | 354.743 | 59.363 | 5.98x |
+| `postRecurring` | 2149.782 | 61.957 | 34.70x |
+| `openStore` | 365.346 | 651.170 | 0.56x |
 
-## Builds and compatibility
+### 50,000 entries
 
-Both required commands passed with the final core sources:
+| Operation | Cycle 1 median ms | Cycle 1.1 median ms | Before / after speed |
+| --- | ---: | ---: | ---: |
+| `addEntry` | 11251.196 | 337.830 | 33.30x |
+| `updateEntry` | 11287.994 | 309.047 | 36.53x |
+| `deleteEntry` | 11411.054 | 304.692 | 37.45x |
+| `undo` | 14649.749 | 408.936 | 35.82x |
+| `previewAddEntry` | 2203.285 | 203.708 | 10.82x |
+| `postRecurring` | 14281.009 | 185.132 | 77.14x |
+| `openStore` | 2066.601 | 2805.114 | 0.74x |
+
+| Metric at 10,000 entries | Cycle 1 bytes (MiB) | Cycle 1.1 bytes (MiB) |
+| --- | ---: | ---: |
+| Before 20 additions | 30,196,600 (28.80) | 32,998,288 (31.47) |
+| After 20 additions | 343,180,440 (327.28) | 54,363,072 (51.84) |
+| Process growth | 312,983,840 (298.48) | 21,364,784 (20.38) |
+
+Process-footprint growth decreased by 93.17%. This measures the combined persistence/history/allocator behavior, not isolated undo allocations. History record-count regressions separately establish that full snapshots are no longer retained.
+
+Opening is 1.78x slower at 10k and 1.36x slower at 50k. Initial full validation, deterministic ordering and fresh-context reading are included in the changed initialization path. No startup improvement is claimed. Commands still scan/copy detached values and build summaries/diffs; row writes are incremental, while CPU cost is not O(1). The 50k results are an explicit limit for Cycle 2 UI responsiveness. The optional iPhone disk benchmark was not run; no phone latency/memory claim is made.
+
+## App builds and existing verification
+
+Both required commands passed:
 
 ```sh
 xcodebuild -project Wealthy/Wealthy.xcodeproj -scheme Wealthy \
@@ -170,75 +158,60 @@ xcodebuild -project Wealthy/Wealthy.xcodeproj -scheme Wealthy -configuration Rel
   -destination 'generic/platform=iOS' CODE_SIGNING_ALLOWED=NO build
 ```
 
-WealthyCore compiled with zero warnings for Simulator arm64/x86_64 and device arm64. The app's metadata processor reports `Metadata extraction skipped, no AppIntents.framework dependency found`; this is outside the core compiler and App Intents are Cycle 3 work. The Swift 5/MainActor consumer type-check also passed without workaround imports or isolation adapters:
+The app's existing AppIntents metadata extraction warning is recorded in the build logs; it is separate from the warning-free Core compiler. No build/signing/deployment settings were changed.
+
+| Existing verification command | Result | Checks | Wall time |
+| --- | --- | ---: | ---: |
+| `python3 Verification/verify_receipt_ocr.py` | PASS | 91 | 8.309 s |
+| `sh Verification/verify_backup.sh` | PASS | 114 | 6.242 s |
+| `sh Verification/verify_localization.sh` | PASS | 6,634 | 3.254 s |
+| `sh Verification/verify_payments.sh` | PASS | 96 | 3.809 s |
+| `sh Verification/verify_migration.sh` | PASS | 11 | 2.736 s |
+| `sh Verification/verify_currency.sh` | PASS | 40 | 1.669 s |
+| `sh Verification/verify_policies.sh` | PASS | 73 | 2.576 s |
+| `sh Verification/verify_money_tip.sh` | PASS | 1,524 | 3.097 s |
+
+The existing scripts are unchanged. Total checks: 8,583; failures: 0.
+
+## GUI smoke on the existing production app
+
+Device: iPhone 16 Pro Max, iOS 27.2 (24B5089g), Apple Intelligence ready. A temporary focused XCTest UI project uses the unchanged production bundle/signing, linked current Core and existing app sources. It installs over the existing app; no uninstall, preference override, data reset or broad destructive test suite is used.
+
+Command (substitute the paired device ID):
 
 ```sh
-xcrun swiftc -typecheck -swift-version 5 -default-isolation MainActor \
-  -enable-upcoming-feature NonisolatedNonsendingByDefault \
-  -I WealthyCore/.build/out/Products/Debug /private/tmp/wealthy-c1-consumer.swift
-```
-
-App source diff: no task changes under `Wealthy/Wealthy/`; the user's `.DS_Store` is deliberately unstaged. The committed `main...HEAD` comparison is verified during Git delivery.
-
-## Performance (informational)
-
-`QueryTests.tenThousandEntryPerformance` creates 10,000 synthetic entries across ten wallets, runs each query 20 times, and reports the median. Final Debug measurement on the development Mac:
-
-| Query | Median |
-| --- | ---: |
-| All wallet balances | 3.636 ms |
-| One monthly summary | 2.869 ms |
-| One category breakdown with previous-period comparison | 4.528 ms |
-
-These measure queries on a detached snapshot; SwiftData fetch/save time and UI rendering are excluded. There is no performance pass/fail threshold.
-
-## Physical-device GUI verification
-
-**PASS**, iPhone 16 Pro Max, **iOS 27.2** (live device information). Final signed build was installed over the existing production bundle without uninstalling or resetting its container. Apple Intelligence's normal launch gate allowed the Home screen.
-
-Executed one XCTest UI case, **0 failures, 38.926 seconds**; an earlier execution of the same smoke case also passed in 39.440 seconds. Final run:
-
-```sh
-xcodebuild -project /private/tmp/wealthy-c1-device-project/Wealthy.xcodeproj \
+xcodebuild -project /private/tmp/wealthy-c1-1-device-project/Wealthy.xcodeproj \
   -scheme Wealthy -destination 'id=YOUR_CONNECTED_IPHONE_UDID' \
-  -derivedDataPath /private/tmp/wealthy-c1-device-build -allowProvisioningUpdates \
-  -resultBundlePath /private/tmp/wealthy-c1-device-results3.xcresult \
+  -derivedDataPath /private/tmp/wealthy-c1-1-device-build -allowProvisioningUpdates \
+  -resultBundlePath /private/tmp/wealthy-c1-1-device-results.xcresult \
   -only-testing:WealthyDeviceUITests/CycleOneSmokeTests test
 ```
 
 | Operation | Expected | Actual |
 | --- | --- | --- |
-| Launch linked app over existing installation | Current Home, four tabs, old records visible | PASS; Home and existing record visible |
-| Open Wallets | Existing wallet names/balances retained | PASS; labels captured before mutation |
-| Add a uniquely named JPY 1 expense to an existing cash wallet | New row visible and wallet decreases | PASS; row visible, cash balance label changed |
-| Delete only that new row | Row removed, wallet balances restored, old record retained | PASS; all prior wallet labels identical, old record visible, marker absent |
-| Inspect Home/Wallets and app source diff | No redesigned UI | PASS; same controls/appearance; no app-source changes |
+| Launch over existing installation | Same Home/four tabs, existing records retained | PASS |
+| Open Wallets | Existing names and balances retained | PASS, all row labels captured |
+| Add one uniquely named JPY 1 expense to existing cash wallet | New row visible, wallet balance changes | PASS |
+| Delete only that test expense | Marker removed, existing record retained, all wallet labels/Home balance restored | PASS |
+| Compare current screens/source | No redesign or store switch | PASS for Home/Wallets; app-source branch diff empty |
 
-Screenshots and accessibility evidence stay in the local xcresult because they include existing user financial records. The test project is temporary and contains only this focused case; the existing broader DeviceTest cases were not run against production. This smoke check does not re-verify every legacy screen or AI/OCR feature.
+One UI test passed with 0 failures in 40.561 seconds. Screenshots/accessibility attachments remain private in the local xcresult because they show existing financial records. Calendar/Analysis and AI/OCR behavior were not separately re-verified in this focused smoke check. No user-visible Core/UI switch was made.
 
-## Errors, logs, reproduction, and remaining review items
+## Changed files, deviations, logs and reproduction
 
-Final required checks have no failures. Intermediate syntax/build issues (qualified SwiftData defaults, throwing formatter fallback, a throwing test assertion) and temporary UITest scheme setup were corrected and verified. Unused-result test warnings were removed. The final Core build/test warnings are zero; app metadata warnings are described above.
+- Core: Store.swift, Commands.swift, Results.swift, Planning.swift, Backup.swift, Files.swift, Queries.swift, Schema.swift, Values.swift; new Changes.swift, IncrementalValidation.swift, PersistenceRecords.swift.
+- Tests: new BenchmarkTests.swift, PersistenceTests.swift, ChangeSetUndoTests.swift, FixTests.swift; existing adaptations listed above.
+- Documentation: Verification/README.md, .ai/CURRENT_TASK.md, .ai/LAST_REPORT.md.
+- Package.swift, root README files, app sources/translation/assets/Info.plist/entitlements, legacy models/images/backup, bundle/signing/deployment settings and Apple Intelligence gate are unchanged.
 
-Local evidence directory: `/private/tmp/wealthy-c1-logs/`.
+No required feature or acceptance deviation remains. Implementation choices permitted by the task: off-by-default Swift Testing benchmark instead of an executable; throwing Core initialization; fresh ModelContexts; deterministic UUID ties; disk-staged rollback files; file-only save/revision handling. #Index was omitted under the explicit documentation condition. Optional phone performance measurement was intentionally omitted. No live CloudKit sync, legacy migration, UI redesign, App Intents/voice or real receipt accuracy test was attempted. Subagents prepared harness/implementation/regressions; after they hit usage limits, the main agent completed integration and verification.
 
-- `m1-tests.log`, `m2-tests.log`, `m3-tests.log`, `final-core-tests.log`
-- `final-simulator-build.log`, `final-release-build.log`, `swift5-consumer.log`
-- `final-baseline.json`, `final-verify_*.log`
-- `final-device-gui.log`, `/private/tmp/wealthy-c1-device-results3.xcresult`
-- Temporary GUI source: `/private/tmp/wealthy-c1-device-project/SmokeUI/CycleOneSmokeTests.swift`
+Local evidence: `/private/tmp/wealthy-c1-1-logs/` (milestone/final Core logs, baseline/after benchmark logs and raw JSON, benchmark-environment.txt, perf-comparison.json, final-baseline.json, final-verify_*.log, final-simulator-build.log, final-release-build.log, final-device-gui.log). GUI result: `/private/tmp/wealthy-c1-1-device-results.xcresult`. Large logs, build caches, temporary projects and private screenshots are intentionally not committed.
 
-Reproduction: run `sh Verification/verify_core.sh` and the build/script commands above from the repository root. Individual regressions can be selected with `swift test --package-path WealthyCore --filter pausePreservesEarlierBacklog`, `--filter persistedRelaunch`, or `--filter recordsOnlyCollision`. The GUI operations are reproducible manually on an Apple Intelligence-ready device, using a disposable expense and an existing wallet, without resetting data.
+Reproduction: run the commands in Verification/README.md and above. Individual regressions can be selected with `swift test --package-path WealthyCore --filter singleEntryWrites`, `--filter unseenExternalConflict`, `--filter endedRuleCatchUp`, `--filter matchingImageRecordsRestore`, or `--filter observableStateAndRevision`.
 
-No unresolved implementation or acceptance blocker remains. Designer review items: commands currently save a complete detached snapshot in one SwiftData save, and undo retains up to 20 snapshots; large-store mutation latency and memory have not been benchmarked. Actual CloudKit sync, the Cycle 2 UI/store switch, legacy migration, on-device voice, App Intents, and real receipt OCR accuracy are intentionally outside this cycle and were not claimed as verified. Calendar/Analysis were not separately visually compared in this focused device case. No merge or main push was performed.
+Errors/warnings: all final required checks passed; Core compiler/concurrency warnings are zero. Baseline Core Data WAL checkpoint/maintenance debug annotations are not compiler warnings. No unresolved implementation blocker or designer decision is required to complete this cycle. Designer review items: the measured startup regression, O(N) detached-state CPU work and 50k operation latency; exact composite CloudKit synchronization remains unverified. Future external writers must coordinate reloads before acting on cached relationships. No additional optimization or Cycle 2 work is started.
 
 ## Git delivery
 
-- Implementation commit: `f521e47614f172c99b0fe4773ed546aecf3078c6` (`Add WealthyCore ledger foundation for cycle 1`).
-- `git push -u origin codex/wealthy-c1-core`: PASS. `git ls-remote origin refs/heads/codex/wealthy-c1-core` confirmed the implementation commit on origin.
-- PR #1: created successfully against `main` and attached to this chat. No merge was performed.
-- `git diff --stat main...HEAD -- Wealthy/Wealthy/`: empty after the source commit, confirming no app-source changes.
-- This report-link update is committed and pushed separately within the same delivery cycle.
-- The user's original three `.DS_Store` changes and three removed blank lines in the Xcode project remain outside the commits.
-
-Stop after verifying the final report commit on origin. Cycle 2 and extra improvements are intentionally not started.
+Source commit: `12c145b9d1258bb236ea49daca107835039dde21`. Its feature-branch push was verified against origin, and PR #2 was created with base main. This report-link update is recorded in a separate final commit and pushed on the same feature branch. The three original .DS_Store changes and three removed blank lines in the Xcode project remain outside the commits. `git diff --stat main...HEAD -- Wealthy/Wealthy/` is empty. Final delivery verification compares local HEAD, the remote branch and PR head; work stops after that verification. No merge or main push is performed.

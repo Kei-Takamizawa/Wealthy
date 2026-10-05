@@ -234,8 +234,13 @@ public enum LedgerQueries {
         }
         return result.sorted { $0.day == $1.day ? $0.ruleID.uuidString < $1.ruleID.uuidString : $0.day < $1.day }
     }
+    /// Returns the last recorded entry by createdAt, then timestamp, then ascending UUID; civil day is ignored.
     public static func mostRecentEntry(in state: LedgerState, source: EntrySource? = nil) -> EntryValue? {
-        state.entries.filter { source == nil || $0.source == source! }.max { ordered($1, $0) }
+        state.entries.filter { source == nil || $0.source == source! }.max {
+            if $0.createdAt != $1.createdAt { return $0.createdAt < $1.createdAt }
+            if $0.timestamp != $1.timestamp { return $0.timestamp < $1.timestamp }
+            return $0.id.uuidString > $1.id.uuidString
+        }
     }
     public static func currenciesInUse(in state: LedgerState) -> [String] {
         Set(state.wallets.map(\.currencyCode) + state.entries.map(\.currencyCode)
