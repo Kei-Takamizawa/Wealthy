@@ -3,10 +3,10 @@
 - Task ID: WEALTHY-C1.1-STORE
 - Cycle: 1.1
 - Date: 2026-10-05 JST
-- Status: COMPLETED (implementation and required verification); Git delivery below.
+- Status: COMPLETED.
 - Branch: `codex/wealthy-c1-1-store`
 - Base: latest `origin/main`, `9b86de2`, which already contains PR #1 / `ebe6fbd`.
-- Pull request: pending creation after the source commit and branch push.
+- Pull request: https://github.com/Kei-Takamizawa/Wealthy/pull/2
 
 ## Outcome and milestones
 
@@ -214,4 +214,4 @@ Errors/warnings: all final required checks passed; Core compiler/concurrency war
 
 ## Git delivery
 
-Source commit, verified feature-branch push, PR creation and report-link update belong to this cycle. The three original .DS_Store changes and three removed blank lines in the Xcode project remain outside the commits. Verify `git diff --stat main...HEAD -- Wealthy/Wealthy/` is empty after commit, and stop after the final push is verified. No merge or main push is performed.
+Source commit: `12c145b9d1258bb236ea49daca107835039dde21`. Its feature-branch push was verified against origin, and PR #2 was created with base main. This report-link update is recorded in a separate final commit and pushed on the same feature branch. The three original .DS_Store changes and three removed blank lines in the Xcode project remain outside the commits. `git diff --stat main...HEAD -- Wealthy/Wealthy/` is empty. Final delivery verification compares local HEAD, the remote branch and PR head; work stops after that verification. No merge or main push is performed.
