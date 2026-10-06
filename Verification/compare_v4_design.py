@@ -266,7 +266,7 @@ def render(screen: str, mode: str, panel: Panel, source_file: Path, notes: str =
 
 def known_difference(screen: str, mode: str) -> str:
     notes = {
-        "Home": "Board illustration and stacked allowance cards differ from the implementation in this PR #5 baseline capture.",
+        "Home": "The remaining-allowance hero, seven-day states, month summary and bottom microphone were checked against this design; the island remains a standalone rounded illustration instead of a full-bleed background.",
         "Voice": "Board shows a voice-session mock; this cycle's page is an idle placeholder.",
         "InfoHousehold": "Board includes long overview sections; the device image shows the current scroll position.",
         "InfoChild": "Board includes more explanatory content; device values are synthetic test data.",

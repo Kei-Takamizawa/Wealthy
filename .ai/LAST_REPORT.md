@@ -1,101 +1,79 @@
-# Cycle 2a.1 — PR #5 blocker fixes and physical-device acceptance
+# Cycle 2a.1 — PR #5 fixes (same branch)
 
 - Task ID: WEALTHY-C2A1-FIXES
-- Status: BLOCKED — physical-device testing is complete, but the normal-motion child-envelope entry flow remains failing and needs diagnosis before acceptance.
-- Branch: `codex/wealthy-c2a-shell`; base `39ae7d531dc44695a5b41ef8ec8b3f10a77bab31`; implementation head before this follow-up `5a21b6d9bdf4c3840008787265dc7f24625fbd8e`.
-- Draft PR #5: https://github.com/Kei-Takamizawa/Wealthy/pull/5 (unmerged).
-- Full clarified task instructions remain saved in `.ai/CURRENT_TASK.md`.
-- Physical device: iPhone 16 Pro Max, iOS 27.2 (24B5089g), UDID `00008140-000C6164027B001C`.
+- Status: PARTIAL — implementation, builds and most device flows pass; the Home contrast audit still reports 3 anonymous contrast issues. Item 1 (audit blocker) is not accepted. The full requested launch metric matrix and a current-code CPU before/after measurement are also incomplete.
+- Branch: `codex/wealthy-c2a-shell`; starting PR head recorded in the prior report: `5a21b6d9bdf4c3840008787265dc7f24625fbd8e`.
+- PR #5: https://github.com/Kei-Takamizawa/Wealthy/pull/5. Keep Draft; do not merge.
+- Device: iPhone 16 Pro Max, iOS 27.2 (24B5089g), UDID `00008140-000C6164027B001C`.
+- User-owned files excluded from this task commit: `.DS_Store` files, the whitespace-only `Wealthy/Wealthy.xcodeproj/project.pbxproj` edits, and `design/v4/引き渡しシート.pdf`.
 
-## Outcome by requested item
+## Results
 
-| Item | Result and evidence | Acceptance |
+| Item | Result | Evidence / limitation |
 | --- | --- | --- |
-| 1. Result sheet contrast | `testResultAccessibilityAudit` PASS without excluded elements or weakened assertions. It brought `resultLateDetail` into view before audit. Result, Home and Entry accessibility audits all PASS on iOS 27.2. | PASS on this device; other OS accessibility settings not manually toggled. |
-| 2. Monthly results | `testMonthResultStatesMatrix` PASS: achieved / over / too-few days in light, dark and AX3 (9 captures). Month screen matrix and result audit also PASS. Current-device comparisons include achieved/over/few screens where the boards are available. | PASS on this device. Dark board images are absent for achieved/over; see compare index. |
-| 3. Home envelope | `testHomeAlwaysHousehold` PASS with Child selected on Info: Home still shows household `307,100`, Info shows Child `76,400`, and returning Home shows household again. | PASS. |
-| 4. Goals / amounts | `testGoalsUnsetMatrix` PASS for 4 languages × light/dark/AX3 (12 captures). `testLocalizedGroupedAmountFields` PASS for Goals and Entry in en/ja/es/ko. | PASS on this device. |
-| 5. Neutral voice copy | `testScreenMatrix` PASS for all 12 screens in 4 languages × 3 appearance/size modes; static validation was previously PASS for catalog parity. | PASS on this device. |
-| 6. Persisted onboarding | `testPersistedOnboardingRelaunch` PASS using a UUID-isolated disk store and preferences: Spanish, KRW and 40,000 target remained after process termination and relaunch to Home. | PASS in isolated real disk store. This does not modify the user's regular preferences. |
-| 7. Idle stall / CPU | `testChildEnvelopeAndLicenseFlow` (normal-motion, no Reduce Motion flag) FAILS; see reproducible failure below. Activity Monitor measured 186.86 ms CPU over 61.118 s on base `39ae7d5` (0.306%) and 191.95 ms over 61.027 s on this revision (0.315%). Idle wakeups: 54 before, 56 after. One sample each; this difference is too small to treat as a measured regression or improvement. | BLOCKED: GUI test is not passing. CPU was measured, but not a repeated controlled battery study. |
-| 8. Launch performance | XCTest launch and signpost results extracted from the physical-device `.xcresult`; detail below and raw available results are in `Verification/Cycle2aEvidence/device-launch-metrics-2026-10-06.json`. Several native launch samples are missing from the result bundle, so the three-size/five-warm-sample requirement is incomplete. | PARTIAL: 10k targets have measurements; missing metrics and 50k interactive result above 2 s require follow-up/Core task. |
+| 1. Result sheet contrast | PASS | `testResultAccessibilityAudit` passed on the current signed device build, unchanged audit intent and no excluded elements. Its explanatory text remains in an opaque Plate with explicit ink colors. Home has a separate FAIL described below. |
+| 2. Monthly result | PASS in prior device run | `testMonthResultStatesMatrix` covered achieved / over / too-few days in light, dark and AX3. Home final edits do not alter month result logic. Full set of requested month screenshot variants is as reported in compare index; absent dark board exports are noted there. |
+| 3. Home envelope | PASS | Latest `testHomeAlwaysHousehold`: Home remains on household data while Info selects Child, in light and dark. |
+| 4. Goals / amounts | PASS in prior device run | `testGoalsUnsetMatrix` covered 4 languages × light/dark/AX3; grouped amount fields test passed for Goals and Entry in en/ja/es/ko. |
+| 5. Voice copy | PASS | Latest `testVoicePlaceholderIsShownOnce` passed light and dark. The localized neutral placeholder appears once; duplicate unavailable message is removed. |
+| 6. Persisted onboarding | PASS | Latest `testPersistedOnboardingRelaunch` passed using a temporary disk store and isolated preferences; Spanish, KRW and 40,000 monthly target remained after process termination/relaunch to Home. |
+| 7. Idle stall / animation | PASS for requested child flow; CPU incomplete | Latest normal-motion `testChildEnvelopeAndLicenseFlow` passed (148.619 s), saving a Child Food/Takeout 8% expense, confirming ¥266 tax, then opening font licenses. The prior stall was the test helper tapping Save while it was outside the visible region / under the keyboard. The updated tap helper checks the button center against app and keyboard bounds before tapping. Source inspection found no repeating animation, `TimelineView`, or continuous Canvas loop; the island is a static Canvas. Current-code 60 s CPU before/after numbers were not re-measured. Historical one-sample Activity Monitor numbers (0.306% vs 0.315% CPU; 54 vs 56 wakeups) are from the previous revision and are not evidence for this final source. |
+| 8. Launch performance | PARTIAL | The existing `device-launch-metrics-current-home-2026-10-06.json` captures the prior Home revision, not the final spacing/layout. It records a 10k Home interactive median around 0.960 s (n=3) with store open 0.011 s, snapshot 0.370 s, query snapshot 0.024 s and render 0.480 s; 10k first-frame median 0.404 s (n=2). Required 1k/10k/50k first-frame and interactive medians, five warm runs each, were not remeasured against this final source. Do not use these prior-revision values as final acceptance evidence. Core persistence stayed unchanged and synchronous. |
 
-## Device UI test results
+## Home accessibility audit — unresolved blocker
 
-Ran the complete `Cycle2aUITests` suite on the iPhone 16 Pro Max: 34 test methods, 33 PASS and 1 FAIL, 2,577.094 seconds total. The final `testScreenMatrix` passed (12 screens × 4 locales × 3 visual modes); it took 725.542 seconds. The failing test was `testChildEnvelopeAndLicenseFlow` (118.836 seconds). The unmodified `testResultAccessibilityAudit` passed. No test was skipped or excluded.
+`testHomeAccessibilityAudit` was run repeatedly on the final device build and still fails on contrast with 3 issues whose XCTest descriptions say `Contrast failed for element / No element`. The test’s audit callback continues to collect and reject the issues; no assertion was removed or weakened.
 
-The failing flow reproduced again in two focused reruns after correcting its ambiguous selection step. In the current failing run, the editor's accessibility tree after tapping Save remained on Add Entry with amount `3600`, Child envelope selected, Food selected, Takeout (8%) selected, and Save still present. The flow then could not find the Info button after eight scroll attempts (XCTest failure at `Cycle2aUITests.swift:14`). The child tax check and font-license screen were therefore not reached in this correctly child-selected path. A prior diagnostic rerun without selecting Child in the editor reached the Child tax screen but showed ¥0, because that entry remained in the default Household envelope while Tax was scoped to the currently selected Child envelope; that rerun does not validate the intended path.
+The first detailed audit identified a clipped `This month's allowance` label and `Remaining allowance` at the bottom edge of the ScrollView, partly behind the fixed footer. Home was tightened to match the approved board more closely: the seven-day state row now sits in the weekly card, the scroll viewport is separated from the fixed footer, the weekly island is 180 pt, and vertical section spacing is 12 pt. Explicit foreground colors were added for card and glass-chip text. The clipped labels no longer appeared by name in the latest audit output, but the audit still reports 3 anonymous contrast failures. Result attachments are at `/private/tmp/wealthy-c2a1-revision/home-audit-final8.xcresult`; final source result is also in `/private/tmp/wealthy-c2a1-revision/home-audit-final7.xcresult` before the last spacing change. The final full audit result is `home-audit-final8.xcresult`.
 
-The focused reruns do not establish why the child-selected Save leaves the editor visible. No product behavior or validation rules were changed to force the test through. Needed next evidence: inspect the actual save error/command and confirm whether this is a UI tap/focus issue or entry validation failure, then rerun the same flow. Do not count the child entry/tax acceptance as passed.
+Do not mark this audit PASS. A next investigation needs a reproducible way to expose the offending anonymous elements or an OS/Xcode audit diagnostic that maps them to visible controls. Do not exclude the elements or weaken the audit.
 
-Other notable physical UI PASS results: `testChildAndResultMatrix`, `testChildInfoMatrix`, `testChildSetupMatrix`, `testChildSupportDefaults`, `testEntryAccessibilityAudit`, `testFormMatrix`, `testHomeAccessibilityAudit`, `testHomeInteractiveMetric10000`, `testHomeInteractiveMetric1000`, `testHomeInteractiveMetric50000`, `testHomeWithFiftyThousandPersistedEntries`, `testLaunchMetric10000`, `testLaunchMetric1000`, `testLaunchMetric50000`, `testLocalizedGroupedAmountFields`, `testLocalizedOnboarding`, `testManualTaxAndMetadataSurviveReopening`, `testMonthResultStatesMatrix`, `testNavigationMatrix`, `testNoSpendDayFromEmptyLedger`, `testOnboardingEntryTaxNoSpendTarget`, `testPagerNavigation`, `testPersistedOnboardingRelaunch`, `testResultAccessibilityAudit`, `testResultAndAccessibilityVariants`, and `testScreenMatrix`.
+## Final source checks
 
-Full UI log and `.xcresult` are outside Git: `/private/tmp/wealthy-c2a1-logs/device-full.log`, `/private/tmp/wealthy-c2a1-device-full.xcresult`. Focused rerun logs/results: `/private/tmp/wealthy-c2a1-logs/child-rerun.log`, `/private/tmp/wealthy-c2a1-logs/child-rerun2.log`, `/private/tmp/wealthy-c2a1-child-rerun.xcresult`, `/private/tmp/wealthy-c2a1-child-rerun2.xcresult`.
+- `sh Verification/verify_core.sh`: PASS, 117 tests across 13 suites; opt-in disk benchmark skipped by its normal default.
+- `python3 Verification/verify_shell.py`: PASS, 146 catalog keys × 4 languages, placeholder parity, isolation, font hashes and Hangul/Spanish subset checks.
+- `git diff --check`: PASS.
+- Signed iPhone `build-for-testing`: PASS, latest source signed with configured Apple Development identity.
+- Generic iOS Simulator build: PASS on latest source.
+- Generic iOS Release build: PASS on latest source (`CODE_SIGNING_ALLOWED=NO`; this is not a signed-device Release launch).
+- Final focused iPhone tests on the latest source before the last spacing-only adjustment: 5/5 passed (`testChildEnvelopeAndLicenseFlow`, `testHomeAlwaysHousehold`, `testPersistedOnboardingRelaunch`, `testResultAccessibilityAudit`, `testVoicePlaceholderIsShownOnce`). Latest spacing source then passed `testHomeAlwaysHousehold` and `testHomeAX3LanguageMatrix` (4 languages at AX3, no clipped-text findings); Home contrast audit remains the recorded fail.
+- Previous full broad device suite is documented in Git history; it was not rerun end-to-end in this cycle.
+- Xcode printed transient `debugger version lookup failed` messages during device test launches. Tests continued and produced results. The runner also attempted device diagnostics after a failed audit and reported a `devicectl diagnose` failure; this did not affect test execution.
 
-## Launch performance evidence and limits
+## Screenshots and design comparisons
 
-All figures below came from the iPhone 16 Pro Max at iOS 27.2. The test-created ledger fixtures were synthetic. `XCTOSSignpostMetric` medians are over the 3 measurements returned by `xcresulttool` for the applicable Home signposts; they are not full app-launch durations. The `XCTApplicationLaunchMetric` result bundle returned only two usable `AppLaunch` measurements, and only for 10k. Apple documents this metric as first frame; without an extended task it measures first frame only. It did not return values for 1k or 50k despite those test methods reporting PASS.
+`Verification/Cycle2aEvidence/compare/` contains 39 JPEG side-by-side comparisons. Home light/dark and Voice light/dark were refreshed from latest device captures; other panels use the earlier Cycle 2a.1 device run. The index lists 7 missing design/capture mappings and their reasons. Files remain below 2 MB each and below the 2,400 px long-edge cap; the directory is approximately 3.8 MB. Captures use synthetic data. No video, full image inventory, or `.xcresult` bundle was added.
 
-| Entry count | XCTest native first frame | Home interactive signpost | StoreOpen | Snapshot | QuerySnapshot | HomeRender |
-| ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| 1,000 | no values in result bundle | 0.256 s (n=3) | 0.008 s | 0.038 s | 0.003 s | 0.134 s |
-| 10,000 | 0.408 s (n=2; only two values returned) | 0.990 s (n=3) | 0.011 s | 0.375 s | 0.024 s | 0.506 s |
-| 50,000 | no values in result bundle | 4.819 s (n=3) | 0.007 s | 2.136 s | 0.142 s | 2.445 s |
+Home differences still include a standalone rounded island rather than the board's full-bleed art. The island illustration is static and has the requested VoiceOver summary label. Missing design exports and dark variants are listed in `Verification/Cycle2aEvidence/compare/INDEX.md`.
 
-At 50,000 entries, the warm persisted-store `testHomeWithFiftyThousandPersistedEntries` also reported launch-to-accessibility-ready values `[5.201, 5.225, 5.314, 5.266, 5.176]` seconds; median 5.225 s. This includes XCTest launch/idle/accessibility overhead, excludes fixture creation, and is not a first-frame metric. The measured Home interactive signpost is above the 2 s criterion at 50k; the user-specified 2 s acceptance threshold was for 10k, where the signpost median is below target. However, no assertion in the test enforces a 2 s threshold.
+## GUI and unverified items
 
-The first-frame target under 1 s cannot be fully accepted because 1k and 50k metric samples are missing. The available 10k first-frame median is under 1 s. The interactive custom interval starts at session initialization and ends after the Home presentation callback; the separate native responsive launch metric did not yield extractable samples. Do not interpret the custom interval as a complete OS launch-to-responsive time. In particular, cost split shows that 50k is dominated by snapshot (2.136 s) and Home rendering (2.445 s), not store open (0.007 s). The Core persistence boundary remains unchanged and synchronous as instructed.
+- Physical GUI checked the child setup, typed expense, Child envelope selection, Food category, Takeout 8%, Save, ¥266 child tax summary, and font license screen.
+- Physical UI tests checked persisted onboarding across process restart, Home household isolation from Info's Child selection, neutral Voice placeholder, result-sheet accessibility, and Home AX3 layouts in all four languages.
+- Not manually verified: VoiceOver traversal, OS Reduce Motion / Reduce Transparency settings, iOS 26 hardware, signed Release installation/launch, current-source 1k/10k/50k launch metrics at n=5, current-source 60 s idle CPU, and a complete week of seeded reward behavior on device.
+- Intentionally not started: Cycle 2b/3 work, Core persistence-boundary changes, and out-of-scope screens.
 
-## CPU / energy observation
+## Changed files
 
-Activity Monitor template recordings were 61.118 s on base and 61.027 s on this revision. Process CPU was 186.86 ms and 191.95 ms respectively: 0.306% and 0.315% of one logical core over the recording window. This is a single before/after sample on iOS 27.2 with the app launched on Home using temporary UserDefaults launch arguments. It suggests no full-frame-rate idle loop during those samples, but the child-envelope GUI test still fails, and these short measurements do not prove battery-life equivalence. Raw traces remain outside Git at `/private/tmp/wealthy-c2a1-idle-before.trace` and `/private/tmp/wealthy-c2a1-idle-after2.trace`; extracted Activity Monitor XML is under `/private/tmp/wealthy-c2a1-logs/`.
+- `.ai/CURRENT_TASK.md` — full user-provided revised task, including the additional design-review fixes.
+- `.ai/LAST_REPORT.md` — this report.
+- `Wealthy/Wealthy/HomeInfo.swift` — household-only Home summary, remaining allowance hero, day states, month summary, fixed microphone/info footer, improved content layout and explicit text colors.
+- `Wealthy/Wealthy/DesignSystem.swift` — explicit foreground ink on glass Pill text.
+- `Wealthy/Wealthy/LedgerRoot.swift` — remove duplicate unavailable voice message.
+- `Wealthy/Wealthy/Localizable.xcstrings` — translated allowance percentage and day-state labels for four languages.
+- `WealthyCore/Sources/WealthyCore/Targets.swift` — overflow-safe spent percentage query value.
+- `WealthyCore/Sources/WealthyCore/IslandQueries.swift` — deterministic per-day presentation states.
+- `WealthyCore/Tests/WealthyCoreTests/IslandTests.swift` — tests for spent percentage and day states.
+- `Verification/Cycle2aUI/Cycle2aUITests.swift` — visible-center tap helper, persisted-child flow assertion, Home household, voice placeholder and AX3 language tests.
+- `Verification/compare_v4_design.py`, `Verification/Cycle2aEvidence/compare/INDEX.md`, and refreshed Home/Voice comparison JPEGs.
+- `Verification/Cycle2aEvidence/device-launch-metrics-current-home-2026-10-06.json` — captured launch/signpost output from the earlier Home revision; clearly not final-source performance evidence.
 
-## Build, tests, warnings
+## Expected / actual and repro
 
-| Check | Result |
-| --- | --- |
-| `sh Verification/verify_core.sh` | PASS in preceding implementation run: 115 tests passed; existing opt-in benchmark skipped (116 total, 13 suites). |
-| `WEALTHY_BENCHMARK=1 ... swift test --package-path WealthyCore -c release` | PASS in preceding implementation run: 116 tests / 13 suites, no skips. |
-| `python3 Verification/verify_shell.py` | PASS in preceding implementation run: catalog key/placeholder parity and font subset validation. |
-| Historical checks | PASS in preceding run: 8,583 assertions across archived verification scripts. |
-| Generic Simulator build / unsigned Release build | PASS in preceding implementation run. Simulator runtime GUI was unavailable. |
-| Current signed device `build-for-testing` | PASS after the test adjustment. App and UI runner signed with configured Apple Development identity. |
-| Physical-device UI suite | 33 PASS / 1 FAIL, not an acceptance pass. |
-| Focused child-flow reruns | 2 FAIL; both stopped in Entry after Save when the correctly selected child path was used. |
-| Comparison generator | PASS: `python3 Verification/compare_v4_design.py --manifest /private/tmp/wealthy-c2a1-evidence-export/manifest.json --capture-dir /private/tmp/wealthy-c2a1-evidence-export --capture-label "Cycle 2a.1 device run after 5a21b6d"`; generated 39 compact current-device comparisons. |
+Expected: all Cycle 2a.1 blockers pass and evidence is current. Actual: result audit, child flow, persisted onboarding, household Home, neutral voice, AX3 language layouts and builds pass; Home contrast audit remains FAIL (3 anonymous issues); requested launch-metric and idle-CPU measurements are incomplete for the final source.
 
-Expected benign warning: AppIntents metadata extraction was skipped because the target does not link AppIntents.framework. No other build error was recorded. Xcode emitted transient debugger-version lookup messages while relaunching UI tests; the suite completed.
-
-## Design comparison and screenshots
-
-`Verification/Cycle2aEvidence/compare/INDEX.md` now identifies the current-device captures rather than the old pre-fix baseline. It contains 39 side-by-side JPEGs, 3,896,539 bytes total; each file is under 2 MB and the directory is 3.8 MB. The images use synthetic test data and are within the 2,400 px long-edge cap. Seven board/capture combinations are listed as missing in the index, primarily because no dark exported board exists and the older week-result fixture mappings are absent. Month achieved/over/few and GoalsUnset light/dark comparisons are present where the source boards exist. Full XCTest attachment exports and `.xcresult` bundles were not added to Git.
-
-Raw launch metrics are saved in `Verification/Cycle2aEvidence/device-launch-metrics-2026-10-06.json`.
-
-## Modified files in this follow-up
-
-- `Verification/Cycle2aUI/Cycle2aUITests.swift`: made the selected Child envelope explicit before opening tax after returning to Info; the normal-motion Save-to-Info child flow still fails as documented.
-- `Verification/Cycle2aEvidence/compare/INDEX.md` and 39 comparison JPEGs: refreshed from the current physical-device run.
-- `Verification/Cycle2aEvidence/device-launch-metrics-2026-10-06.json`: raw `xcresulttool` metrics output.
-- `.ai/LAST_REPORT.md`: this physical-device completion report.
-- `.ai/CURRENT_TASK.md`: retained unchanged; already contains the complete clarified Cycle 2a.1 instructions.
-
-The pre-existing `.DS_Store` edits, three blank-line deletions in `Wealthy/Wealthy.xcodeproj/project.pbxproj`, and untracked `design/v4/引き渡しシート.pdf` are user changes and were not included. No PR merge, app uninstall, store deletion, or real-user preference reset occurred. The full 251-image inventory, videos, and `.xcresult` bundles remain outside Git.
-
-## Expected / actual and remaining work
-
-- Expected: all 34 device UI methods pass, including a normal-motion child expense saved to the Child envelope and included in the Child tax result; launch metrics available for all 3 sizes; current light/dark comparison captures; before/after idle CPU.
-- Actual: 33/34 full-suite methods pass; the child-selected add/save flow remains in Entry after Save and never reaches Info. Focused reruns confirm this. First-frame metrics are extractable only for 10k (n=2); 1k/50k native metrics are missing. Home 50k interactive signpost median is 4.819 s. CPU observations were 0.306% base vs 0.315% current from one 60 s sample per revision. Current comparisons are refreshed (39 pairs).
-- Reproduce child issue: on the device run `testChildEnvelopeAndLicenseFlow`; create Child envelope, set its 80,000 monthly target, select Child in Info, go Home, add JPY 3,600 Food/Takeout expense, select Child in Entry, Save. The UI remains on Add Entry and the follow-on Info button lookup fails at test helper line 14.
-- Unverified: manual VoiceOver traversal; manual OS Reduce Motion / Reduce Transparency settings; iOS 26 hardware; physical app-store/Release launch; native first-frame values for 1k/50k; reliable native app-responsive launch samples for all sizes; a multi-sample power comparison.
-- Claude/product-owner diagnosis is needed for the child-selected Save failure before changing product validation or envelope behavior. No speculative Core, tax, target, persistence, or UI behavior change was made.
-- Intentionally not implemented: Cycle 2b/3, persistent stickers, async Core reads, any persistence/undo/backup changes, and out-of-scope screens.
-
-The PR remains Draft and unmerged. Previous Cycle 2a.1 implementation checks and original host benchmark remain documented in Git history; no baseline commit was rewritten.
+Reproduce Home audit: run `Cycle2aUITests/testHomeAccessibilityAudit` on the iPhone 16 Pro Max with the signed Cycle2a test runner. It asserts all contrast, text clipping, hit-region and description issues are empty. The three remaining issues are reported by XCTest without an element description. Result audit remains separately passing.
 
 ## Git delivery
 
-- Commit `f9ebdc328de40198fbfef36b041b903e474b3420` (`Record Cycle 2a.1 device verification`) was pushed to `origin/codex/wealthy-c2a-shell`.
-- Verified remote branch SHA and PR head SHA both equal `f9ebdc328de40198fbfef36b041b903e474b3420`.
-- PR #5 remains OPEN and Draft (`mergedAt: null`); no merge was performed.
-- Existing unrelated user edits remain unstaged and untouched.
+After review of the task-only changes, commit this partial result and push it to `codex/wealthy-c2a-shell`. Verify PR #5 stays OPEN, Draft, and unmerged. Do not merge. User-owned uncommitted `.DS_Store`, project whitespace, and Japanese handoff PDF changes are excluded.

@@ -1,11 +1,23 @@
 import Foundation
 
 public enum RewardOutcome: String, Sendable, Equatable { case unset, achieved, over, few }
+public enum IslandDayState: String, Sendable, Equatable {
+    case underAllowance, over, noSpend, today, future, unlogged
+}
 public struct IslandDay: Sendable, Equatable, Identifiable {
     public var id: LedgerDay { day }
     public var day: LedgerDay
     public var status: TargetStatus
     public var hasGrowth: Bool { status.loggedDays > 0 && (status.remaining ?? -1) > 0 }
+    public var presentationState: IslandDayState {
+        if status.period.start > referenceToday { return .future }
+        if status.noSpendDays > 0 { return .noSpend }
+        if status.isOver { return .over }
+        if status.period.start == referenceToday { return .today }
+        if hasGrowth { return .underAllowance }
+        return .unlogged
+    }
+    public var referenceToday: LedgerDay
 }
 public struct IslandSummary: Sendable, Equatable {
     public var week: TargetStatus
@@ -30,7 +42,7 @@ extension LedgerQueries {
         for offset in 0..<7 {
             let day = try week.period.start.adding(days: offset, calendar: calendar)
             let status = try targetStatus(in: state, period: LedgerPeriod(start: day, end: day), envelopeID: envelopeID, currencyCode: currencyCode, calendar: calendar)
-            days.append(IslandDay(day: day, status: status))
+            days.append(IslandDay(day: day, status: status, referenceToday: today))
         }
         var cursor = month.period.start, festivals = 0
         while cursor <= month.period.end {
@@ -50,7 +62,7 @@ extension LedgerQueries {
         var cursor = period.start, count = 0
         while cursor <= period.end {
             let status = try targetStatus(in: state, period: LedgerPeriod(start: cursor, end: cursor), envelopeID: envelopeID, currencyCode: currencyCode, calendar: calendar)
-            if IslandDay(day: cursor, status: status).hasGrowth { count += 1 }
+            if status.loggedDays > 0 && (status.remaining ?? -1) > 0 { count += 1 }
             cursor = try cursor.adding(days: 1, calendar: calendar)
         }
         return count

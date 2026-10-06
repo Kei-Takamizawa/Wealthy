@@ -57,7 +57,7 @@ struct Pill: View {
     @Environment(\.colorScheme) private var scheme
     let text: String
     let icon: String
-    var body: some View { Label(text, systemImage: icon).font(.footnote.weight(.semibold)).padding(12).frame(minHeight: 44).modifier(V4Glass(level: .thin)) }
+    var body: some View { Label(text, systemImage: icon).font(.footnote.weight(.semibold)).foregroundStyle(V4.ink(scheme)).padding(12).frame(minHeight: 44).modifier(V4Glass(level: .thin)) }
 }
 struct Sticker: View {
     @Environment(\.colorScheme) private var scheme

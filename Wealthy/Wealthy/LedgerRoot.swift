@@ -185,7 +185,6 @@ struct VoiceView: View {
                 IslandScene(growth: session.householdSummary?.days.filter(\.hasGrowth).count ?? 0, festivals: session.householdSummary?.festivals ?? 0, dusk: false).frame(height: 280).blur(radius: 14).accessibilityHidden(true)
                 Text(session.t("voice")).font(V4.heading(session.language))
                 Plate { Text(session.t("voiceLater")).frame(maxWidth: .infinity).multilineTextAlignment(.center) }
-                Label(session.t("microphoneUnavailable"), systemImage: "mic.slash").padding(24).modifier(V4Glass()).accessibilityIdentifier("voicePlaceholder")
             }.padding(16)
         }.background(V4.paper(scheme))
     }

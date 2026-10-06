@@ -26,6 +26,12 @@ public struct TargetStatus: Codable, Sendable, Equatable {
     public var isRewardEligible: Bool
     public var isSet: Bool { allowance != nil }
     public var isOver: Bool { remaining.map { $0 < 0 } ?? false }
+    /// Rounded percentage of the allowance spent; nil means there is no configured target.
+    public var spentPercentage: Int? {
+        guard let allowance, allowance > 0 else { return nil }
+        let percentage = (Double(spent) / Double(allowance)) * 100
+        return percentage >= Double(Int.max) ? Int.max : Int(percentage.rounded())
+    }
     /// A bounded visual fill for progress indicators; displayed money remains integer minor units.
     public var displayFill: Double {
         guard let allowance, allowance > 0 else { return spent > 0 && isSet ? 1 : 0 }

@@ -103,6 +103,18 @@ struct IslandTests {
         #expect(summary.week.loggedDays == 1 && summary.festivals == 0)
         #expect(summary.days.first?.hasGrowth == false)
         #expect(summary.week.isOver == false)
+        #expect(summary.week.spentPercentage == 71)
+    }
+
+    @Test func islandDayPresentationStates() throws {
+        let today = try day(2027,1,6)
+        let state = LedgerState(
+            entries: [EntryValue(kind: .expense, amount: 200, currencyCode: "JPY", day: try day(2027,1,4))],
+            targets: [TargetValue(currencyCode: "JPY", amountMinor: 3100, effectiveMonth: LedgerMonth(day: today))],
+            noSpendMarks: [NoSpendMarkValue(day: try day(2027,1,5))]
+        )
+        let result = try LedgerQueries.islandSummary(in: state, today: today, currencyCode: "JPY", calendar: calendar)
+        #expect(result.days.map(\.presentationState) == [.over, .noSpend, .today, .future, .future, .future, .future])
     }
 
 }

@@ -10,8 +10,18 @@ import XCTest
     }
     func tap(_ label: String) {
         let button = app.buttons[label].firstMatch
-        for _ in 0..<8 { if button.isHittable { break }; app.swipeUp() }
-        XCTAssertTrue(button.waitForExistence(timeout: 5), app.debugDescription); button.tap()
+        XCTAssertTrue(button.waitForExistence(timeout: 5), app.debugDescription)
+        func unobscuredCenter() -> Bool {
+            let bounds = app.frame
+            let keyboard = app.keyboards.firstMatch
+            let visibleBottom = keyboard.exists ? min(bounds.maxY, keyboard.frame.minY) : bounds.maxY
+            return button.isHittable
+                && button.frame.midX >= bounds.minX && button.frame.midX <= bounds.maxX
+                && button.frame.midY >= bounds.minY && button.frame.midY < visibleBottom
+        }
+        for _ in 0..<12 { if unobscuredCenter() { break }; app.swipeUp() }
+        XCTAssertTrue(unobscuredCenter(), "Button center is not visible above the keyboard: \(button.frame), keyboard: \(app.keyboards.firstMatch.frame)\n\(app.debugDescription)")
+        button.tap()
     }
     func enter(_ identifier: String, _ text: String) {
         let field = app.textFields[identifier]
@@ -103,6 +113,7 @@ import XCTest
         for _ in 0..<6 { app.swipeDown() }
         tap("Child envelope"); tap("To island"); tap("addEntry"); enter("entryAmount", "3600"); tap("Child envelope")
         app.buttons["entryCategory"].tap(); tap("Food"); app.buttons["entryService"].tap(); tap("Takeout (8%)"); tap("saveEntry")
+        XCTAssertTrue(app.buttons["addEntry"].waitForExistence(timeout: 10), app.debugDescription)
         tap("Info"); tap("Child envelope"); tap("Consumption tax")
         XCTAssertTrue(app.staticTexts["¥266"].waitForExistence(timeout: 5), app.debugDescription); capture("child-tax")
         app.navigationBars.buttons.firstMatch.tap()
@@ -314,13 +325,44 @@ extension Cycle2aUITests {
         }
     }
     func testHomeAlwaysHousehold() throws {
-        app.launchArguments = ["--cycle2a-test", "--cycle2a-seed", "--child-info", "-v4.language", "en", "-v4.currency", "JPY"]
-        app.launch(); XCTAssertTrue(app.buttons["addEntry"].waitForExistence(timeout: 20))
-        XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "307,100")).firstMatch.exists, app.debugDescription)
-        capture("home-household-child-selected")
-        tap("homeInfo"); XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "76,400")).firstMatch.exists, app.debugDescription)
-        capture("info-child-selected")
-        tap("infoIsland"); XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "307,100")).firstMatch.exists, app.debugDescription)
+        for mode in ["light", "dark"] {
+            app.launchArguments = ["--cycle2a-test", "--cycle2a-seed", "--child-info", "-v4.language", "en", "-v4.currency", "JPY"]
+            if mode == "dark" { app.launchArguments.append("--dark") }
+            app.launch(); XCTAssertTrue(app.buttons["addEntry"].waitForExistence(timeout: 20))
+            XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "307,100")).firstMatch.exists, app.debugDescription)
+            XCTAssertTrue(app.staticTexts["homeWeeklyRemaining"].exists, app.debugDescription)
+            XCTAssertTrue(app.buttons["homeMicrophone"].exists, app.debugDescription)
+            capture("home-household-child-selected---\(mode)")
+            tap("homeInfo"); XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "76,400")).firstMatch.exists, app.debugDescription)
+            capture("info-child-selected---\(mode)")
+            tap("infoIsland"); XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "307,100")).firstMatch.exists, app.debugDescription)
+            app.terminate()
+        }
+    }
+    func testVoicePlaceholderIsShownOnce() throws {
+        for mode in ["light", "dark"] {
+            app.launchArguments = ["--cycle2a-test", "--cycle2a-seed", "-v4.language", "en", "--screen", "voice"]
+            if mode == "dark" { app.launchArguments.append("--dark") }
+            app.launch()
+            XCTAssertTrue(app.staticTexts["Voice input is coming soon. For now, add entries by typing."].waitForExistence(timeout: 15), app.debugDescription)
+            XCTAssertFalse(app.staticTexts["Voice input is unavailable right now."].exists, app.debugDescription)
+            capture("voice-single-placeholder---\(mode)")
+            app.terminate()
+        }
+    }
+    func testHomeAX3LanguageMatrix() throws {
+        for language in ["en", "ja", "es", "ko"] {
+            app.launchArguments = ["--cycle2a-test", "--cycle2a-seed", "--ax3", "-v4.language", language, "-v4.currency", "JPY"]
+            app.launch()
+            XCTAssertTrue(app.staticTexts["homeWeeklyRemaining"].waitForExistence(timeout: 20), app.debugDescription)
+            XCTAssertTrue(app.buttons["homeMicrophone"].isHittable, app.debugDescription)
+            try app.performAccessibilityAudit(for: [.textClipped]) { issue in
+                XCTFail("Home AX3 \(language): \(issue.compactDescription) / \(issue.detailedDescription)")
+                return true
+            }
+            capture("home-ax3-\(language)")
+            app.terminate()
+        }
     }
     func testLocalizedGroupedAmountFields() throws {
         for (language, goal, entry) in [("en", "¥310,000", "¥2,400"), ("ja", "¥310,000", "¥2,400"), ("es", "310.000 ¥", "2.400 ¥"), ("ko", "JP¥310,000", "JP¥2,400")] {

@@ -1,13 +1,13 @@
 # v4 design and device comparisons
 
-Each available image places the selected design panel on the left and a synthetic-data XCTest device capture on the right. Both panels have the same displayed height. The captured implementation is `Cycle 2a.1 device run after 5a21b6d`. Output JPEG quality is 80; the longest edge is at most 2,400 px.
+Each available image places the selected design panel on the left and a synthetic-data XCTest device capture on the right. Both panels have the same displayed height. The captured implementation is `Home current on iPhone 16 Pro Max iOS 27.2 after Cycle 2a.1 fixes; other panels from previous Cycle 2a.1 device run`. Output JPEG quality is 80; the longest edge is at most 2,400 px.
 
 Design panels are cropped from the local exported boards in `design/v4/`. Several exports are multi-screen canvases; crop boxes are explicitly recorded in `Verification/compare_v4_design.py`. A difference note describes visible known differences only; the images are review aids, not pixel-diff claims.
 
 | File | Screen / mode | Known difference or source note |
 |---|---|---|
-| compare-V4Home-light.jpg | Home / light | Board illustration and stacked allowance cards differ from the implementation in this PR #5 baseline capture. |
-| compare-V4Home-dark.jpg | Home / dark | Board illustration and stacked allowance cards differ from the implementation in this PR #5 baseline capture. |
+| compare-V4Home-light.jpg | Home / light | The remaining-allowance hero, seven-day states, month summary and bottom microphone were checked against this design; the island remains a standalone rounded illustration instead of a full-bleed background. |
+| compare-V4Home-dark.jpg | Home / dark | The remaining-allowance hero, seven-day states, month summary and bottom microphone were checked against this design; the island remains a standalone rounded illustration instead of a full-bleed background. |
 | compare-V4Voice-light.jpg | Voice / light | Closest idle-state board panel. |
 | compare-V4Voice-dark.jpg | Voice / dark | Closest idle-state board panel. |
 | compare-V4InfoHousehold-light.jpg | InfoHousehold / light | Board includes long overview sections; the device image shows the current scroll position. |

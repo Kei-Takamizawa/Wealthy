@@ -31,3 +31,12 @@ Commit comparison material to the PR branch so the reviewer can read it from Git
 - `Verification/Cycle2aEvidence/compare/`: for each in-scope screen, light and dark (AX3 optional), ONE side-by-side image: design board on the left, device screenshot on the right, same height, label on top (screen id, mode). JPEG quality about 80, long edge at most 2400 px, each file under 2 MB, total added under 30 MB. Names like `compare-V4Home-light.jpg`. Add `compare/INDEX.md` listing every file, the screen, and one line on known differences.
 - Synthetic data only; no real financial records or personal data in any image.
 - Do not commit the full 251-image inventory, videos or xcresult bundles.
+
+## 6. Additional fixes from design review of the PR #5 comparison images (Home, Voice)
+Reviewed from `Verification/Cycle2aEvidence/compare/` (base-revision captures). Apply in this cycle, using Core values (no UI-side arithmetic):
+1. **Home hero = remaining.** Board V4Home shows "This week left: ¥5,798" ("今週あと") as the big number with the "Not a balance" pill, a progress bar, and a line "of allowance ¥X, spent ¥Y (Z%)". The implementation shows the allowance as the big number and "spent" below; the remaining amount is missing. Make remaining the hero. If remaining is negative, show it with the "over" icon + word (never red alone, no punishing wording). If no target is set, show the unset state, not 0.
+2. **Seven-day row.** Use the board's per-day states (under allowance: check; over: moon/dusk; no-spend marked; today: outlined plus; future: dash) with weekday labels, not all green checks. Derive from Core.
+3. **Month card on Home** (this month spent / remaining target + state pill) as in the board, household envelope only.
+4. **Microphone on Home.** The board has a bottom bar with the centered microphone (info / mic / history). The mic must exist on Home and move to the Voice page (placeholder behavior unchanged). "History" can be omitted in 2a (no dead entry point); do not add a dead button.
+5. **Island framing (recommended, not blocking).** The board shows the island full-bleed behind translucent cards; the implementation puts it in a rounded card. If feasible with native glass, move toward the board; otherwise report as a known difference.
+6. Voice page placeholder copy is acceptable ("Voice input is coming soon...") but also shows a second pill "voice input is not available now": keep only one message.
