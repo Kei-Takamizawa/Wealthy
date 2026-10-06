@@ -222,7 +222,7 @@ import XCTest
     }
 
     func launchSeededWorkflow() {
-        app.launchArguments = ["--cycle2a-test", "--cycle2a-seed", "--reduce-motion", "-v4.language", "en", "-v4.currency", "JPY"]
+        app.launchArguments = ["--cycle2a-test", "--cycle2a-seed", "--reset-test-preferences", "--reduce-motion", "-v4.language", "en", "-v4.currency", "JPY"]
         app.launch(); XCTAssertTrue(app.buttons["addEntry"].waitForExistence(timeout: 15))
     }
     func testIncomeEntry() throws {
@@ -248,15 +248,15 @@ import XCTest
     }
 
     func testPagerNavigation() throws {
-        launchSeededWorkflow()
-        XCTAssertTrue(app.buttons["page-1"].isSelected)
-        tap("homeVoice"); XCTAssertTrue(app.buttons["page-0"].isSelected)
-        tap("voiceInfo"); XCTAssertTrue(app.buttons["page-2"].isSelected)
-        tap("infoIsland"); XCTAssertTrue(app.buttons["page-1"].isSelected)
-        app.swipeLeft(); XCTAssertTrue(app.buttons["page-2"].isSelected)
-        app.swipeRight(); XCTAssertTrue(app.buttons["page-1"].isSelected)
-        app.swipeRight(); XCTAssertTrue(app.buttons["page-0"].isSelected)
-        capture("pager-voice")
+        app.launchArguments = ["--cycle2a-test", "--cycle2a-seed", "--reset-test-preferences", "--reduce-motion", "-v4.language", "en", "-v4.currency", "JPY"]
+        app.launch()
+        let tabs = app.tabBars.buttons
+        XCTAssertTrue(tabs["Voice"].waitForExistence(timeout: 20), app.debugDescription)
+        XCTAssertTrue(tabs["Island"].isSelected, app.debugDescription)
+        tabs["Voice"].tap(); XCTAssertTrue(tabs["Voice"].isSelected, app.debugDescription)
+        tabs["Info"].tap(); XCTAssertTrue(tabs["Info"].isSelected, app.debugDescription)
+        tabs["Island"].tap(); XCTAssertTrue(tabs["Island"].isSelected, app.debugDescription)
+        capture("native-tab-bar")
     }
     func testChildInfoMatrix() throws {
         for language in ["en", "ja", "es", "ko"] {
@@ -323,7 +323,7 @@ extension Cycle2aUITests {
         XCTAssertTrue(app.buttons["addEntry"].waitForExistence(timeout: 20))
         XCTAssertFalse(app.buttons["onboardingNext"].exists)
         XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "40.000")).firstMatch.exists, app.debugDescription)
-        XCTAssertTrue(app.buttons["homeInfoBottom"].label.contains("Información"), app.debugDescription)
+        XCTAssertTrue(app.tabBars.buttons["Información"].exists, app.debugDescription)
         capture("persisted-onboarding-home-after")
         tap("Ajustes"); XCTAssertTrue(app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "KRW")).firstMatch.exists, app.debugDescription)
         capture("persisted-onboarding-settings")
@@ -345,11 +345,11 @@ extension Cycle2aUITests {
             app.launch(); XCTAssertTrue(app.buttons["addEntry"].waitForExistence(timeout: 20))
             XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "307,100")).firstMatch.exists, app.debugDescription)
             XCTAssertTrue(app.staticTexts["homeWeeklyRemaining"].exists, app.debugDescription)
-            XCTAssertTrue(app.buttons["homeMicrophone"].exists, app.debugDescription)
+            XCTAssertTrue(app.tabBars.buttons["Info"].exists, app.debugDescription)
             capture("home-household-child-selected---\(mode)")
-            tap("homeInfoBottom"); XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "76,400")).firstMatch.exists, app.debugDescription)
+            app.tabBars.buttons["Info"].tap(); XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "76,400")).firstMatch.exists, app.debugDescription)
             capture("info-child-selected---\(mode)")
-            tap("infoIsland"); XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "307,100")).firstMatch.exists, app.debugDescription)
+            app.tabBars.buttons["Home"].tap(); XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "307,100")).firstMatch.exists, app.debugDescription)
             app.terminate()
         }
     }
@@ -369,7 +369,7 @@ extension Cycle2aUITests {
             app.launchArguments = ["--cycle2a-test", "--cycle2a-seed", "--ax3", "-v4.language", language, "-v4.currency", "JPY"]
             app.launch()
             XCTAssertTrue(app.staticTexts["homeWeeklyRemaining"].waitForExistence(timeout: 20), app.debugDescription)
-            XCTAssertTrue(app.buttons["homeMicrophone"].isHittable, app.debugDescription)
+            XCTAssertTrue(app.tabBars.buttons["Home"].isSelected, app.debugDescription)
             try app.performAccessibilityAudit(for: [.textClipped]) { issue in
                 XCTFail("Home AX3 \(language): \(issue.compactDescription) / \(issue.detailedDescription)")
                 return true
@@ -403,7 +403,7 @@ extension Cycle2aUITests {
             : [XCTApplicationLaunchMetric(waitUntilResponsive: false)]
         measure(metrics: metrics, options: options) {
             app.launch(); XCTAssertTrue(app.buttons["addEntry"].waitForExistence(timeout: 60))
-            if interactive { XCTAssertTrue(app.buttons["homeInfoBottom"].isHittable); XCTAssertEqual(app.alerts.count, 0) }
+            if interactive { XCTAssertTrue(app.tabBars.buttons["Info"].isHittable); XCTAssertEqual(app.alerts.count, 0) }
             app.terminate()
         }
     }

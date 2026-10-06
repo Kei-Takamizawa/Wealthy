@@ -25,6 +25,11 @@ import MetricKit
         return nil
     }
     private static var preferences: UserDefaults {
+        #if DEBUG
+        if isUITest && ProcessInfo.processInfo.arguments.contains("--reset-test-preferences") {
+            return UserDefaults(suiteName: "Cycle2aUITestPreferences")!
+        }
+        #endif
         if let id = testDiskID { return UserDefaults(suiteName: "Cycle2aOnboarding-" + id)! }
         return .standard
     }

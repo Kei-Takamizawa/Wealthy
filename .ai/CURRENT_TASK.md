@@ -1,49 +1,41 @@
-# CURRENT TASK — Cycle 2a.1: Fix the blockers of PR #5 (same branch `codex/wealthy-c2a-shell`)
+# CURRENT TASK — Cycle 2a.2: Switch the whole UI to standard iOS components (same branch `codex/wealthy-c2a-shell`)
 
-Task ID: WEALTHY-C2A1-FIXES
-Base: PR #5 head `39ae7d5`. Push to the same branch; keep the PR as draft until the product owner approves. Read `.ai/LAST_REPORT.md` first; update it at the end. Scope is limited to the items below. Do not start Cycle 2b or 3 work.
+Task ID: WEALTHY-C2A2-NATIVE-UI
+Base: current head of PR #5. Push to the same branch; PR stays draft. This task REPLACES section 7 items 1-2 of `CYCLE2A_1_CURRENT_TASK.md` where they conflict (bottom bar, mic button, custom plates); items 7.3 (identify audit failures), 7.4 (measurements on final source) and 7.5 (signed Release install/launch) still apply AFTER this conversion.
 
-## 1. Fixes required
+## 1. Decision (product owner, 2026-10-06)
+Use standard iOS components everywhere. Do NOT build custom Liquid-Glass-like surfaces. Whatever Liquid Glass the system applies automatically in iOS 26 to standard controls is fine; do not add custom glass, blur, plates or capsule buttons.
 
-1. **Result sheet contrast audit (blocker).** `Cycle2aUITests/testResultAccessibilityAudit` flags the late-entry explanation text. Put that text (and any other explanatory text in the result sheet) on an opaque Plate with the design `ink`/`ink2` colors. If the audit still fails, bisect by removing modifiers one by one (opacity, hierarchical/secondary styles, blend modes, material backgrounds) and report which one causes it. Do NOT exclude the element or weaken the audit.
-2. **Monthly result (blocker).** Implement the month achieved / over / too-few-days presentations as in boards `V4ResultMonth` / `V4Result` (kind=month): headline per state, island with the month's earned areas (festival count, max 4), month decoration reward line for achieved, "over" wording without punishment, too-few-days wording. Replace design copy that says "20 days or more" with the real rule from Core: logged on at least 70% of the month's days (show the actual number of days required, e.g. "22 of 31"). Weekly captions must not appear on month results.
-3. **Home envelope.** Home always shows the household envelope (island = household weekly allowance). It must NOT follow the envelope selected on Info. The child envelope is shown on Info and its detail screens only.
-4. **Goals.** Build the distinct `V4GoalsUnset` presentation for a month with no target set (not the same empty form). Amount fields in Goals and Edit must display grouped digits and the currency symbol per locale (currently raw "310000", "2400"); input must still accept plain digits.
-5. **No internal jargon in UI text.** Remove "Cycle 3" (or any cycle/task wording) from user-visible strings (e.g. the voice-page placeholder). Use a neutral localized message such as "Voice input is coming soon. For now, add entries by typing." in all 4 languages.
-6. **Persisted onboarding.** Verify on a real device with the real disk store: complete onboarding, force-quit, relaunch: the app opens on Home (not onboarding) with the chosen language, currency and target retained. Add a UI test (disk store in a temp location) and report the result.
-7. **Idle stall / continuous animation.** The normal-motion child-envelope UI test stalled in XCTest waiting for animation idle (repeated 60 s waits). Find the cause (likely a repeating animation or `TimelineView`/`Canvas` redraw loop on the island or elsewhere). Fix so that: ambient animations stop when the view is off-screen, when the app is not active, when Low Power Mode is on, and when Reduce Motion is on; the island redraw loop does not run continuously at full frame rate; the normal-motion child-envelope test passes without special-casing. Report battery-relevant measures you can actually measure (e.g. CPU % idle on Home over 60 s on device, before/after). Do not claim battery numbers you did not measure.
-8. **Launch performance (scope clarified).** Do not change the Core persistence boundary in this cycle: `LedgerStore`/`LedgerCore` stay `@MainActor` with synchronous reads. Instead: render the first frame (loading state) BEFORE the synchronous ledger open starts (e.g. start the open from a `.task` after the first render, yielding once so the frame is committed), keep the loading state minimal and accessible (VoiceOver announces loading), and measure on device with signposts / `XCTApplicationLaunchMetric` (not "accessibility element exists") at 1,000 / 10,000 / 50,000 entries, median of 5 warm launches each. Report two numbers per size: time to first frame, and time until Home is interactive. Targets: first frame under 1 s at all sizes; Home interactive under 2 s at 10,000 entries. If the interactive target is missed at 10,000, report the numbers and the cost split (store open vs. snapshot vs. first render); that result will trigger a separate Core task (async persistence boundary). Truly asynchronous loading is NOT blocked-by-you work in this cycle and is not required for acceptance.
+## 2. Requirements
+1. **Tabs instead of the custom pager and the bottom dots.** Use the system tab bar (`TabView` with `Tab`, iOS 26 style) with three tabs in this order: Voice | Home | Info. The app opens on Home. SF Symbols + short localized labels. Remove the page dots and the custom bottom bar completely. Remove the microphone button from Home (the Voice tab replaces it).
+2. **Switching by tap AND by swipe.** The system tab bar does not swipe between tabs by itself. Add horizontal swipe between adjacent tabs (Voice <-> Home <-> Info) with a minimal, standard approach (e.g. a horizontal drag gesture on the content that only triggers when the horizontal movement clearly dominates and does not interfere with vertical scrolling, List swipe actions, text fields, sliders or pickers; or a paging container if you can keep the standard tab bar). Respect Reduce Motion (no animation). Report honestly what conflicts you found and how they are handled. If a clean swipe cannot be achieved without breaking standard behavior, say so and stop at tap switching plus the best partial option; do not hack around system behavior.
+3. **Standard layout containers.** Use `NavigationStack` with system large/inline titles, `List`/`Form` (inset grouped) or `Section`/`GroupBox` for content, `Picker` (segmented/menu), `Toggle`, `Stepper`, `DatePicker`, `TextField`, system `sheet` with detents, `alert`/`confirmationDialog`. Amounts sit in system-opaque rows, so the "amount on opaque surface" rule is satisfied by the standard grouped backgrounds.
+4. **Standard buttons only.** `Button` with system styles (`.borderedProminent`, `.bordered`, `.plain` in lists, toolbar items, `.glass`/`.glassProminent` only if you use the iOS 26 system styles as-is). No custom capsule/pill buttons, no custom hit-area hacks unless needed for >= 44 pt. Status chips ("Within allowance", "Not a balance") become plain `Label`/text with SF Symbols and semantic colors, not custom capsules.
+5. **Colors and type.** System semantic colors and system fonts (Dynamic Type) for UI chrome and body. Keep: the app accent color (navy, from the design tokens), status colors (ok/watch/over) always with icon + word, the island artwork, and the handwritten fonts ONLY for island captions and result-sheet headlines (short text). Navigation titles, tab labels, buttons and list text use the system font. Amounts use the system rounded design with monospaced digits.
+6. **Remove the custom design system** that is no longer used (custom Plate, GlassChip/GlassBar, FrostLayer, custom Row/Pill/PrimaryButton, custom Reduce-Transparency branches). The system handles Reduce Transparency/Motion automatically; keep Reduce Motion handling only for the island animation and the swipe animation.
+7. **Content stays as already decided.** Home: remaining amount is the hero with the label "Left this week" (ja 今週あと), "Not a balance", progress, "of allowance X, spent Y (Z%)", seven day states, month summary; household envelope only. Info: household/child segment, targets, tax. Voice tab: placeholder message shown once. All data from WealthyCore; no UI-side arithmetic.
+8. Keep all 4 languages, the String Catalog, fonts and licenses screen, onboarding (use standard navigation/`Form`/buttons), result sheet, goals, edit entry, tax, child setup/detail, settings, with standard components.
+9. Accessibility: VoiceOver labels for tabs and the swipe behavior (tabs remain operable via standard VoiceOver tab navigation), contrast and hit areas via standard controls, AX sizes up to AX3 must not clip.
 
-## 2. Constraints
-Keep WealthyCore persistence, undo, backup and tax/target rules unchanged (small query additions allowed if strictly needed, tested). No new dependencies. No audit exclusions, no weakened assertions, no skipped tests. Do not merge; do not delete legacy user data.
+## 3. Constraints
+No WealthyCore changes except if strictly needed for the above (none expected). No new dependencies. No audit exclusions or weakened tests; update UI tests to the new structure (tab selection by tab bar, swipe test, existing workflow tests). Do not delete legacy user data. Do not merge.
 
-## 3. Acceptance
-- All previously passing tests still pass; `testResultAccessibilityAudit` passes unmodified in intent; the normal-motion child test passes.
-- Items 1–8 each have evidence in the report (test names, screenshots for 2, 3, 4, 5, measured numbers for 7 and 8).
-- Core tests and historical checks still pass; Simulator, Release and signed-device builds pass.
+## 4. Design references
+The v4 boards in `design/v4/` are now an information/content and wording reference only; the visuals (glass chips, plates, capsule buttons, bottom bar, paper-colored cards) are intentionally replaced by standard iOS components. Do not try to reproduce those visuals. The island artwork and its states remain as built.
 
-## 4. Report
-Per-item status with evidence; measured numbers (first frame at 3 sizes, idle CPU before/after); what remains unverified (manual VoiceOver traversal, OS Reduce Motion/Transparency settings, iOS 26 hardware) stated explicitly; screenshots of month results (3 states, light/dark/AX3) and Goals unset.
+## 5. Acceptance
+- No custom glass/plate/capsule-button code remains; searching the app target for the removed design-system types finds nothing.
+- Tab bar with three tabs works by tap and (if feasible, see 2.2) by swipe; no dots at the bottom; no mic button on Home.
+- Existing workflow tests pass on device in the new structure; new tests: tab selection, swipe left/right between tabs, swipe does not trigger while scrolling vertically or inside a text field/picker.
+- Accessibility audit on Home/Info/Edit/Result: report results; the earlier 3 unidentified contrast failures must be identified and resolved or explained with evidence (element, frame, crop).
+- Build: Core tests, localization/font validation, Simulator, Release, signed device build pass.
 
-## 5. Design-vs-implementation comparison images (add to this cycle)
-Commit comparison material to the PR branch so the reviewer can read it from GitHub:
-- `design/v4/`: the exported v4 design boards (PNG or JPEG) if the product owner has placed them locally; do not generate them yourself. Name files by board (e.g. `V4Home-light.png`, `V4Home-dark.png`). If they are missing locally, say so in the report.
-- `Verification/Cycle2aEvidence/compare/`: for each in-scope screen, light and dark (AX3 optional), ONE side-by-side image: design board on the left, device screenshot on the right, same height, label on top (screen id, mode). JPEG quality about 80, long edge at most 2400 px, each file under 2 MB, total added under 30 MB. Names like `compare-V4Home-light.jpg`. Add `compare/INDEX.md` listing every file, the screen, and one line on known differences.
-- Synthetic data only; no real financial records or personal data in any image.
-- Do not commit the full 251-image inventory, videos or xcresult bundles.
+## 6. Report
+Per-requirement status; what changed in the structure (files removed/added); swipe behavior details and conflicts found; screenshots of Voice, Home, Info, Goals, Edit, Tax, Result sheet, Onboarding (light, dark, AX3, one language each is enough; all 4 languages for Home); remaining unverified items.
 
-## 6. Additional fixes from design review of the PR #5 comparison images (Home, Voice)
-Reviewed from `Verification/Cycle2aEvidence/compare/` (base-revision captures). Apply in this cycle, using Core values (no UI-side arithmetic):
-1. **Home hero = remaining.** Board V4Home shows "This week left: ¥5,798" ("今週あと") as the big number with the "Not a balance" pill, a progress bar, and a line "of allowance ¥X, spent ¥Y (Z%)". The implementation shows the allowance as the big number and "spent" below; the remaining amount is missing. Make remaining the hero. If remaining is negative, show it with the "over" icon + word (never red alone, no punishing wording). If no target is set, show the unset state, not 0.
-2. **Seven-day row.** Use the board's per-day states (under allowance: check; over: moon/dusk; no-spend marked; today: outlined plus; future: dash) with weekday labels, not all green checks. Derive from Core.
-3. **Month card on Home** (this month spent / remaining target + state pill) as in the board, household envelope only.
-4. **Microphone on Home.** The board has a bottom bar with the centered microphone (info / mic / history). The mic must exist on Home and move to the Voice page (placeholder behavior unchanged). "History" can be omitted in 2a (no dead entry point); do not add a dead button.
-5. **Island framing (recommended, not blocking).** The board shows the island full-bleed behind translucent cards; the implementation puts it in a rounded card. If feasible with native glass, move toward the board; otherwise report as a known difference.
-6. Voice page placeholder copy is acceptable ("Voice input is coming soon...") but also shows a second pill "voice input is not available now": keep only one message.
+## User follow-up during implementation (2026-10-07)
 
-## 7. Round 2 (after PR #5 head a817d4a)
-1. **Label correction (design review).** The Home hero number is the REMAINING amount (allowance 70,000 − spent 2,900 = 67,100) but its label reads "This week's allowance". Rename the hero label to "Left this week" (ja 今週あと, es "Te quedan esta semana" or similar, ko equivalent) and keep "of allowance ¥70,000, spent ¥2,900 (4%)" below. "Not a balance" pill stays. Check the Info page uses the same wording ("Left" for remaining, "Allowance" for the total).
-2. **Home bottom bar.** The bar overlaps and clips the month card; the mic is a plain outlined button. Follow the board: one glass bar with Info | center primary microphone (filled primary color, 66 pt) | (no History button in 2a), content must scroll behind it with bottom inset so nothing is cut. Remove the duplicate "Info" pill if the top-right chip and the bottom bar both link to Info (keep one).
-3. **Unidentified audit failures.** `testHomeAccessibilityAudit` reports 3 contrast failures without elements. In the audit issue handler, log each `XCUIAccessibilityAuditIssue`'s `element` (label, identifier, frame, debugDescription) and attach a cropped screenshot per issue; then fix the root causes (do not exclude elements or weaken the audit). Include the findings in the report.
-4. **Collect the missing measurements on the final source** (signed Release build, device unlocked): first frame and Home-interactive at 1k/10k/50k (5 warm launches, medians), and a 60-second idle CPU comparison on Home. If the device cannot be kept unlocked, say so and stop; do not reuse earlier numbers.
-5. **Signed Release installation and normal launch** verification on the device.
+「iosのシミュレータで起動できるデバイスを追加してください」
+「iphone mirroringにはテストビルド入っていると思います。ただiphoneをミラーリングしてるだけなので。最低要件のiphone 15 proでもちゃんと動くか確かめるために、シミュレータに15 proも入れてください。」
+
+Create bootable iPhone simulator devices, including iPhone 15 Pro, and verify the app can build, install and launch there. User also instructed: 「claudeアプリにも画面録画があるので、これは止めて、iphone mirroringだけにしてください。」 Do not use Claude app recording; use only iPhone Mirroring for computer UI inspection.
