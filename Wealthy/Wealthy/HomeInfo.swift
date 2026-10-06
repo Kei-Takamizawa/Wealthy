@@ -14,6 +14,9 @@ struct AllowancePlate: View {
                 Text(status.remaining.map { session.money($0) } ?? session.t("targetUnset")).font(.system(.largeTitle, design: .rounded).weight(.bold).monospacedDigit()).lineLimit(1).minimumScaleFactor(0.25)
                 Text(session.t("notBalance")).font(.footnote).foregroundStyle(V4.ink2(scheme))
                 if status.isSet { ProgressView(value: status.displayFill, total: 1).tint(status.isOver ? V4.over(scheme) : V4.ok(scheme)).accessibilityHidden(true) }
+                if let allowance = status.allowance {
+                    LabeledContent(session.t("allowance"), value: session.money(allowance))
+                }
                 if typeSize.isAccessibilitySize { VStack(alignment: .leading, spacing: 4) { Text(session.t("spent")); Text(session.money(status.spent)).monospacedDigit() } }
                 else { LabeledContent(session.t("spent"), value: session.money(status.spent)) }
                 Text(String(format: session.t("loggedDays"), status.loggedDays)).font(.footnote)
@@ -30,12 +33,10 @@ struct HomeView: View {
     let toInfo: () -> Void
     let showResult: (TargetStatus) -> Void
     var body: some View {
-        VStack(spacing: 0) {
-            ScrollView {
-                VStack(spacing: 12) {
+        ScrollView {
+            VStack(spacing: 12) {
                 GlassEffectContainer {
-                    let layout = typeSize.isAccessibilitySize ? AnyLayout(VStackLayout(alignment: .leading, spacing: 12)) : AnyLayout(HStackLayout())
-                    layout { Text(session.t("thisWeek")).foregroundStyle(V4.ink(scheme)).padding(12).modifier(V4Glass()); if !typeSize.isAccessibilitySize { Spacer() }; Button(action: toInfo) { Pill(text: session.t("info"), icon: "chevron.right") }.accessibilityIdentifier("homeInfo") }
+                    Text(session.t("thisWeek")).foregroundStyle(V4.ink(scheme)).padding(12).background(V4.paper(scheme), in: .capsule).overlay(Capsule().stroke(V4.line(scheme), lineWidth: 1.5)).accessibilityHidden(true)
                 }
                 if let s = session.householdSummary {
                     IslandScene(growth: s.days.filter(\.hasGrowth).count, festivals: s.festivals, dusk: s.week.isOver).frame(height: 180).accessibilityHidden(true)
@@ -48,68 +49,74 @@ struct HomeView: View {
                 NavigationLink { EntryEditor(entry: nil) } label: { Label(session.t("addEntry"), systemImage: "plus") }.buttonStyle(PrimaryButton()).accessibilityIdentifier("addEntry")
                 Button { session.perform { try session.run(.markNoSpend(session.today, envelopeID: EnvelopeValue.householdID)) } } label: { Text(session.t("noSpend")).frame(maxWidth: .infinity, minHeight: 52).contentShape(Rectangle()) }.accessibilityIdentifier("noSpend")
                 GlassEffectContainer { ViewThatFits(in: .horizontal) { HStack { homeControls }; VStack(alignment: .leading) { homeControls } } }
-                }.padding(16).padding(.bottom, 32)
             }
-            .frame(maxHeight: .infinity)
-            .background(V4.paper(scheme)).accessibilityIdentifier("homePage").task { await session.homePresented() }
-            homeBottomBar
+            .padding(16)
+            .padding(.bottom, 24)
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(V4.paper(scheme))
+        .accessibilityIdentifier("homePage")
+        .safeAreaInset(edge: .bottom, spacing: 0) { homeBottomBar }
+        .task { await session.homePresented() }
     }
     private var homeBottomBar: some View {
         GlassEffectContainer {
-            HStack {
+            HStack(spacing: 0) {
                 Button(action: toInfo) {
                     Label(session.t("info"), systemImage: "info.circle")
-                        .font(.footnote.weight(.semibold)).padding(12).frame(minHeight: 44)
-                        .foregroundStyle(V4.ink(scheme))
-                        .background(V4.color(0xFFF8EA, 0x25221E, scheme), in: .capsule)
-                        .overlay(Capsule().stroke(V4.line(scheme), lineWidth: 0.7))
+                        .font(.footnote.weight(.semibold)).frame(maxWidth: .infinity, minHeight: 52)
+                        .foregroundStyle(V4.ink(scheme)).padding(.horizontal, 12).background(V4.paper(scheme), in: .capsule).contentShape(Capsule())
                 }.accessibilityIdentifier("homeInfoBottom")
-                Spacer()
-                Button(action: toVoice) { Image(systemName: "mic.fill").font(.title2).frame(width: 56, height: 52).modifier(V4Glass()).accessibilityLabel(session.t("voice")) }
-                    .accessibilityIdentifier("homeMicrophone")
-                Spacer()
-                Color.clear.frame(width: 56, height: 44).accessibilityHidden(true)
-            }.padding(.horizontal, 16).padding(.vertical, 6)
+                Button(action: toVoice) {
+                    Image(systemName: "mic.fill").font(.title2.weight(.semibold))
+                        .foregroundStyle(V4.onPrimary(scheme))
+                        .frame(width: 66, height: 66)
+                        .background(V4.primary(scheme), in: Circle())
+                }
+                .accessibilityIdentifier("homeMicrophone")
+                .accessibilityLabel(session.t("voice"))
+                .frame(maxWidth: .infinity, minHeight: 52)
+            }
+            .padding(8)
+            .modifier(V4Glass(level: .regular))
         }
-        .frame(maxWidth: .infinity)
-        .background(V4.paper(scheme))
+        .padding(.horizontal, 16)
+        .padding(.vertical, 8)
+        .background(V4.paper(scheme).opacity(0.82))
     }
     private func weeklyCard(_ status: TargetStatus, summary: IslandSummary) -> some View {
         Plate {
             VStack(alignment: .leading, spacing: 10) {
-                Text(session.t("weeklyAllowance")).font(V4.heading(session.language, size: 22))
+                Text(session.t("leftThisWeek")).font(V4.heading(session.language, size: 22)).foregroundStyle(V4.ink(scheme))
                 Text(status.isSet ? session.money(status.remaining ?? 0) : session.t("targetUnset"))
-                    .font(.system(.largeTitle, design: .rounded).weight(.bold).monospacedDigit()).lineLimit(1).minimumScaleFactor(0.35)
+                    .font(.system(.largeTitle, design: .rounded).weight(.bold).monospacedDigit()).lineLimit(1).minimumScaleFactor(0.35).foregroundStyle(V4.ink(scheme))
                     .accessibilityIdentifier("homeWeeklyRemaining")
                 Text(session.t("notBalance")).font(.footnote).padding(.horizontal, 10).padding(.vertical, 6).background(V4.sunken(scheme), in: .capsule)
                 if status.isSet { ProgressView(value: status.displayFill, total: 1).tint(status.isOver ? V4.over(scheme) : V4.ok(scheme)).accessibilityHidden(true) }
                 if status.isSet, let allowance = status.allowance {
                     Text(String(format: session.t("allowanceSpentPercent"), session.money(allowance), session.money(status.spent), status.spentPercentage ?? 0))
-                        .font(.footnote).foregroundStyle(V4.ink2(scheme))
+                        .font(.footnote).foregroundStyle(V4.ink(scheme))
                 }
                 Label(session.t(status.isOver ? "over" : status.isSet ? "within" : "unset"),
                       systemImage: status.isOver ? "moon.fill" : status.isSet ? "checkmark.circle.fill" : "circle.dotted")
                     .foregroundStyle(status.isOver ? V4.over(scheme) : status.isSet ? V4.ok(scheme) : V4.ink2(scheme))
                 HStack(spacing: 4) { dayStickers(summary) }
             }
-        }.accessibilityElement(children: .combine)
+        }.accessibilityElement(children: .ignore)
+            .accessibilityLabel("\(session.t("leftThisWeek")), \(status.remaining.map { session.money($0) } ?? session.t("targetUnset")), \(session.t("notBalance")), \(session.t("allowance")) \(status.allowance.map { session.money($0) } ?? session.t("targetUnset")), \(session.t("spent")) \(session.money(status.spent))")
     }
     private func monthCard(_ status: TargetStatus) -> some View {
         Plate {
             VStack(alignment: .leading, spacing: 10) {
-                Text(session.t("monthlyAllowance")).font(V4.heading(session.language, size: 21)).foregroundStyle(V4.ink(scheme))
+                Text(session.t("leftThisMonth")).font(V4.heading(session.language, size: 21)).foregroundStyle(V4.ink(scheme))
                 if status.isSet {
                     HStack(alignment: .firstTextBaseline) {
                         VStack(alignment: .leading, spacing: 4) {
-                            Text(session.t("spent")).font(.footnote).foregroundStyle(V4.ink2(scheme))
+                            Text(session.t("spent")).font(.footnote).foregroundStyle(V4.ink(scheme))
                             Text(session.money(status.spent)).font(.system(.title2, design: .rounded).monospacedDigit()).foregroundStyle(V4.ink(scheme))
                         }
                         Spacer(minLength: 8)
                         VStack(alignment: .trailing, spacing: 4) {
-                            Text(session.t("remainingAllowance")).font(.footnote).foregroundStyle(V4.ink2(scheme))
+                            Text(session.t("leftThisMonth")).font(.footnote).foregroundStyle(V4.ink(scheme))
                             Text(session.money(status.remaining ?? 0)).font(.system(.title2, design: .rounded).monospacedDigit()).foregroundStyle(V4.ink(scheme))
                         }
                     }
@@ -118,7 +125,8 @@ struct HomeView: View {
                 } else { Text(session.t("targetUnset")).foregroundStyle(V4.ink2(scheme)) }
                 Text(session.t("notBalance")).font(.footnote).foregroundStyle(V4.ink2(scheme))
             }
-        }.accessibilityElement(children: .combine)
+        }.accessibilityElement(children: .ignore)
+            .accessibilityLabel("\(session.t("leftThisMonth")), \(session.t("spent")) \(session.money(status.spent)), \(session.t("leftThisMonth")) \(status.remaining.map { session.money($0) } ?? session.t("targetUnset")), \(session.t("notBalance"))")
     }
     @ViewBuilder private var homeControls: some View {
         NavigationLink { GoalsView(envelopeID: EnvelopeValue.householdID) } label: { Pill(text: session.t("goals"), icon: "target") }
@@ -161,7 +169,7 @@ struct InfoView: View {
                     Text(session.t("household")).tag(EnvelopeValue.householdID)
                     if let child = session.child() { Text(session.t("child")).tag(child.id) }
                 }.pickerStyle(.segmented).frame(minHeight: 44)
-                if let s = session.summary { AllowancePlate(title: "weeklyAllowance", status: s.week); AllowancePlate(title: "monthlyAllowance", status: s.month) }
+                if let s = session.summary { AllowancePlate(title: "leftThisWeek", status: s.week); AllowancePlate(title: "leftThisMonth", status: s.month) }
                 NavigationLink { GoalsView(envelopeID: session.envelopeID) } label: { Label(session.t("goals"), systemImage: "target").frame(minHeight: 52) }
                 categoryTargets
                 NavigationLink { TaxView() } label: { Label(session.t("tax"), systemImage: "percent").frame(minHeight: 52) }

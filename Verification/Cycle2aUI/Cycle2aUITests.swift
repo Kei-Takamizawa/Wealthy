@@ -152,8 +152,22 @@ import XCTest
             }
             capture("audit-preview-\(screen)")
             var issues: [String] = []
+            let auditedScreen = screen
             try app.performAccessibilityAudit(for: [.contrast, .textClipped, .hitRegion, .sufficientElementDescription]) { issue in
-                issues.append("\(issue.auditType): \(issue.compactDescription) / \(issue.detailedDescription) / \(issue.element?.debugDescription ?? "No element")")
+                let element = issue.element
+                let details = "\(issue.auditType): \(issue.compactDescription) / \(issue.detailedDescription) / label=\(element?.label ?? "<nil>") identifier=\(element?.identifier ?? "<nil>") frame=\(element.map { NSCoder.string(for: $0.frame) } ?? "<nil>") / \(element?.debugDescription ?? "No element")"
+                issues.append(details)
+                print("ACCESSIBILITY_AUDIT_ISSUE \(details)")
+                let image = self.app.screenshot().image
+                let crop: UIImage
+                if let element, let cgImage = image.cgImage, self.app.frame.width > 0, self.app.frame.height > 0 {
+                    let scaleX = CGFloat(cgImage.width) / self.app.frame.width
+                    let scaleY = CGFloat(cgImage.height) / self.app.frame.height
+                    let frame = element.frame
+                    let rect = CGRect(x: max(0, (frame.minX - self.app.frame.minX - 24) * scaleX), y: max(0, (frame.minY - self.app.frame.minY - 24) * scaleY), width: min(CGFloat(cgImage.width), (frame.width + 48) * scaleX), height: min(CGFloat(cgImage.height), (frame.height + 48) * scaleY)).integral.intersection(CGRect(x: 0, y: 0, width: cgImage.width, height: cgImage.height))
+                    crop = rect.isNull || rect.isEmpty ? image : UIImage(cgImage: cgImage.cropping(to: rect) ?? cgImage)
+                } else { crop = image }
+                let attachment = XCTAttachment(image: crop); attachment.name = "audit-\(auditedScreen)-issue-\(issues.count)-crop"; attachment.lifetime = .keepAlways; self.add(attachment)
                 return true // Collect every issue; the explicit assertion below rejects all of them.
             }
             let proof = XCTAttachment(string: issues.joined(separator: "\n")); proof.name = "audit-\(screen)"; proof.lifetime = .keepAlways; add(proof)
@@ -309,7 +323,7 @@ extension Cycle2aUITests {
         XCTAssertTrue(app.buttons["addEntry"].waitForExistence(timeout: 20))
         XCTAssertFalse(app.buttons["onboardingNext"].exists)
         XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "40.000")).firstMatch.exists, app.debugDescription)
-        XCTAssertTrue(app.buttons["homeInfo"].label.contains("Información"), app.debugDescription)
+        XCTAssertTrue(app.buttons["homeInfoBottom"].label.contains("Información"), app.debugDescription)
         capture("persisted-onboarding-home-after")
         tap("Ajustes"); XCTAssertTrue(app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "KRW")).firstMatch.exists, app.debugDescription)
         capture("persisted-onboarding-settings")
@@ -333,7 +347,7 @@ extension Cycle2aUITests {
             XCTAssertTrue(app.staticTexts["homeWeeklyRemaining"].exists, app.debugDescription)
             XCTAssertTrue(app.buttons["homeMicrophone"].exists, app.debugDescription)
             capture("home-household-child-selected---\(mode)")
-            tap("homeInfo"); XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "76,400")).firstMatch.exists, app.debugDescription)
+            tap("homeInfoBottom"); XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "76,400")).firstMatch.exists, app.debugDescription)
             capture("info-child-selected---\(mode)")
             tap("infoIsland"); XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "307,100")).firstMatch.exists, app.debugDescription)
             app.terminate()
@@ -383,14 +397,13 @@ extension Cycle2aUITests {
     private func launchMetric(entries: Int, interactive: Bool = false) throws {
         app.launchArguments = ["--cycle2a-test", "--cycle2a-performance", "--entry-count", String(entries), "-v4.language", "en", "-v4.currency", "JPY"]
         if interactive { app.launchArguments.append("--measure-home-launch") }
-        app.launch(); XCTAssertTrue(app.buttons["addEntry"].waitForExistence(timeout: 120)); app.terminate()
         let options = XCTMeasureOptions(); options.iterationCount = 5
         let metrics: [XCTMetric] = interactive
             ? [XCTApplicationLaunchMetric(waitUntilResponsive: true)] + ["HomeInteractive", "StoreOpen", "Snapshot", "QuerySnapshot", "HomeRender"].map { XCTOSSignpostMetric(subsystem: "com.harrison.Wealthy", category: "LedgerLaunch", name: $0) }
             : [XCTApplicationLaunchMetric(waitUntilResponsive: false)]
         measure(metrics: metrics, options: options) {
             app.launch(); XCTAssertTrue(app.buttons["addEntry"].waitForExistence(timeout: 60))
-            if interactive { XCTAssertTrue(app.buttons["homeInfo"].isHittable); XCTAssertEqual(app.alerts.count, 0) }
+            if interactive { XCTAssertTrue(app.buttons["homeInfoBottom"].isHittable); XCTAssertEqual(app.alerts.count, 0) }
             app.terminate()
         }
     }
