@@ -92,3 +92,10 @@ The pre-existing `.DS_Store` edits, three blank-line deletions in `Wealthy/Wealt
 - Intentionally not implemented: Cycle 2b/3, persistent stickers, async Core reads, any persistence/undo/backup changes, and out-of-scope screens.
 
 The PR remains Draft and unmerged. Previous Cycle 2a.1 implementation checks and original host benchmark remain documented in Git history; no baseline commit was rewritten.
+
+## Git delivery
+
+- Commit `f9ebdc328de40198fbfef36b041b903e474b3420` (`Record Cycle 2a.1 device verification`) was pushed to `origin/codex/wealthy-c2a-shell`.
+- Verified remote branch SHA and PR head SHA both equal `f9ebdc328de40198fbfef36b041b903e474b3420`.
+- PR #5 remains OPEN and Draft (`mergedAt: null`); no merge was performed.
+- Existing unrelated user edits remain unstaged and untouched.
