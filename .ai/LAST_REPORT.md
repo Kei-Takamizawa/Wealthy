@@ -76,4 +76,4 @@ Reproduce Home audit: run `Cycle2aUITests/testHomeAccessibilityAudit` on the iPh
 
 ## Git delivery
 
-After review of the task-only changes, commit this partial result and push it to `codex/wealthy-c2a-shell`. Verify PR #5 stays OPEN, Draft, and unmerged. Do not merge. User-owned uncommitted `.DS_Store`, project whitespace, and Japanese handoff PDF changes are excluded.
+Committed as `738531355c8e97523d86ccf3ad106b1e4a916d47` (`Fix Cycle 2a.1 home and device blockers`) and pushed to `origin/codex/wealthy-c2a-shell`. `git ls-remote` confirms the same remote SHA. GitHub reports PR #5 `OPEN`, `isDraft: true`, `mergedAt: null`; no merge was performed. User-owned uncommitted `.DS_Store`, project whitespace, and Japanese handoff PDF changes remain excluded and untouched.
