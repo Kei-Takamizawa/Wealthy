@@ -1,46 +1,68 @@
-# Cycle 2a.1 — PR #5 Round 2 update
+# Cycle 2a.3 Report
 
-- Task ID: WEALTHY-C2A1-FIXES
-- Status: PARTIAL — requested Home labeling/footer changes are implemented, signed Release installation and normal launch succeeded, but the required Home contrast audit still fails and the full 1k/10k/50k performance matrix was not obtained.
-- Branch: `codex/wealthy-c2a-shell`; PR #5 remains OPEN, Draft, unmerged.
-- Device: iPhone 16 Pro Max, iOS 27.2 (24B5089g), UDID `00008140-000C6164027B001C`; lockState showed `unlockedSinceBoot: true` during device work.
+Task ID: `WEALTHY-C2A3-CLOSE`
+Status: **PARTIAL / BLOCKED**
 
-## Round 2 items
+## Branch and base
 
-1. **Labels and allowance distinction — implemented.** Home week hero says “Left this week”; month uses “Left this month”; Info uses matching “Left” labels and shows total as “Allowance”. Four-language catalog additions: en/ja/es/ko. `verify_shell.py` validates 149 keys × 4 languages.
-2. **Bottom bar — implemented.** One Info control and one centered 66 pt primary microphone occupy a single regular-glass bar; Home content is a scroll view with bottom safe-area inset. UI test references updated from removed `homeInfo` to `homeInfoBottom`. Real device build and normal Home launch succeeded. Manual visual review against board not newly captured.
-3. **Audit diagnostics — implemented, audit remains FAIL.** `testHomeAccessibilityAudit` now prints audit type, label, identifier, frame and debugDescription and attaches a crop/full-screen image per issue. Results: initial run exposed 7 contrast issues (Info, weekly header, weekly hero, month header and 3 month card texts). After making Info opaque and changing specified secondary label colors, later runs still report contrast issues for weekly card heading/value and month spent/remaining labels; an additional day-label issue can occur. Removing/changing styles did not establish a single root modifier. Audit callback still collects all issues and the unmodified `XCTAssertTrue(issues.isEmpty)` rejects them. Latest failed result: `/private/tmp/wealthy-c2a1-round2-home-audit-fix8.xcresult`; diagnostic crops are in that result bundle. No element exclusions or weakened assertions.
-4. **Final-source signed Release, CPU and launch measurements — partial.** Signed Release app installed over existing app and launched normally on device (`devicectl` returned PID; no launch args). Activity Monitor trace `Launch_Wealthy.app_2026-10-06_21.43.52_0D3F4E3A.trace` shows a single 88.797 s observation interval (the capture was intended as 60 s but Instruments stopped only after manual stop), 210.75 ms process CPU (~0.237% of elapsed interval), 68 idle wakeups, and 1.92 MiB read. This interval includes launch; it is not a controlled 60 s steady-idle sample and there is no comparable new baseline. A separate 59.309 s interval had 203.81 ms CPU (~0.344%) / 60 idle wakeups but similarly begins at launch. Treat these as single launch-plus-observation samples, not a before/after battery comparison. The required exact five-warm-launch medians at 1k/10k/50k were not obtained.
-   - Initial 1k attempt used an extra warm-up and failed to save usable results. The test was corrected to remove that extra launch and rerun. In the corrected run `testHomeInteractiveMetric1000` passed; Xcode 27 omitted `XCTApplicationLaunchMetric` values and warned it was missing in later iterations, while signposts were recorded for only 3 iterations despite `iterationCount = 5`. HomeInteractive was 0.172525, 0.171044, 0.193915 seconds (n=3; median 0.172525 s); HomeRender 0.106113, 0.104966, 0.106297 s (n=3; median 0.106113 s); QuerySnapshot 0.000517, 0.000502, 0.000467 s (n=3; median 0.000502 s). These are interim 1k reference measurements, not five-launch acceptance medians. StoreOpen/Snapshot and first-frame values were not present in the result.
-   - `testLaunchMetric1000` passed its UI test method but the result bundle contained no launch metric object. No 10k/50k measures were run after this instrumentation inconsistency.
-5. **Signed Release device install/normal launch — PASS.** `devicectl device install app` replaced installed `com.harrison.Wealthy`; `devicectl device process launch ... --terminate-existing` succeeded, PID observed. This was a normal launch with no arguments. Existing app data was not explicitly removed.
+- Branch: `codex/wealthy-c2a3-close`
+- Base: latest fetched `origin/main` at `2cfe37b`.
+- Incorporated post-merge Cycle 2a.2 commit `5c12529` from `codex/wealthy-c2a-shell`.
+- The merged PR #5 was not reused or modified. No merge was performed.
 
-## Validation
+## Implemented
 
-- `sh Verification/verify_core.sh`: PASS, 117 tests / 13 suites.
-- `python3 Verification/verify_shell.py`: PASS, 149 localization keys × 4 languages, placeholder parity and bundled font checks.
-- `git diff --check`: PASS.
-- Signed iPhone Release `build-for-testing`: PASS on final source (`/private/tmp/wealthy-c2a1-round2-final-build.log`).
-- Generic iOS Simulator Release build: PASS after Home content cleanup and label changes.
-- Signed Release install and normal launch: PASS after final source build and style cleanup. No user data was erased.
-- `testHomeAccessibilityAudit`: FAIL, diagnostic data listed above.
-- `testHomeInteractiveMetric1000`: PASS test method; metric collection partial, n=3 and launch metric missing.
-- `testLaunchMetric1000`: PASS test method; no metrics persisted in result.
-- Other prior Cycle 2a.1 results are recorded in earlier report history; not rerun in this round.
+- Home now uses the standard inline navigation title and a 100-point island scene to move the lower Home content above the iOS 27 tab bar. The earlier audit had located low-contrast weekday labels at y=807 beneath the system tab bar; this change is intended to address that overlap. The final UI audit could not be rerun because the Xcode project has no UI test target or shared test scheme.
+- Existing UI test source includes Home/Info vertical-scroll and horizontal-tab-swipe checks, Edit text/date/segmented drag checks, and Info segmented-control drag checks. These tests are not currently wired to an Xcode test target. There is no List swipe-action surface in the in-scope app screens.
+- No WealthyCore behavior or dependencies were changed.
 
-## Expected / Actual
+## Files changed for this cycle
 
-Expected: single glass Info/mic bar and consistent remaining labels; named contrast issues fixed; five warm runs at each store size and current-device measurements.
-Actual: label/footer code is updated. The audit is still failing. Signed Release launches on iPhone. One 1k interactive signpost sample set (n=3) and two launch-plus-observation Activity Monitor samples were extracted; required metric matrix/true idle comparison is incomplete.
+- `.ai/CURRENT_TASK.md`
+- `.ai/LAST_REPORT.md`
+- `Verification/Cycle2aUI/Cycle2aUITests.swift`
+- `Wealthy/Wealthy/HomeInfo.swift`
+- `Wealthy/Wealthy/LedgerRoot.swift`
+- `Wealthy/Wealthy/LedgerSession.swift`
+- `Wealthy/Wealthy/DesignSystem.swift`
+- `Wealthy/Wealthy/EntryEditor.swift`
+- `Wealthy/Wealthy/GoalsTaxSettings.swift`
 
-## Open / unverified
+The source files listed above include the cherry-picked Cycle 2a.2 native UI change plus subsequent 2a.3 adjustments. Existing unrelated dirty files (`.DS_Store`, `Wealthy/Wealthy.xcodeproj/project.pbxproj`, `design/v4/引き渡しシート.pdf`, and the two existing `.trace` directories) were not intentionally modified by this task and must not be staged.
 
-- Home contrast audit root cause and PASS.
-- 1k first-frame measurement; five values per metric.
-- 10k and 50k first-frame and Home-interactive five-run medians.
-- Device steady-state 60 second CPU comparison against a comparable base.
-- Manual VoiceOver, Reduce Motion, Reduce Transparency, iOS 26 hardware.
-- Current-source screenshot comparison images have not been refreshed for this round.
-- Final signed Release rebuild/install/normal launch was repeated after source cleanup and succeeded.
+## Verification
 
-No Cycle 2b/3 work was started. No changes to WealthyCore persistence/domain rules. This report intentionally does not claim blockers passed.
+- `sh Verification/verify_core.sh` — PASS, 117 tests in 13 suites.
+- `python3 Verification/verify_shell.py` — PASS, 149 keys × 4 languages, placeholder parity and font checks.
+- iPhone 15 Pro simulator Debug build — PASS: `xcodebuild -project Wealthy/Wealthy.xcodeproj -scheme Wealthy -destination 'platform=iOS Simulator,id=870430A8-E557-4CED-8A8E-079801D804B9' -derivedDataPath /tmp/wealthy-c2a3-derived build`.
+- iPhone 17 Pro simulator Debug build — PASS: same command with destination UDID `DEA8D0DF-8BA2-4F70-B19C-BACAC400EAE0`.
+- Generic iOS Simulator Release build — PASS: `xcodebuild -project Wealthy/Wealthy.xcodeproj -scheme Wealthy -configuration Release -destination 'generic/platform=iOS Simulator' -derivedDataPath /tmp/wealthy-c2a3-release build -quiet`.
+- Signed generic iOS Release build — PASS: `xcodebuild -project Wealthy/Wealthy.xcodeproj -scheme Wealthy -configuration Release -destination 'generic/platform=iOS' -derivedDataPath /tmp/wealthy-c2a3-device CODE_SIGNING_ALLOWED=YES build -quiet`.
+- Physical-device install and launch — PASS on paired iPhone 16 Pro Max (iOS 27.2), using `xcrun devicectl device install app ...` and `xcrun devicectl device process launch ...`. This proves install/launch only, not visual or accessibility correctness.
+- `git diff --check` — not yet run after final report edit.
+
+## Blockers and unverified requirements
+
+- `xcodebuild -list -project Wealthy/Wealthy.xcodeproj` reports targets `Wealthy`, `WealthyCore`, and schemes `Wealthy`, `WealthyCore`. The Wealthy scheme is not configured for the test action; `Wealthy/Wealthy.xcodeproj` has no shared scheme file and the project has only the application native target. Attempting `xcodebuild ... -only-testing:Cycle2aUITests/Cycle2aUITests/testHomeAccessibilityAudit test` fails with: `Scheme Wealthy is not currently configured for the test action.` This prevents running all four audits, gesture tests, screenshot matrices, and XCTest performance measures.
+- Home contrast correction is **not verified**. Previous iPhone 15 Pro simulator run failed the contrast audit on weekday labels at `y=807`; screenshot/element evidence exists only in the failed test result under `/tmp/wealthy-c2a3-home-fail-screenshot` and `/tmp/wealthy-c2a3-home-barbackground.log`. No crop or element dump has been committed.
+- Entry, Result, Info and Home audits were not all rerun across iPhone 15 Pro, iPhone 17 Pro and physical hardware for this final source.
+- Swipe tests were not executable. VoiceOver gesture behavior was not tested; horizontal custom swipes remain implemented. Text/date/segmented/List-action test coverage is incomplete as an executed result. No List swipe action is present in the in-scope UI.
+- Required screenshots under `Verification/Cycle2aEvidence/native/` were not produced or committed.
+- First-frame/Home-interactive medians for 1k/10k/50k entries and 60-second idle CPU were not measured. No performance numbers are claimed.
+- GUI comparison against the iPhone 15 Pro simulator and manual VoiceOver traversal were not completed. Reduce Motion/Transparency manual checks and iOS 26 hardware checks remain unverified.
+- `git diff --check` — PASS.
+- Commit `7c90772` (`Close Cycle 2a native UI gaps`) — created and pushed to `origin/codex/wealthy-c2a3-close`.
+- New draft PR #6: https://github.com/Kei-Takamizawa/Wealthy/pull/6 (base `main`). It remains draft; it was not merged.
+
+## Expected / actual
+
+- Expected: all four audits and swipe tests pass across requested devices, required screenshots and measurements are committed, and a new draft PR is available.
+- Actual: core/localization checks and simulator/release/device builds pass; UI audits, UI tests, screenshots, and requested measurements are blocked by missing Xcode UI test target/scheme. Therefore acceptance is not met.
+
+## Decisions needed
+
+- The project currently lacks the UI test target and shared scheme needed by the prescribed verification. Adding them requires Xcode project/test-host configuration beyond the current existing project structure. This report does not invent a test harness or claim those checks passed.
+
+## Intentionally not performed
+
+- No PR merge, no change to WealthyCore behavior, no dependencies, no deletion or staging of unrelated dirty user files, and no fabricated screenshot or performance evidence.

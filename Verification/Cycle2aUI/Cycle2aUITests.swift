@@ -2,7 +2,12 @@ import XCTest
 
 @MainActor final class Cycle2aUITests: XCTestCase {
     let app = XCUIApplication(bundleIdentifier: "com.harrison.Wealthy")
-    override func setUpWithError() throws { continueAfterFailure = false }
+    override func setUpWithError() throws {
+        continueAfterFailure = false
+        if ProcessInfo.processInfo.environment["SIMULATOR_DEVICE_NAME"] != nil {
+            app.launchEnvironment["WEALTHY_CYCLE2A_TEST_AI_AVAILABLE"] = "1"
+        }
+    }
     func capture(_ name: String) {
         XCTAssertTrue(app.descendants(matching: .any).matching(identifier: "ledgerLoading").firstMatch.waitForNonExistence(timeout: 30), app.debugDescription)
         XCTAssertEqual(app.alerts.count, 0, app.debugDescription)
@@ -10,7 +15,6 @@ import XCTest
     }
     func tap(_ label: String) {
         let button = app.buttons[label].firstMatch
-        XCTAssertTrue(button.waitForExistence(timeout: 5), app.debugDescription)
         func unobscuredCenter() -> Bool {
             let bounds = app.frame
             let keyboard = app.keyboards.firstMatch
@@ -20,6 +24,7 @@ import XCTest
                 && button.frame.midY >= bounds.minY && button.frame.midY < visibleBottom
         }
         for _ in 0..<12 { if unobscuredCenter() { break }; app.swipeUp() }
+        XCTAssertTrue(button.waitForExistence(timeout: 5), app.debugDescription)
         XCTAssertTrue(unobscuredCenter(), "Button center is not visible above the keyboard: \(button.frame), keyboard: \(app.keyboards.firstMatch.frame)\n\(app.debugDescription)")
         button.tap()
     }
@@ -176,6 +181,7 @@ import XCTest
     }
 
     func testHomeAccessibilityAudit() throws { try audit("home") }
+    func testInfoAccessibilityAudit() throws { try audit("info") }
     func testResultAccessibilityAudit() throws { try audit("result") }
     func testEntryAccessibilityAudit() throws { try audit("edit") }
 
@@ -222,8 +228,9 @@ import XCTest
     }
 
     func launchSeededWorkflow() {
-        app.launchArguments = ["--cycle2a-test", "--cycle2a-seed", "--reduce-motion", "-v4.language", "en", "-v4.currency", "JPY"]
-        app.launch(); XCTAssertTrue(app.buttons["addEntry"].waitForExistence(timeout: 15))
+        app.launchArguments = ["--cycle2a-test", "--cycle2a-seed", "--reset-test-preferences", "--reduce-motion", "-v4.language", "en", "-v4.currency", "JPY"]
+        app.launch(); XCTAssertTrue(app.tabBars.buttons["Island"].waitForExistence(timeout: 30), app.debugDescription)
+        XCTAssertTrue(app.tabBars.buttons["Island"].isSelected, app.debugDescription)
     }
     func testIncomeEntry() throws {
         launchSeededWorkflow(); tap("addEntry"); enter("entryAmount", "12000")
@@ -248,15 +255,70 @@ import XCTest
     }
 
     func testPagerNavigation() throws {
+        app.launchArguments = ["--cycle2a-test", "--cycle2a-seed", "--reset-test-preferences", "--reduce-motion", "-v4.language", "en", "-v4.currency", "JPY"]
+        app.launch()
+        let tabs = app.tabBars.buttons
+        XCTAssertTrue(tabs["Voice"].waitForExistence(timeout: 20), app.debugDescription)
+        XCTAssertTrue(tabs["Island"].isSelected, app.debugDescription)
+        tabs["Voice"].tap(); XCTAssertTrue(tabs["Voice"].isSelected, app.debugDescription)
+        tabs["Info"].tap(); XCTAssertTrue(tabs["Info"].isSelected, app.debugDescription)
+        tabs["Island"].tap(); XCTAssertTrue(tabs["Island"].isSelected, app.debugDescription)
+        capture("native-tab-bar")
+    }
+
+    func testHorizontalTabSwipeAndVerticalScroll() throws {
         launchSeededWorkflow()
-        XCTAssertTrue(app.buttons["page-1"].isSelected)
-        tap("homeVoice"); XCTAssertTrue(app.buttons["page-0"].isSelected)
-        tap("voiceInfo"); XCTAssertTrue(app.buttons["page-2"].isSelected)
-        tap("infoIsland"); XCTAssertTrue(app.buttons["page-1"].isSelected)
-        app.swipeLeft(); XCTAssertTrue(app.buttons["page-2"].isSelected)
-        app.swipeRight(); XCTAssertTrue(app.buttons["page-1"].isSelected)
-        app.swipeRight(); XCTAssertTrue(app.buttons["page-0"].isSelected)
-        capture("pager-voice")
+        let home = app.tabBars.buttons["Island"]
+        let info = app.tabBars.buttons["Info"]
+        XCTAssertTrue(home.isSelected, app.debugDescription)
+        app.swipeUp()
+        XCTAssertTrue(home.isSelected, "A vertical Home scroll must not select another tab.")
+        app.swipeLeft()
+        XCTAssertTrue(info.waitForExistence(timeout: 5) && info.isSelected, app.debugDescription)
+        app.swipeUp()
+        XCTAssertTrue(info.isSelected, "A vertical Info scroll must not select another tab.")
+        app.swipeRight()
+        XCTAssertTrue(home.isSelected, "A right swipe from Info should select the adjacent Home tab.")
+    }
+
+    func testEditorControlDragsDoNotSwitchTabs() throws {
+        launchSeededWorkflow(); tap("addEntry")
+        let home = app.tabBars.buttons["Island"]
+        XCTAssertTrue(app.textFields["entryAmount"].waitForExistence(timeout: 10), app.debugDescription)
+        app.swipeUp()
+        XCTAssertTrue(app.buttons["saveEntry"].exists, "A vertical Edit scroll must keep the editor open.")
+
+        let kind = app.buttons["Expense"]
+        XCTAssertTrue(kind.exists)
+        kind.coordinate(withNormalizedOffset: CGVector(dx: 0.85, dy: 0.5))
+            .press(forDuration: 0.1, thenDragTo: kind.coordinate(withNormalizedOffset: CGVector(dx: 0.15, dy: 0.5)))
+        XCTAssertTrue(app.buttons["saveEntry"].exists, "A segmented picker drag must not leave the editor.")
+
+        let date = app.descendants(matching: .any).matching(identifier: "entryDate").firstMatch
+        XCTAssertTrue(date.waitForExistence(timeout: 5), app.debugDescription)
+        date.coordinate(withNormalizedOffset: CGVector(dx: 0.85, dy: 0.5))
+            .press(forDuration: 0.1, thenDragTo: date.coordinate(withNormalizedOffset: CGVector(dx: 0.15, dy: 0.5)))
+        XCTAssertTrue(app.buttons["saveEntry"].exists, "A date picker drag must not leave the editor.")
+
+        let note = app.textFields["entryNote"]
+        XCTAssertTrue(note.waitForExistence(timeout: 5), app.debugDescription)
+        note.tap()
+        note.coordinate(withNormalizedOffset: CGVector(dx: 0.85, dy: 0.5))
+            .press(forDuration: 0.1, thenDragTo: note.coordinate(withNormalizedOffset: CGVector(dx: 0.15, dy: 0.5)))
+        XCTAssertTrue(app.buttons["saveEntry"].exists, "A text-field selection drag must not leave the editor.")
+        app.navigationBars.buttons.firstMatch.tap()
+        XCTAssertTrue(home.isSelected, "Editor control drags must return to the same Home tab.")
+    }
+
+    func testInfoSegmentedControlDragDoesNotSwitchTabs() throws {
+        launchSeededWorkflow()
+        let info = app.tabBars.buttons["Info"]
+        info.tap()
+        let picker = app.segmentedControls.firstMatch
+        XCTAssertTrue(picker.waitForExistence(timeout: 10), app.debugDescription)
+        picker.coordinate(withNormalizedOffset: CGVector(dx: 0.85, dy: 0.5))
+            .press(forDuration: 0.1, thenDragTo: picker.coordinate(withNormalizedOffset: CGVector(dx: 0.15, dy: 0.5)))
+        XCTAssertTrue(info.isSelected, "Dragging the Info envelope picker must not change tabs.")
     }
     func testChildInfoMatrix() throws {
         for language in ["en", "ja", "es", "ko"] {
@@ -323,7 +385,7 @@ extension Cycle2aUITests {
         XCTAssertTrue(app.buttons["addEntry"].waitForExistence(timeout: 20))
         XCTAssertFalse(app.buttons["onboardingNext"].exists)
         XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "40.000")).firstMatch.exists, app.debugDescription)
-        XCTAssertTrue(app.buttons["homeInfoBottom"].label.contains("Información"), app.debugDescription)
+        XCTAssertTrue(app.tabBars.buttons["Información"].exists, app.debugDescription)
         capture("persisted-onboarding-home-after")
         tap("Ajustes"); XCTAssertTrue(app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "KRW")).firstMatch.exists, app.debugDescription)
         capture("persisted-onboarding-settings")
@@ -345,11 +407,11 @@ extension Cycle2aUITests {
             app.launch(); XCTAssertTrue(app.buttons["addEntry"].waitForExistence(timeout: 20))
             XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "307,100")).firstMatch.exists, app.debugDescription)
             XCTAssertTrue(app.staticTexts["homeWeeklyRemaining"].exists, app.debugDescription)
-            XCTAssertTrue(app.buttons["homeMicrophone"].exists, app.debugDescription)
+            XCTAssertTrue(app.tabBars.buttons["Info"].exists, app.debugDescription)
             capture("home-household-child-selected---\(mode)")
-            tap("homeInfoBottom"); XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "76,400")).firstMatch.exists, app.debugDescription)
+            app.tabBars.buttons["Info"].tap(); XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "76,400")).firstMatch.exists, app.debugDescription)
             capture("info-child-selected---\(mode)")
-            tap("infoIsland"); XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "307,100")).firstMatch.exists, app.debugDescription)
+            app.tabBars.buttons["Home"].tap(); XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "307,100")).firstMatch.exists, app.debugDescription)
             app.terminate()
         }
     }
@@ -369,7 +431,7 @@ extension Cycle2aUITests {
             app.launchArguments = ["--cycle2a-test", "--cycle2a-seed", "--ax3", "-v4.language", language, "-v4.currency", "JPY"]
             app.launch()
             XCTAssertTrue(app.staticTexts["homeWeeklyRemaining"].waitForExistence(timeout: 20), app.debugDescription)
-            XCTAssertTrue(app.buttons["homeMicrophone"].isHittable, app.debugDescription)
+            XCTAssertTrue(app.tabBars.buttons["Home"].isSelected, app.debugDescription)
             try app.performAccessibilityAudit(for: [.textClipped]) { issue in
                 XCTFail("Home AX3 \(language): \(issue.compactDescription) / \(issue.detailedDescription)")
                 return true
@@ -399,11 +461,11 @@ extension Cycle2aUITests {
         if interactive { app.launchArguments.append("--measure-home-launch") }
         let options = XCTMeasureOptions(); options.iterationCount = 5
         let metrics: [XCTMetric] = interactive
-            ? [XCTApplicationLaunchMetric(waitUntilResponsive: true)] + ["HomeInteractive", "StoreOpen", "Snapshot", "QuerySnapshot", "HomeRender"].map { XCTOSSignpostMetric(subsystem: "com.harrison.Wealthy", category: "LedgerLaunch", name: $0) }
+            ? [XCTApplicationLaunchMetric(waitUntilResponsive: true)] + ["FirstFrame", "HomeInteractive", "StoreOpen", "Snapshot", "QuerySnapshot", "HomeRender"].map { XCTOSSignpostMetric(subsystem: "com.harrison.Wealthy", category: "LedgerLaunch", name: $0) }
             : [XCTApplicationLaunchMetric(waitUntilResponsive: false)]
         measure(metrics: metrics, options: options) {
             app.launch(); XCTAssertTrue(app.buttons["addEntry"].waitForExistence(timeout: 60))
-            if interactive { XCTAssertTrue(app.buttons["homeInfoBottom"].isHittable); XCTAssertEqual(app.alerts.count, 0) }
+            if interactive { XCTAssertTrue(app.tabBars.buttons["Info"].isHittable); XCTAssertEqual(app.alerts.count, 0) }
             app.terminate()
         }
     }

@@ -13,6 +13,7 @@ import MetricKit
         false
         #endif
     }
+    private var firstFrameInterval: OSSignpostIntervalState?
     private var interactiveInterval: OSSignpostIntervalState?
     private var renderInterval: OSSignpostIntervalState?
     private(set) var isOpening = false
@@ -25,6 +26,11 @@ import MetricKit
         return nil
     }
     private static var preferences: UserDefaults {
+        #if DEBUG
+        if isUITest && ProcessInfo.processInfo.arguments.contains("--reset-test-preferences") {
+            return UserDefaults(suiteName: "Cycle2aUITestPreferences")!
+        }
+        #endif
         if let id = testDiskID { return UserDefaults(suiteName: "Cycle2aOnboarding-" + id)! }
         return .standard
     }
@@ -49,6 +55,7 @@ import MetricKit
     }
     var locale: Locale { Locale(identifier: ["en":"en_US", "ja":"ja_JP", "es":"es_ES", "ko":"ko_KR"][language] ?? "en_US") }
     init() {
+        firstFrameInterval = loadLog.beginInterval("FirstFrame")
         language = Self.preferences.string(forKey: "v4.language") ?? "en"
         currency = Self.preferences.string(forKey: "v4.currency") ?? "JPY"
         onboarded = Self.preferences.bool(forKey: "v4.onboarded")
@@ -62,6 +69,13 @@ import MetricKit
         refreshAvailability()
     }
     func refreshAvailability() {
+        #if DEBUG
+        if Self.isUITest, ProcessInfo.processInfo.environment["WEALTHY_CYCLE2A_TEST_AI_AVAILABLE"] == "1" {
+            available = true
+            readiness = "available"
+            return
+        }
+        #endif
         switch SystemLanguageModel.default.availability {
         case .available: available = true; readiness = "available"
         case .unavailable(let reason):
@@ -81,6 +95,10 @@ import MetricKit
         defer { isOpening = false }
         await Task.yield()
         await DisplayFrameWaiter.wait()
+        if let firstFrameInterval {
+            loadLog.endInterval("FirstFrame", firstFrameInterval)
+            self.firstFrameInterval = nil
+        }
         guard !Task.isCancelled else { return }
         open()
     }
