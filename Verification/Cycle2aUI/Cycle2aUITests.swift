@@ -103,7 +103,7 @@ import XCTest
         for _ in 0..<6 { app.swipeDown() }
         tap("Child envelope"); tap("To island"); tap("addEntry"); enter("entryAmount", "3600"); tap("Child envelope")
         app.buttons["entryCategory"].tap(); tap("Food"); app.buttons["entryService"].tap(); tap("Takeout (8%)"); tap("saveEntry")
-        tap("Info"); tap("Consumption tax")
+        tap("Info"); tap("Child envelope"); tap("Consumption tax")
         XCTAssertTrue(app.staticTexts["¥266"].waitForExistence(timeout: 5), app.debugDescription); capture("child-tax")
         app.navigationBars.buttons.firstMatch.tap()
         for _ in 0..<8 { app.swipeDown() }; tap("To island"); tap("Settings"); tap("Font licenses")
