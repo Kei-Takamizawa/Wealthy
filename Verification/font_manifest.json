@@ -1,0 +1,34 @@
+{
+  "joyoSource": "https://www.bunka.go.jp/kokugo_nihongo/sisaku/joho/joho/kijun/naikaku/pdf/joyokanjihyo_20101130.pdf",
+  "extractedJoyoForms": 2137,
+  "fonts": [
+    {
+      "source": "https://raw.githubusercontent.com/google/fonts/main/ofl/kleeone/KleeOne-Regular.ttf",
+      "sourceSHA256": "bf4063f030cc2ae6adf0a11424a1888e5c0eb4438f1f6d02f52294af868e9b3a",
+      "file": "WealthyKleeOne-Regular.ttf",
+      "bytes": 1618192,
+      "subsetSHA256": "4a6b6114730d53686dc83517658b32d75accbdb60060d7b00bcc0e608863b733"
+    },
+    {
+      "source": "https://raw.githubusercontent.com/google/fonts/main/ofl/kleeone/KleeOne-SemiBold.ttf",
+      "sourceSHA256": "b031ec426c23ca1143ef1f7d58bee7a79efe119ed654152f121c922202b303fd",
+      "file": "WealthyKleeOne-SemiBold.ttf",
+      "bytes": 1650476,
+      "subsetSHA256": "bed3f77831a16f32970bcf962a2af44dfd5a2283c3a280bd1e32bf69df41eed3"
+    },
+    {
+      "source": "https://raw.githubusercontent.com/google/fonts/main/ofl/poorstory/PoorStory-Regular.ttf",
+      "sourceSHA256": "831ab87f7b5463f9cd83ac249bf386816f3a478f1d226427c88cac907adb7ee2",
+      "file": "WealthyPoorStory-Regular.ttf",
+      "bytes": 3859528,
+      "subsetSHA256": "e1ca0e0db33ce55312b0eaf9fb0edcf1f1be226d8610bbd2e76e41ada6f4300f"
+    },
+    {
+      "source": "https://raw.githubusercontent.com/google/fonts/main/ofl/patrickhand/PatrickHand-Regular.ttf",
+      "sourceSHA256": "0f173b3e6cb6d1af25babf7f0057c5ac4ee11f9992b0469bb817e967ef4ad0fc",
+      "file": "WealthyPatrickHand-Regular.ttf",
+      "bytes": 101784,
+      "subsetSHA256": "7d6a1b1e1d5ffb7ab12b025e0497acf20fb5bd98e2050a708e526ff7dfe0aabf"
+    }
+  ]
+}

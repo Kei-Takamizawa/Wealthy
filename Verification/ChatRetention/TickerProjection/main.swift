@@ -1,7 +1,7 @@
 import Foundation
 
 // Run from the repository root:
-// swiftc Wealthy/Wealthy/AITickerProjection.swift Verification/ChatRetention/TickerProjection/main.swift -o /tmp/wealthy-ticker-projection-checks
+// swiftc LegacyApp/AITickerProjection.swift Verification/ChatRetention/TickerProjection/main.swift -o /tmp/wealthy-ticker-projection-checks
 // /tmp/wealthy-ticker-projection-checks
 let width: CGFloat = 300
 let center = AITickerProjection.effect(centerX: width / 2, in: width)

@@ -1,0 +1,345 @@
+[
+  {
+    "testIdentifier" : "Cycle2aUITests/testHomeInteractiveMetric10000()",
+    "testIdentifierURL" : "test://com.apple.xcode/Wealthy/Cycle2aUITests/Cycle2aUITests/testHomeInteractiveMetric10000",
+    "testRuns" : [
+      {
+        "device" : {
+          "deviceId" : "00008140-000C6164027B001C",
+          "deviceName" : "Harrison"
+        },
+        "metrics" : [
+          {
+            "baselineAverage" : 0,
+            "baselineName" : "",
+            "displayName" : "Duration (HomeRender)",
+            "identifier" : "com.apple.dt.XCTMetric_OSSignpost-HomeRender.duration",
+            "maxPercentRegression" : 10,
+            "maxPercentRelativeStandardDeviation" : 10,
+            "maxRegression" : 0,
+            "maxStandardDeviation" : 10,
+            "measurements" : [
+              0.505824542,
+              0.509770458,
+              0.506103708
+            ],
+            "polarity" : "prefers smaller",
+            "unitOfMeasurement" : "s"
+          },
+          {
+            "baselineAverage" : 0,
+            "baselineName" : "",
+            "displayName" : "Duration (Snapshot)",
+            "identifier" : "com.apple.dt.XCTMetric_OSSignpost-Snapshot.duration",
+            "maxPercentRegression" : 10,
+            "maxPercentRelativeStandardDeviation" : 10,
+            "maxRegression" : 0,
+            "maxStandardDeviation" : 10,
+            "measurements" : [
+              0.375185417,
+              0.37136541700000003,
+              0.37668358300000004
+            ],
+            "polarity" : "prefers smaller",
+            "unitOfMeasurement" : "s"
+          },
+          {
+            "baselineAverage" : 0,
+            "baselineName" : "",
+            "displayName" : "Duration (QuerySnapshot)",
+            "identifier" : "com.apple.dt.XCTMetric_OSSignpost-QuerySnapshot.duration",
+            "maxPercentRegression" : 10,
+            "maxPercentRelativeStandardDeviation" : 10,
+            "maxRegression" : 0,
+            "maxStandardDeviation" : 10,
+            "measurements" : [
+              0.024135792000000003,
+              0.0245515,
+              0.023151042
+            ],
+            "polarity" : "prefers smaller",
+            "unitOfMeasurement" : "s"
+          },
+          {
+            "baselineAverage" : 0,
+            "baselineName" : "",
+            "displayName" : "Duration (StoreOpen)",
+            "identifier" : "com.apple.dt.XCTMetric_OSSignpost-StoreOpen.duration",
+            "maxPercentRegression" : 10,
+            "maxPercentRelativeStandardDeviation" : 10,
+            "maxRegression" : 0,
+            "maxStandardDeviation" : 10,
+            "measurements" : [
+              0.01138275,
+              0.010910541000000001,
+              0.01076525
+            ],
+            "polarity" : "prefers smaller",
+            "unitOfMeasurement" : "s"
+          },
+          {
+            "baselineAverage" : 0,
+            "baselineName" : "",
+            "displayName" : "Duration (HomeInteractive)",
+            "identifier" : "com.apple.dt.XCTMetric_OSSignpost-HomeInteractive.duration",
+            "maxPercentRegression" : 10,
+            "maxPercentRelativeStandardDeviation" : 10,
+            "maxRegression" : 0,
+            "maxStandardDeviation" : 10,
+            "measurements" : [
+              0.983649458,
+              0.99491375,
+              0.9898290420000001
+            ],
+            "polarity" : "prefers smaller",
+            "unitOfMeasurement" : "s"
+          }
+        ],
+        "testPlanConfiguration" : {
+          "configurationId" : "1",
+          "configurationName" : "Test Scheme Action"
+        }
+      }
+    ]
+  },
+  {
+    "testIdentifier" : "Cycle2aUITests/testHomeInteractiveMetric1000()",
+    "testIdentifierURL" : "test://com.apple.xcode/Wealthy/Cycle2aUITests/Cycle2aUITests/testHomeInteractiveMetric1000",
+    "testRuns" : [
+      {
+        "device" : {
+          "deviceId" : "00008140-000C6164027B001C",
+          "deviceName" : "Harrison"
+        },
+        "metrics" : [
+          {
+            "baselineAverage" : 0,
+            "baselineName" : "",
+            "displayName" : "Duration (HomeRender)",
+            "identifier" : "com.apple.dt.XCTMetric_OSSignpost-HomeRender.duration",
+            "maxPercentRegression" : 10,
+            "maxPercentRelativeStandardDeviation" : 10,
+            "maxRegression" : 0,
+            "maxStandardDeviation" : 10,
+            "measurements" : [
+              0.13384158300000001,
+              0.129816375,
+              0.13498358300000002
+            ],
+            "polarity" : "prefers smaller",
+            "unitOfMeasurement" : "s"
+          },
+          {
+            "baselineAverage" : 0,
+            "baselineName" : "",
+            "displayName" : "Duration (Snapshot)",
+            "identifier" : "com.apple.dt.XCTMetric_OSSignpost-Snapshot.duration",
+            "maxPercentRegression" : 10,
+            "maxPercentRelativeStandardDeviation" : 10,
+            "maxRegression" : 0,
+            "maxStandardDeviation" : 10,
+            "measurements" : [
+              0.038438917,
+              0.040953750000000004,
+              0.037591667
+            ],
+            "polarity" : "prefers smaller",
+            "unitOfMeasurement" : "s"
+          },
+          {
+            "baselineAverage" : 0,
+            "baselineName" : "",
+            "displayName" : "Duration (QuerySnapshot)",
+            "identifier" : "com.apple.dt.XCTMetric_OSSignpost-QuerySnapshot.duration",
+            "maxPercentRegression" : 10,
+            "maxPercentRelativeStandardDeviation" : 10,
+            "maxRegression" : 0,
+            "maxStandardDeviation" : 10,
+            "measurements" : [
+              0.00293375,
+              0.0033835840000000002,
+              0.002844375
+            ],
+            "polarity" : "prefers smaller",
+            "unitOfMeasurement" : "s"
+          },
+          {
+            "baselineAverage" : 0,
+            "baselineName" : "",
+            "displayName" : "Duration (StoreOpen)",
+            "identifier" : "com.apple.dt.XCTMetric_OSSignpost-StoreOpen.duration",
+            "maxPercentRegression" : 10,
+            "maxPercentRelativeStandardDeviation" : 10,
+            "maxRegression" : 0,
+            "maxStandardDeviation" : 10,
+            "measurements" : [
+              0.007979375,
+              0.009012334,
+              0.007830833
+            ],
+            "polarity" : "prefers smaller",
+            "unitOfMeasurement" : "s"
+          },
+          {
+            "baselineAverage" : 0,
+            "baselineName" : "",
+            "displayName" : "Duration (HomeInteractive)",
+            "identifier" : "com.apple.dt.XCTMetric_OSSignpost-HomeInteractive.duration",
+            "maxPercentRegression" : 10,
+            "maxPercentRelativeStandardDeviation" : 10,
+            "maxRegression" : 0,
+            "maxStandardDeviation" : 10,
+            "measurements" : [
+              0.24988483300000003,
+              0.262167041,
+              0.255958792
+            ],
+            "polarity" : "prefers smaller",
+            "unitOfMeasurement" : "s"
+          }
+        ],
+        "testPlanConfiguration" : {
+          "configurationId" : "1",
+          "configurationName" : "Test Scheme Action"
+        }
+      }
+    ]
+  },
+  {
+    "testIdentifier" : "Cycle2aUITests/testHomeInteractiveMetric50000()",
+    "testIdentifierURL" : "test://com.apple.xcode/Wealthy/Cycle2aUITests/Cycle2aUITests/testHomeInteractiveMetric50000",
+    "testRuns" : [
+      {
+        "device" : {
+          "deviceId" : "00008140-000C6164027B001C",
+          "deviceName" : "Harrison"
+        },
+        "metrics" : [
+          {
+            "baselineAverage" : 0,
+            "baselineName" : "",
+            "displayName" : "Duration (HomeRender)",
+            "identifier" : "com.apple.dt.XCTMetric_OSSignpost-HomeRender.duration",
+            "maxPercentRegression" : 10,
+            "maxPercentRelativeStandardDeviation" : 10,
+            "maxRegression" : 0,
+            "maxStandardDeviation" : 10,
+            "measurements" : [
+              2.3604824580000003,
+              2.485220708,
+              2.445005875
+            ],
+            "polarity" : "prefers smaller",
+            "unitOfMeasurement" : "s"
+          },
+          {
+            "baselineAverage" : 0,
+            "baselineName" : "",
+            "displayName" : "Duration (Snapshot)",
+            "identifier" : "com.apple.dt.XCTMetric_OSSignpost-Snapshot.duration",
+            "maxPercentRegression" : 10,
+            "maxPercentRelativeStandardDeviation" : 10,
+            "maxRegression" : 0,
+            "maxStandardDeviation" : 10,
+            "measurements" : [
+              2.1362947080000003,
+              2.115331583,
+              2.181027416
+            ],
+            "polarity" : "prefers smaller",
+            "unitOfMeasurement" : "s"
+          },
+          {
+            "baselineAverage" : 0,
+            "baselineName" : "",
+            "displayName" : "Duration (QuerySnapshot)",
+            "identifier" : "com.apple.dt.XCTMetric_OSSignpost-QuerySnapshot.duration",
+            "maxPercentRegression" : 10,
+            "maxPercentRelativeStandardDeviation" : 10,
+            "maxRegression" : 0,
+            "maxStandardDeviation" : 10,
+            "measurements" : [
+              0.14393975,
+              0.141913708,
+              0.13983404200000002
+            ],
+            "polarity" : "prefers smaller",
+            "unitOfMeasurement" : "s"
+          },
+          {
+            "baselineAverage" : 0,
+            "baselineName" : "",
+            "displayName" : "Duration (StoreOpen)",
+            "identifier" : "com.apple.dt.XCTMetric_OSSignpost-StoreOpen.duration",
+            "maxPercentRegression" : 10,
+            "maxPercentRelativeStandardDeviation" : 10,
+            "maxRegression" : 0,
+            "maxStandardDeviation" : 10,
+            "measurements" : [
+              0.006644292,
+              0.006748625,
+              0.006482750000000001
+            ],
+            "polarity" : "prefers smaller",
+            "unitOfMeasurement" : "s"
+          },
+          {
+            "baselineAverage" : 0,
+            "baselineName" : "",
+            "displayName" : "Duration (HomeInteractive)",
+            "identifier" : "com.apple.dt.XCTMetric_OSSignpost-HomeInteractive.duration",
+            "maxPercentRegression" : 10,
+            "maxPercentRelativeStandardDeviation" : 10,
+            "maxRegression" : 0,
+            "maxStandardDeviation" : 10,
+            "measurements" : [
+              4.711109958000001,
+              4.819116875000001,
+              4.840380083
+            ],
+            "polarity" : "prefers smaller",
+            "unitOfMeasurement" : "s"
+          }
+        ],
+        "testPlanConfiguration" : {
+          "configurationId" : "1",
+          "configurationName" : "Test Scheme Action"
+        }
+      }
+    ]
+  },
+  {
+    "testIdentifier" : "Cycle2aUITests/testLaunchMetric10000()",
+    "testIdentifierURL" : "test://com.apple.xcode/Wealthy/Cycle2aUITests/Cycle2aUITests/testLaunchMetric10000",
+    "testRuns" : [
+      {
+        "device" : {
+          "deviceId" : "00008140-000C6164027B001C",
+          "deviceName" : "Harrison"
+        },
+        "metrics" : [
+          {
+            "baselineAverage" : 0,
+            "baselineName" : "",
+            "displayName" : "Duration (AppLaunch)",
+            "identifier" : "com.apple.dt.XCTMetric_ApplicationLaunch-AppLaunch.duration",
+            "maxPercentRegression" : 10,
+            "maxPercentRelativeStandardDeviation" : 10,
+            "maxRegression" : 0,
+            "maxStandardDeviation" : 10,
+            "measurements" : [
+              0.40775266600000004,
+              0.409131625
+            ],
+            "polarity" : "prefers smaller",
+            "unitOfMeasurement" : "s"
+          }
+        ],
+        "testPlanConfiguration" : {
+          "configurationId" : "1",
+          "configurationName" : "Test Scheme Action"
+        }
+      }
+    ]
+  }
+]

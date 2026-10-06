@@ -9,6 +9,10 @@ extension LedgerPeriod {
         return try LedgerPeriod(start: start, end: start.adding(days: 6, calendar: civil))
     }
 }
+public struct LoggedDayRequirement: Sendable, Equatable {
+    public let required: Int
+    public let total: Int
+}
 public struct TargetStatus: Codable, Sendable, Equatable {
     public var envelopeID: UUID
     public var categoryID: UUID?
@@ -21,8 +25,33 @@ public struct TargetStatus: Codable, Sendable, Equatable {
     public var noSpendDays: Int
     public var isRewardEligible: Bool
     public var isSet: Bool { allowance != nil }
+    public var isOver: Bool { remaining.map { $0 < 0 } ?? false }
+    /// Rounded percentage of the allowance spent; nil means there is no configured target.
+    public var spentPercentage: Int? {
+        guard let allowance, allowance > 0 else { return nil }
+        let percentage = (Double(spent) / Double(allowance)) * 100
+        return percentage >= Double(Int.max) ? Int.max : Int(percentage.rounded())
+    }
+    /// A bounded visual fill for progress indicators; displayed money remains integer minor units.
+    public var displayFill: Double {
+        guard let allowance, allowance > 0 else { return spent > 0 && isSet ? 1 : 0 }
+        return min(1, max(0, Double(spent) / Double(allowance)))
+    }
 }
 extension LedgerQueries {
+    public static func minimumLoggedDays(forPeriodDayCount count: Int) -> Int {
+        count == 7 ? 5 : (count * 70 + 99) / 100
+    }
+    /// The displayed logging threshold used by reward eligibility for a period.
+    public static func loggedDayRequirement(in period: LedgerPeriod, calendar: Calendar = .current) throws -> LoggedDayRequirement {
+        var count = 0, day = period.start
+        while day <= period.end {
+            count += 1
+            if day == period.end { break }
+            day = try day.adding(days: 1, calendar: calendar)
+        }
+        return LoggedDayRequirement(required: minimumLoggedDays(forPeriodDayCount: count), total: count)
+    }
     public static func effectiveTarget(in state: LedgerState, month: LedgerMonth, envelopeID: UUID = EnvelopeValue.householdID,
                                        categoryID: UUID? = nil, currencyCode: String) -> TargetValue? {
         state.targets.filter { $0.envelopeID == envelopeID && $0.categoryID == categoryID && $0.currencyCode == currencyCode && $0.effectiveMonth <= month }
@@ -56,7 +85,7 @@ extension LedgerQueries {
         let marked = Set(state.noSpendMarks.filter { $0.envelopeID == envelopeID && period.contains($0.day) }.map(\.day))
         logged.formUnion(marked)
         let remaining = configured ? try checkedSum(allowance, -spent) : nil
-        let minimum = dayCount == 7 ? 5 : (dayCount * 80 + 99) / 100
+        let minimum = minimumLoggedDays(forPeriodDayCount: dayCount)
         return TargetStatus(envelopeID: envelopeID, categoryID: categoryID, currencyCode: currencyCode, period: period,
                             allowance: configured ? allowance : nil, spent: spent, remaining: remaining,
                             loggedDays: logged.count, noSpendDays: marked.subtracting(expenseDays).count,

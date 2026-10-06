@@ -1,87 +1,49 @@
-# CURRENT TASK — Cycle 1.2: Domain v2 (targets, envelopes, consumption tax; wallets removed)
+# CURRENT TASK — Cycle 2a.1: Fix the blockers of PR #5 (same branch `codex/wealthy-c2a-shell`)
 
-Task ID: WEALTHY-C1.2-DOMAIN-V2
-Base: latest `main` (WealthyCore with PR #1 and PR #2 merged: incremental persistence, change-set undo, observable `LedgerCore` with `revision`/`reload()`, SHA-256 receipt matching, orphan cleanup, command provenance rules, createdAt ordering are DONE and must be preserved). Work on a new branch, open a PR. Do not touch the app target or any UI.
+Task ID: WEALTHY-C2A1-FIXES
+Base: PR #5 head `39ae7d5`. Push to the same branch; keep the PR as draft until the product owner approves. Read `.ai/LAST_REPORT.md` first; update it at the end. Scope is limited to the items below. Do not start Cycle 2b or 3 work.
 
-## 1. Goal
-Reshape the WealthyCore domain to the product pivot: no wallets/assets, monthly targets with weekly/monthly evaluation, a separate child-expense envelope, and consumption-tax tracking. The persistence rework and the PR #1 review fixes were delivered in PR #2 (previous task WEALTHY-C1.1-STORE, written against the wallet model); do not redo them, but port them to the new model.
+## 1. Fixes required
 
-## 2. Background
-- The app is a household budget app. Manual wallet/balance entry was judged too burdensome (no bank sync), so wallets, transfers, balances and balance adjustments are removed entirely.
-- Instead the user sets a monthly overall target and optional per-category targets. Weekly allowance = sum of daily allowances. Staying within target is rewarded (reward UI is a later cycle; this cycle only provides the numbers).
-- Tax: Japan only, JPY only for tax features. Voice words decide the rate (eat-in vs takeout). Apple Intelligence will only classify/propose; this core does all arithmetic, tax rounding and validation.
-- Schema V1 is unshipped: change it in place, no migration code.
+1. **Result sheet contrast audit (blocker).** `Cycle2aUITests/testResultAccessibilityAudit` flags the late-entry explanation text. Put that text (and any other explanatory text in the result sheet) on an opaque Plate with the design `ink`/`ink2` colors. If the audit still fails, bisect by removing modifiers one by one (opacity, hierarchical/secondary styles, blend modes, material backgrounds) and report which one causes it. Do NOT exclude the element or weaken the audit.
+2. **Monthly result (blocker).** Implement the month achieved / over / too-few-days presentations as in boards `V4ResultMonth` / `V4Result` (kind=month): headline per state, island with the month's earned areas (festival count, max 4), month decoration reward line for achieved, "over" wording without punishment, too-few-days wording. Replace design copy that says "20 days or more" with the real rule from Core: logged on at least 70% of the month's days (show the actual number of days required, e.g. "22 of 31"). Weekly captions must not appear on month results.
+3. **Home envelope.** Home always shows the household envelope (island = household weekly allowance). It must NOT follow the envelope selected on Info. The child envelope is shown on Info and its detail screens only.
+4. **Goals.** Build the distinct `V4GoalsUnset` presentation for a month with no target set (not the same empty form). Amount fields in Goals and Edit must display grouped digits and the currency symbol per locale (currently raw "310000", "2400"); input must still accept plain digits.
+5. **No internal jargon in UI text.** Remove "Cycle 3" (or any cycle/task wording) from user-visible strings (e.g. the voice-page placeholder). Use a neutral localized message such as "Voice input is coming soon. For now, add entries by typing." in all 4 languages.
+6. **Persisted onboarding.** Verify on a real device with the real disk store: complete onboarding, force-quit, relaunch: the app opens on Home (not onboarding) with the chosen language, currency and target retained. Add a UI test (disk store in a temp location) and report the result.
+7. **Idle stall / continuous animation.** The normal-motion child-envelope UI test stalled in XCTest waiting for animation idle (repeated 60 s waits). Find the cause (likely a repeating animation or `TimelineView`/`Canvas` redraw loop on the island or elsewhere). Fix so that: ambient animations stop when the view is off-screen, when the app is not active, when Low Power Mode is on, and when Reduce Motion is on; the island redraw loop does not run continuously at full frame rate; the normal-motion child-envelope test passes without special-casing. Report battery-relevant measures you can actually measure (e.g. CPU % idle on Home over 60 s on device, before/after). Do not claim battery numbers you did not measure.
+8. **Launch performance (scope clarified).** Do not change the Core persistence boundary in this cycle: `LedgerStore`/`LedgerCore` stay `@MainActor` with synchronous reads. Instead: render the first frame (loading state) BEFORE the synchronous ledger open starts (e.g. start the open from a `.task` after the first render, yielding once so the frame is committed), keep the loading state minimal and accessible (VoiceOver announces loading), and measure on device with signposts / `XCTApplicationLaunchMetric` (not "accessibility element exists") at 1,000 / 10,000 / 50,000 entries, median of 5 warm launches each. Report two numbers per size: time to first frame, and time until Home is interactive. Targets: first frame under 1 s at all sizes; Home interactive under 2 s at 10,000 entries. If the interactive target is missed at 10,000, report the numbers and the cost split (store open vs. snapshot vs. first render); that result will trigger a separate Core task (async persistence boundary). Truly asynchronous loading is NOT blocked-by-you work in this cycle and is not required for acceptance.
 
-## 3. Requirements
+## 2. Constraints
+Keep WealthyCore persistence, undo, backup and tax/target rules unchanged (small query additions allowed if strictly needed, tested). No new dependencies. No audit exclusions, no weakened assertions, no skipped tests. Do not merge; do not delete legacy user data.
 
-### 3.1 Remove
-Wallet, transfer, adjustment, derived balance, everything that references them (types, commands, queries, backup fields, tests). Entries no longer carry a wallet. Keep multi-currency entries, but targets and tax summaries are per currency.
+## 3. Acceptance
+- All previously passing tests still pass; `testResultAccessibilityAudit` passes unmodified in intent; the normal-motion child test passes.
+- Items 1–8 each have evidence in the report (test names, screenshots for 2, 3, 4, 5, measured numbers for 7 and 8).
+- Core tests and historical checks still pass; Simulator, Release and signed-device builds pass.
 
-### 3.2 Envelope (new)
-- `Envelope` entity: id, kind (`household` | `child`), name, archived, createdAt. A default `household` envelope exists in a fresh ledger; exactly one `child` envelope may exist and is created on demand.
-- Every entry belongs to exactly one envelope (default household). Child-envelope entries use child-envelope categories; household entries use household categories. Categories get `envelopeID`.
-- Child envelope ships with preset categories (system keys, translated at display time): `child.food`, `child.education`, `child.clothing`, `child.medical`, `child.activities`, `child.support`, `child.other`. `child.support` means child-support payments the user pays to another person (e.g. monthly 養育費 to a separate household); it has `taxHint` exempt (no consumption tax) and is typically driven by a recurring rule (mark it `isFixedCost`; targets may still include it if the user sets `includeFixedCostsInTargets`). The child envelope therefore covers both spending on the child and support payments; no separate envelope type. Money received as child support is out of scope (not modeled). Users can add/rename/archive categories freely (system-key categories are renamed via `customName`, never deleted if used).
-- Child envelope has its own targets and is evaluated separately from household targets. Household totals/targets never include child-envelope entries.
+## 4. Report
+Per-item status with evidence; measured numbers (first frame at 3 sizes, idle CPU before/after); what remains unverified (manual VoiceOver traversal, OS Reduce Motion/Transparency settings, iOS 26 hardware) stated explicitly; screenshots of month results (3 states, light/dark/AX3) and Goals unset.
 
-### 3.3 Targets (replaces Budget)
-- `Target`: id, envelopeID, categoryID? (nil = overall), currency, amountMinor, effectiveMonth (LedgerMonth). Versioned by month: the target in force for month M is the latest with effectiveMonth <= M; changing a target creates/updates the version for the current month only and never rewrites history.
-- Fixed costs: entries from recurring rules flagged `isFixedCost` are excluded from target evaluation by default; add a ledger setting `includeFixedCostsInTargets` (default false).
-- Daily allowance for a day = monthly overall target for that day's month / number of days in that month (integer minor units; distribute the remainder one unit at a time from day 1 so the month sums exactly to the target). Weekly allowance = sum of daily allowances of the 7 days; weeks may span months. Week start is a ledger setting (default Monday).
-- `TargetStatus` queries for week and month, per envelope/category/currency: allowance, spent (after fixed-cost rule), remaining, `loggedDays`, `noSpendDays`, `isRewardEligible` (spent <= allowance AND loggedDays >= 5 of the 7 days for weeks; for months, loggedDays >= 80% of days). A day counts as logged if it has >=1 entry or a NoSpendMark.
-- `NoSpendMark`: id, envelopeID, day. Command `markNoSpend(day)` / `unmarkNoSpend(day)`. Adding an expense on a marked day removes nothing but the mark stops counting as "no spend" (the day stays logged).
-- Remaining can be negative; never clamp. No streak counters in this cycle.
+## 5. Design-vs-implementation comparison images (add to this cycle)
+Commit comparison material to the PR branch so the reviewer can read it from GitHub:
+- `design/v4/`: the exported v4 design boards (PNG or JPEG) if the product owner has placed them locally; do not generate them yourself. Name files by board (e.g. `V4Home-light.png`, `V4Home-dark.png`). If they are missing locally, say so in the report.
+- `Verification/Cycle2aEvidence/compare/`: for each in-scope screen, light and dark (AX3 optional), ONE side-by-side image: design board on the left, device screenshot on the right, same height, label on top (screen id, mode). JPEG quality about 80, long edge at most 2400 px, each file under 2 MB, total added under 30 MB. Names like `compare-V4Home-light.jpg`. Add `compare/INDEX.md` listing every file, the screen, and one line on known differences.
+- Synthetic data only; no real financial records or personal data in any image.
+- Do not commit the full 251-image inventory, videos or xcresult bundles.
 
-### 3.4 Consumption tax (new)
-- `TaxRate` enum: `.standard` (10%), `.reduced` (8%), `.exempt` (0%, e.g. non-taxable). Stored on entries as `taxRate` (optional, nil = unknown/not applicable, e.g. non-JPY).
-- Amounts are tax-inclusive. `TaxMath.taxPart(inclusiveMinor:, rate:)` = floor(amount * rate / (100 + rate)). Rounding rule is isolated in one function and documented so it can change (Japanese invoice rounding is per-invoice per-rate; per-entry floor is the accepted approximation here; document this limitation).
-- `TaxRuleBook`: effective-dated data (not hard-coded in logic): list of (effectiveFrom day, standardRate, reducedRate). Seed: effective 2019-10-01, standard 10, reduced 8. Lookups take the entry's day. Do NOT add any speculative future rate change.
-- `ServiceMode` on entries (optional): `dineIn`, `takeout`, `delivery`, `none`. Helper `TaxClassifier.suggestedRate(category tax hint, serviceMode, day)` is deterministic: food/drink category + `takeout`/`delivery` -> reduced; food/drink + `dineIn` -> standard; other categories -> standard; categories may carry a `taxHint` (`food`, `nonfood`, `exempt`). This is the code that validates whatever Apple Intelligence proposes later.
-- `EntryDraft` (AI -> code boundary, plain Sendable value): amountMinor?, currency?, categoryID?, envelopeID?, day?, note?, serviceMode?, proposedTaxRate?, confidence fields optional. `DraftResolution`: either `.ready(EntryValue-to-add + preview)` or `.needsInput([MissingField])`. The resolver validates and fills deterministic defaults (tax rate via classifier when `proposedTaxRate` is nil or inconsistent with the rule book; flag disagreement in the result so the UI can tell the user).
-- Queries: `taxSummary(month|week, envelope, currency)` -> total tax paid, per-rate breakdown, taxable-base per rate; `takeoutSavingEstimate(month)` -> for dine-in food entries, the tax that would have been saved at the reduced rate (computed from the rule book; state as an estimate and exclude entries with unknown mode).
+## 6. Additional fixes from design review of the PR #5 comparison images (Home, Voice)
+Reviewed from `Verification/Cycle2aEvidence/compare/` (base-revision captures). Apply in this cycle, using Core values (no UI-side arithmetic):
+1. **Home hero = remaining.** Board V4Home shows "This week left: ¥5,798" ("今週あと") as the big number with the "Not a balance" pill, a progress bar, and a line "of allowance ¥X, spent ¥Y (Z%)". The implementation shows the allowance as the big number and "spent" below; the remaining amount is missing. Make remaining the hero. If remaining is negative, show it with the "over" icon + word (never red alone, no punishing wording). If no target is set, show the unset state, not 0.
+2. **Seven-day row.** Use the board's per-day states (under allowance: check; over: moon/dusk; no-spend marked; today: outlined plus; future: dash) with weekday labels, not all green checks. Derive from Core.
+3. **Month card on Home** (this month spent / remaining target + state pill) as in the board, household envelope only.
+4. **Microphone on Home.** The board has a bottom bar with the centered microphone (info / mic / history). The mic must exist on Home and move to the Voice page (placeholder behavior unchanged). "History" can be omitted in 2a (no dead entry point); do not add a dead button.
+5. **Island framing (recommended, not blocking).** The board shows the island full-bleed behind translucent cards; the implementation puts it in a rounded card. If feasible with native glass, move toward the board; otherwise report as a known difference.
+6. Voice page placeholder copy is acceptable ("Voice input is coming soon...") but also shows a second pill "voice input is not available now": keep only one message.
 
-### 3.5 Commands and preview
-- Keep the command layer and the change-set undo from PR #2. Remove wallet commands; add envelope, target, noSpend commands; entry commands take envelope/serviceMode/taxRate.
-- `CommandPreview` gains: target impact (week and month: remaining before -> after, for overall and the entry's category) and tax part of the entry. This feeds voice confirmation.
-- Tighten commands: `addEntry`/`updateEntry` must not create or alter adjustment-like data (adjustments no longer exist), must not set `source` to recurring, must not set recurring links; those only come from the recurring engine.
-
-### 3.6 Preserve Cycle 1.1 behavior on the new model
-- Persistence stays incremental: new entities (Envelope, Target, NoSpendMark, tax fields) get per-model change sets, incremental validation, undo change sets (still 20 steps) and `revision`/`reload()` handling. Tests from PR #2 are adapted (not deleted) where wallets disappear; keep their intent (write counts, undo exactness, conflict detection, failure rollback).
-- Keep: recurring back-fill through min(today, endDay), records-only restore hash matching, orphan receipt cleanup, addEntry/updateEntry provenance restrictions (now without adjustments), mostRecentEntry by createdAt.
-- Performance: re-run the disk benchmark at 10,000 and 50,000 entries; do not regress add/update/delete/undo medians by more than 20% versus PR #2 numbers (36 ms add at 10k, 338 ms at 50k). Opening got slower in PR #2 (651 ms at 10k, 2,805 ms at 50k); do not make it worse, and if you find a cheap improvement (e.g. cheaper validation at load), report it. Report numbers for target/tax queries at 50k entries too (week/month status, taxSummary).
-
-### 3.7 Decisions on open questions (final)
-1. Tax rate before the first rule-book date (2019-10-01): the lookup returns nil ("unknown"), not an error and not extra historical data. Entries on such days keep `taxRate` nil; `taxSummary` excludes them from totals and reports `unknownTaxEntryCount`. Do not seed pre-2019 rates.
-2. Month with no target: `TargetStatus` returns an explicit not-set state (e.g. `allowance`/`remaining` nil), never allowance = 0. `spent`, `loggedDays` and `noSpendDays` are still reported. `isRewardEligible` is false when not set. Use nil/optional values, not a magic zero, so a UI can show "no target set".
-3. Fixed-cost classification is a snapshot: the entry stores its own `isFixedCost` (default false), copied from the rule when the recurring engine posts it (and settable on manually added entries). Changing a rule's flag affects only entries posted afterwards; deleting a rule leaves past entries untouched. Past weeks/months are never re-evaluated by later rule edits. Add the field to the schema, backup, change sets and tests.
-
-## 4. Technical constraints
-- Swift 6 strict concurrency, no external dependencies, no UI imports. Money is integer minor units. Days are `LedgerDay` civil dates.
-- All new fields CloudKit-compatible (optional or defaulted, UUID references, no unique constraints), matching the existing schema rules.
-- Backup format "wealthy-ledger" version 1 is changed in place (remove wallet data, add envelopes, targets, noSpendMarks, tax fields, settings).
-- Reference data (rule book, preset child categories) lives in data tables, not scattered literals.
-- Performance work is out of scope; do not change persistence internals beyond what the model change forces.
-
-## 5. Files to change
-`WealthyCore` package only (sources, tests, README of the package if it mentions wallets). Do not modify the app target or Xcode project; `Verification/README.md` may be updated.
-
-## 6. Do not change
-App UI, app target, existing app SwiftData models, the 8,583 existing verification checks, public naming style, license/README of the repository root.
-
-## 7. Acceptance criteria
-- No type, command, query, backup field or test refers to wallets, transfers, adjustments or balances.
-- Child envelope entries never appear in household totals/targets, and vice versa (tested).
-- Daily allowances sum exactly to the monthly target for 28/29/30/31-day months; weekly allowance across a month boundary is correct (tested, including negative remaining).
-- Reward eligibility tested: within target but 4/7 logged days -> not eligible; 5/7 -> eligible; no-spend marks count as logged.
-- Tax: 1,100 at 10% -> 100; 1,080 at 8% -> 80; 999 at 8% floor rule; rule-book lookup before/after 2019-10-01; takeout food -> reduced, dine-in food -> standard, non-food -> standard; resolver flags a proposed rate that disagrees with the classifier.
-- takeoutSavingEstimate is deterministic and excludes unknown-mode entries (tested).
-- All PR #2 regression tests still pass (adapted for wallet removal) and write-count tests cover the new entities.
-- Backup round-trip (export -> import) preserves envelopes, targets, marks, tax fields.
-
-## 8. Build and test
-Run `sh Verification/verify_core.sh`, the opt-in disk benchmark, the simulator and Release app builds, and the existing verification scripts exactly as in PR #2. All must pass. Report actual output; do not summarize failures away.
-
-## 9. GUI check
-None (no UI in this cycle). Confirm the app still builds and launches on the simulator or device unchanged.
-
-## 10. Report back (`.ai/LAST_REPORT.md`)
-Branch and PR link; per-requirement done/not-done; test counts (new/existing) with commands run; any deviation from this spec and why; assumptions you made (especially tax rounding, week handling, fixed-cost flag); anything you found ambiguous.
+## 7. Round 2 (after PR #5 head a817d4a)
+1. **Label correction (design review).** The Home hero number is the REMAINING amount (allowance 70,000 − spent 2,900 = 67,100) but its label reads "This week's allowance". Rename the hero label to "Left this week" (ja 今週あと, es "Te quedan esta semana" or similar, ko equivalent) and keep "of allowance ¥70,000, spent ¥2,900 (4%)" below. "Not a balance" pill stays. Check the Info page uses the same wording ("Left" for remaining, "Allowance" for the total).
+2. **Home bottom bar.** The bar overlaps and clips the month card; the mic is a plain outlined button. Follow the board: one glass bar with Info | center primary microphone (filled primary color, 66 pt) | (no History button in 2a), content must scroll behind it with bottom inset so nothing is cut. Remove the duplicate "Info" pill if the top-right chip and the bottom bar both link to Info (keep one).
+3. **Unidentified audit failures.** `testHomeAccessibilityAudit` reports 3 contrast failures without elements. In the audit issue handler, log each `XCUIAccessibilityAuditIssue`'s `element` (label, identifier, frame, debugDescription) and attach a cropped screenshot per issue; then fix the root causes (do not exclude elements or weaken the audit). Include the findings in the report.
+4. **Collect the missing measurements on the final source** (signed Release build, device unlocked): first frame and Home-interactive at 1k/10k/50k (5 warm launches, medians), and a 60-second idle CPU comparison on Home. If the device cannot be kept unlocked, say so and stop; do not reuse earlier numbers.
+5. **Signed Release installation and normal launch** verification on the device.

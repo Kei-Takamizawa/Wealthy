@@ -1,7 +1,7 @@
 import Foundation
 
 // Run from the repository root:
-// swiftc Wealthy/Wealthy/ChatRetentionPolicy.swift Verification/ChatRetention/main.swift -o /tmp/wealthy-chat-retention-checks
+// swiftc LegacyApp/ChatRetentionPolicy.swift Verification/ChatRetention/main.swift -o /tmp/wealthy-chat-retention-checks
 // /tmp/wealthy-chat-retention-checks
 let now = Date(timeIntervalSince1970: 2_000_000_000)
 let cases: [(label: String, age: TimeInterval, expected: Bool)] = [

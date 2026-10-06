@@ -8,6 +8,6 @@ xcrun swiftc -parse-as-library -module-cache-path "$build_dir/module-cache" \
   "$build_dir/LegacyItem.swift" "$repo_root/Verification/Migration/Create.swift" -o "$build_dir/create"
 "$build_dir/create" "$build_dir/store.sqlite"
 xcrun swiftc -parse-as-library -module-cache-path "$build_dir/module-cache" \
-  "$repo_root/Wealthy/Wealthy/CurrencyPolicy.swift" \
-  "$repo_root/Wealthy/Wealthy/Item.swift" "$repo_root/Verification/Migration/Validate.swift" -o "$build_dir/validate"
+  "$repo_root/LegacyApp/CurrencyPolicy.swift" \
+  "$repo_root/LegacyApp/Item.swift" "$repo_root/Verification/Migration/Validate.swift" -o "$build_dir/validate"
 "$build_dir/validate" "$build_dir/store.sqlite"

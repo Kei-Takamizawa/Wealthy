@@ -62,6 +62,22 @@ public enum CoreCurrency {
         let value = try decimalAmount(amount, currencyCode: code)
         return formatter.string(from: value) ?? "\(code) \(value.stringValue)"
     }
+    /// The approved four-language UI uses a yen symbol and grouping even below 10,000 in Spanish.
+    public static func formatForDisplay(_ amount: Int, currencyCode: String, locale: Locale = .current) throws -> String {
+        let code = try normalizedCode(currencyCode)
+        guard code == "JPY" else { return try format(amount, currencyCode: code, locale: locale) }
+        let formatter = NumberFormatter()
+        formatter.locale = Locale(identifier: "en_US")
+        formatter.numberStyle = .decimal
+        formatter.maximumFractionDigits = 0
+        formatter.groupingSeparator = locale.groupingSeparator ?? ","
+        let number = formatter.string(from: NSNumber(value: amount)) ?? String(amount)
+        let language = locale.language.languageCode?.identifier
+        if language == "es" { return number + " ¥" }
+        let symbol = language == "ko" ? "JP¥" : "¥"
+        if number.hasPrefix("-") { return "-" + symbol + number.dropFirst() }
+        return symbol + number
+    }
     public static func inputText(_ amount: Int, currencyCode: String, locale: Locale = .current) throws -> String {
         let formatter = NumberFormatter()
         formatter.locale = locale
