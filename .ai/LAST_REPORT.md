@@ -50,7 +50,9 @@ The source files listed above include the cherry-picked Cycle 2a.2 native UI cha
 - Required screenshots under `Verification/Cycle2aEvidence/native/` were not produced or committed.
 - First-frame/Home-interactive medians for 1k/10k/50k entries and 60-second idle CPU were not measured. No performance numbers are claimed.
 - GUI comparison against the iPhone 15 Pro simulator and manual VoiceOver traversal were not completed. Reduce Motion/Transparency manual checks and iOS 26 hardware checks remain unverified.
-- `git diff --check`, commit, push, and creation of a new draft PR remain outstanding. Do not merge.
+- `git diff --check` — PASS.
+- Commit `7c90772` (`Close Cycle 2a native UI gaps`) — created and pushed to `origin/codex/wealthy-c2a3-close`.
+- New draft PR #6: https://github.com/Kei-Takamizawa/Wealthy/pull/6 (base `main`). It remains draft; it was not merged.
 
 ## Expected / actual
 
