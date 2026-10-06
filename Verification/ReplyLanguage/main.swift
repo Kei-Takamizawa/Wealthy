@@ -1,7 +1,7 @@
 import Foundation
 
 // Run from the repository root:
-// xcrun swiftc -module-cache-path /tmp/wealthy-language-cache Wealthy/Wealthy/ReplyLanguagePolicy.swift Verification/ReplyLanguage/main.swift -o /tmp/wealthy-language-checks
+// xcrun swiftc -module-cache-path /tmp/wealthy-language-cache LegacyApp/ReplyLanguagePolicy.swift Verification/ReplyLanguage/main.swift -o /tmp/wealthy-language-checks
 // /tmp/wealthy-language-checks
 let cases: [(message: String, fallback: String, expected: String)] = [
     ("今月の支出を教えて", "en", "ja"),

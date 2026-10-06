@@ -24,18 +24,20 @@ project.mkdir(parents=True, exist_ok=False)
 source = repo / 'Wealthy/Wealthy.xcodeproj/project.pbxproj'
 data = plistlib.loads(subprocess.check_output(['plutil', '-convert', 'xml1', '-o', '-', str(source)]))
 objects = data['objects']
+objects['C10000000000000000000002']['relativePath'] = str(repo / 'WealthyCore')
 team = args.team or next((item.get('buildSettings', {}).get('DEVELOPMENT_TEAM') for item in objects.values() if item.get('buildSettings', {}).get('PRODUCT_BUNDLE_IDENTIFIER') == 'com.harrison.Wealthy' and item.get('buildSettings', {}).get('DEVELOPMENT_TEAM')), '')
 app_id = '84BE02D52EFFDCA6000C29F9'
 root_id = '84BE02CE2EFFDCA6000C29F9'
 main_group = objects[root_id]['mainGroup']
 products = objects[root_id]['productRefGroup']
-objects['84BE02D82EFFDCA6000C29F9']['path'] = str(repo / 'Wealthy/Wealthy')
+objects['84BE02D82EFFDCA6000C29F9']['path'] = str(repo / 'LegacyApp')
 objects['84BE02D82EFFDCA6000C29F9']['sourceTree'] = '<absolute>'
 for item in objects.values():
     settings = item.get('buildSettings', {})
     if settings.get('PRODUCT_BUNDLE_IDENTIFIER') == 'com.harrison.Wealthy':
         settings['PRODUCT_BUNDLE_IDENTIFIER'] = 'com.harrison.Wealthy.DeviceTest'
-        settings['INFOPLIST_FILE'] = str(repo / 'Wealthy/Wealthy/Info.plist')
+        settings['SWIFT_VERSION'] = '5.0'
+        settings['INFOPLIST_FILE'] = str(repo / 'LegacyApp/Info.plist')
         settings['CODE_SIGN_ENTITLEMENTS'] = str(repo / 'Wealthy/Wealthy/Wealthy.entitlements')
         settings['INFOPLIST_KEY_CFBundleDisplayName'] = 'Wealthy Test'
 

@@ -1,0 +1,27 @@
+XCUIAccessibilityAuditType(rawValue: 1): Contrast failed / Contrast failed for element / Attributes: StaticText, 0x128fe4a00, {{31.7, 744.0}, {311.7, 64.3}}, label: 'Results are recalculated from your records. Forgotten days can be added within three days after the period ends.'
+Element subtree:
+ →StaticText, 0x128fe4a00, {{31.7, 744.0}, {311.7, 64.3}}, label: 'Results are recalculated from your records. Forgotten days can be added within three days after the period ends.'
+Path to element:
+ →Application, 0x128fde1c0, pid: 25405, label: 'Wealthy'
+  ↳Window (Main), 0x128fde300, {{0.0, 0.0}, {375.0, 812.0}}
+   ↳Other, 0x128fde440, {{0.0, 0.0}, {375.0, 812.0}}
+    ↳Other, 0x128fde580, {{0.0, 0.0}, {375.0, 812.0}}
+     ↳Other, 0x128fde6c0, {{0.0, 0.0}, {375.0, 812.0}}
+      ↳Other, 0x128fde800, {{0.0, 0.0}, {375.0, 812.0}}
+       ↳Other, 0x128fde940, {{0.0, 0.0}, {375.0, 812.0}}
+        ↳Other, 0x128fdea80, {{0.0, 0.0}, {375.0, 812.0}}
+         ↳Other, 0x128fdebc0, {{0.0, 0.0}, {375.0, 812.0}}
+          ↳Other, 0x128fded00, {{0.0, 0.0}, {375.0, 812.0}}
+           ↳Other, 0x128fdee40, {{0.0, 0.0}, {375.0, 812.0}}
+            ↳ScrollView, 0x128fdef80, {{0.0, 0.0}, {375.0, 812.0}}, identifier: 'resultSheet'
+             ↳Other, 0x128fdf480, {{0.0, 53.0}, {375.0, 855.3}}
+              ↳StaticText, 0x128fe4a00, {{31.7, 744.0}, {311.7, 64.3}}, label: 'Results are recalculated from your records. Forgotten days can be added within three days after the period ends.'
+Query chain:
+ →Find: Target Application 'com.harrison.Wealthy'
+  Output: {
+    Application, 0x128fc7c00, pid: 25405, label: 'Wealthy'
+  }
+  ↪︎Find: Descendant with identity binding to AX element pid: 25405, elementOrHash.elementID: 5327456928.26
+    Output: {
+      StaticText, 0x128fe7c00, {{31.7, 744.0}, {311.7, 64.3}}, label: 'Results are recalculated from your records. Forgotten days can be added within three days after the period ends.'
+    }

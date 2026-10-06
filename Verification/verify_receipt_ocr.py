@@ -7,11 +7,11 @@ import sys
 import tempfile
 
 ROOT = Path(__file__).resolve().parents[1]
-PARSER = ROOT / 'Wealthy/Wealthy/ReceiptTextParser.swift'
-CATEGORY = ROOT / 'Wealthy/Wealthy/ReceiptCategoryPolicy.swift'
-SCANNER = ROOT / 'Wealthy/Wealthy/ReceiptScanner.swift'
+PARSER = ROOT / 'LegacyApp/ReceiptTextParser.swift'
+CATEGORY = ROOT / 'LegacyApp/ReceiptCategoryPolicy.swift'
+SCANNER = ROOT / 'LegacyApp/ReceiptScanner.swift'
 FIXTURES = ROOT / 'Verification/ReceiptOCR/main.swift'
-LOCALIZATION = [ROOT / 'Wealthy/Wealthy' / name for name in (
+LOCALIZATION = [ROOT / 'LegacyApp' / name for name in (
     'AppLanguage.swift', 'AppLocalization.swift', 'CurrencyPolicy.swift', 'CoreTranslations.swift', 'UITranslations.swift', 'FinanceTranslations.swift')]
 
 

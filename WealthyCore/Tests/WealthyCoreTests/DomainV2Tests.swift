@@ -57,12 +57,12 @@ struct DomainV2Tests {
         status = try LedgerQueries.weekTargetStatus(in:state,containing:monday,currencyCode:"JPY",calendar:calendar)
         #expect(status.loggedDays == 5 && status.noSpendDays == 4 && status.remaining == -1 && !status.isRewardEligible)
     }
-    @Test("Monthly reward requires ceiling eighty percent logged days")
+    @Test("Monthly reward requires ceiling seventy percent logged days")
     func monthlyReward() throws {
         let first = try day(2027,2)
-        var state = LedgerState(targets:[target(LedgerMonth(day:first),amount:2800)],noSpendMarks:try(1...22).map {NoSpendMarkValue(day:try day(2027,2,$0))})
+        var state = LedgerState(targets:[target(LedgerMonth(day:first),amount:2800)],noSpendMarks:try(1...19).map {NoSpendMarkValue(day:try day(2027,2,$0))})
         #expect(try !LedgerQueries.monthTargetStatus(in:state,month:LedgerMonth(day:first),currencyCode:"JPY").isRewardEligible)
-        state.noSpendMarks.append(NoSpendMarkValue(day:try day(2027,2,23)))
+        state.noSpendMarks.append(NoSpendMarkValue(day:try day(2027,2,20)))
         #expect(try LedgerQueries.monthTargetStatus(in:state,month:LedgerMonth(day:first),currencyCode:"JPY").isRewardEligible)
     }
     @Test("Household and child targets totals and marks remain isolated")
