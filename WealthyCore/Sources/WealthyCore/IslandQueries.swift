@@ -55,6 +55,22 @@ extension LedgerQueries {
         }
         return count
     }
+    /// Counts reward-eligible completed weeks ending within a month, capped at the four visible areas.
+    public static func earnedFestivalCount(in state: LedgerState, monthPeriod: LedgerPeriod,
+                                           envelopeID: UUID = EnvelopeValue.householdID, currencyCode: String,
+                                           calendar: Calendar = .current) throws -> Int {
+        var cursor = try LedgerPeriod.week(containing: monthPeriod.start, weekStart: state.settings.weekStart, calendar: calendar).start
+        var festivals = 0
+        while cursor <= monthPeriod.end {
+            let week = try LedgerPeriod.week(containing: cursor, weekStart: state.settings.weekStart, calendar: calendar)
+            if week.end <= monthPeriod.end {
+                let status = try targetStatus(in: state, period: week, envelopeID: envelopeID, currencyCode: currencyCode, calendar: calendar)
+                if status.isRewardEligible { festivals += 1 }
+            }
+            cursor = try week.end.adding(days: 1, calendar: calendar)
+        }
+        return min(4, festivals)
+    }
     public static func canAddEntry(on day: LedgerDay, today: LedgerDay, weekStart: Int = 2, calendar: Calendar = .current) throws -> Bool {
         let week = try LedgerPeriod.week(containing: day, weekStart: weekStart, calendar: calendar)
         let month = try LedgerPeriod.month(containing: day, calendar: calendar)

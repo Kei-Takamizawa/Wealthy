@@ -9,7 +9,7 @@ struct LedgerRoot: View {
         @Bindable var session = session
         Group {
             if !session.available { NoAIView() }
-            else if session.core == nil { ProgressView().task { session.open() } }
+            else if session.core == nil { ProgressView(session.t("loading")).accessibilityIdentifier("ledgerLoading").accessibilityAddTraits(.updatesFrequently).task { if UIAccessibility.isVoiceOverRunning { UIAccessibility.post(notification: .announcement, argument: session.t("loading")) }; await session.openAfterPresentation() } }
             else if !session.onboarded { OnboardingView() }
             else { mainContent }
         }
@@ -78,7 +78,7 @@ struct CurrencyPicker: View {
     @Environment(LedgerSession.self) private var session
     var body: some View {
         @Bindable var session = session
-        Picker(session.t("currency"), selection: $session.currency) { ForEach(["JPY", "USD", "EUR", "KRW"], id: \.self) { Text($0).tag($0) } }.frame(minHeight: 44)
+        Picker(session.t("currency"), selection: $session.currency) { ForEach(["JPY", "USD", "EUR", "KRW"], id: \.self) { Text($0).tag($0) } }.frame(minHeight: 44).accessibilityIdentifier("currency")
     }
 }
 struct OnboardingView: View {
@@ -182,7 +182,7 @@ struct VoiceView: View {
                     let layout = typeSize.isAccessibilitySize ? AnyLayout(VStackLayout(alignment: .leading, spacing: 12)) : AnyLayout(HStackLayout())
                     layout { Button(action: toIsland) { Pill(text: session.t("toIsland"), icon: "chevron.left") }; if !typeSize.isAccessibilitySize { Spacer() }; Button(action: toInfo) { Pill(text: session.t("info"), icon: "chevron.right") }.accessibilityIdentifier("voiceInfo") }
                 }
-                IslandScene(growth: session.summary?.days.filter(\.hasGrowth).count ?? 0, festivals: session.summary?.festivals ?? 0, dusk: false).frame(height: 280).blur(radius: 14).accessibilityHidden(true)
+                IslandScene(growth: session.householdSummary?.days.filter(\.hasGrowth).count ?? 0, festivals: session.householdSummary?.festivals ?? 0, dusk: false).frame(height: 280).blur(radius: 14).accessibilityHidden(true)
                 Text(session.t("voice")).font(V4.heading(session.language))
                 Plate { Text(session.t("voiceLater")).frame(maxWidth: .infinity).multilineTextAlignment(.center) }
                 Label(session.t("microphoneUnavailable"), systemImage: "mic.slash").padding(24).modifier(V4Glass()).accessibilityIdentifier("voicePlaceholder")

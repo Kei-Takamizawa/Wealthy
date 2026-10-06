@@ -36,7 +36,7 @@ struct HomeView: View {
                     let layout = typeSize.isAccessibilitySize ? AnyLayout(VStackLayout(alignment: .leading, spacing: 12)) : AnyLayout(HStackLayout())
                     layout { Text(session.t("thisWeek")).padding(12).modifier(V4Glass()); if !typeSize.isAccessibilitySize { Spacer() }; Button(action: toInfo) { Pill(text: session.t("info"), icon: "chevron.right") }.accessibilityIdentifier("homeInfo") }
                 }
-                if let s = session.summary {
+                if let s = session.householdSummary {
                     IslandScene(growth: s.days.filter(\.hasGrowth).count, festivals: s.festivals, dusk: s.week.isOver).frame(height: 240)
                         .accessibilityElement(children: .ignore).accessibilityLabel(String(format: session.t("islandLabel"), s.festivals, s.days.filter(\.hasGrowth).count))
                     AllowancePlate(title: "weeklyAllowance", status: s.week)
@@ -46,13 +46,13 @@ struct HomeView: View {
                 }
                 if session.core?.state.entries.isEmpty == true { Plate { VStack(alignment: .leading, spacing: 12) { Text(session.t("emptyDay")).font(V4.heading(session.language, size: 24)); Text(session.t("emptyDetail")) } } }
                 NavigationLink { EntryEditor(entry: nil) } label: { Label(session.t("addEntry"), systemImage: "plus") }.buttonStyle(PrimaryButton()).accessibilityIdentifier("addEntry")
-                Button { session.perform { try session.run(.markNoSpend(session.today, envelopeID: session.envelopeID)) } } label: { Text(session.t("noSpend")).frame(maxWidth: .infinity, minHeight: 52).contentShape(Rectangle()) }.accessibilityIdentifier("noSpend")
+                Button { session.perform { try session.run(.markNoSpend(session.today, envelopeID: EnvelopeValue.householdID)) } } label: { Text(session.t("noSpend")).frame(maxWidth: .infinity, minHeight: 52).contentShape(Rectangle()) }.accessibilityIdentifier("noSpend")
                 GlassEffectContainer { ViewThatFits(in: .horizontal) { HStack { homeControls }; VStack(alignment: .leading) { homeControls } } }
             }.padding(16).padding(.bottom, 32)
-        }.background(V4.paper(scheme)).accessibilityIdentifier("homePage")
+        }.background(V4.paper(scheme)).accessibilityIdentifier("homePage").task { await session.homePresented() }
     }
     @ViewBuilder private var homeControls: some View {
-        NavigationLink { GoalsView(envelopeID: session.envelopeID) } label: { Pill(text: session.t("goals"), icon: "target") }
+        NavigationLink { GoalsView(envelopeID: EnvelopeValue.householdID) } label: { Pill(text: session.t("goals"), icon: "target") }
         Button(action: toVoice) { Pill(text: session.t("voice"), icon: "mic") }.accessibilityIdentifier("homeVoice")
         NavigationLink { SettingsView() } label: { Pill(text: session.t("settings"), icon: "gear") }
     }
@@ -134,19 +134,66 @@ struct ResultView: View {
     @Environment(LedgerSession.self) private var session
     @Environment(\.dismiss) private var dismiss
     let status: TargetStatus
+    private var isMonth: Bool { loggedRequirement.map { $0.total > 7 } ?? false }
+    private var outcome: RewardOutcome { LedgerQueries.rewardOutcome(status) }
     private var resultGrowth: Int {
         guard let core = session.core else { return 0 }
         return (try? LedgerQueries.islandGrowthDays(in: core.state, period: status.period, envelopeID: status.envelopeID, currencyCode: status.currencyCode)) ?? 0
     }
+    private var monthAreas: Int {
+        guard isMonth, let core = session.core else { return 0 }
+        return (try? LedgerQueries.earnedFestivalCount(in: core.state, monthPeriod: status.period, envelopeID: status.envelopeID, currencyCode: status.currencyCode)) ?? 0
+    }
+    private var loggedRequirement: LoggedDayRequirement? {
+        return try? LedgerQueries.loggedDayRequirement(in: status.period)
+    }
     var body: some View {
         ScrollView { VStack(spacing: 24) {
-            Text(session.t("result")).font(V4.heading(session.language))
-            Sticker(icon: LedgerQueries.rewardOutcome(status) == .achieved ? "sparkles" : "moon.fill", label: session.t(LedgerQueries.rewardOutcome(status).rawValue))
-            Text("\(status.period.start.formatted) – \(status.period.end.formatted)").font(.footnote)
-            IslandScene(growth: resultGrowth, festivals: status.isRewardEligible ? 1 : 0, dusk: status.isOver).frame(height: 180).accessibilityHidden(true)
+            Text(session.t(isMonth ? "monthResultTitle" : "weekResultTitle")).font(V4.heading(session.language))
+            if isMonth {
+                Text(session.t(monthHeadlineKey)).font(V4.heading(session.language, size: 26)).multilineTextAlignment(.center).foregroundStyle(V4.ink(scheme))
+            }
+            Sticker(icon: outcome == .achieved ? (isMonth ? "leaf.fill" : "sparkles") : "moon.fill", label: session.t(isMonth ? monthStickerKey : outcome.rawValue))
+            if isMonth, let loggedRequirement {
+                Plate {
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text(String(format: session.t("monthRequirement"), status.loggedDays, loggedRequirement.total, loggedRequirement.required))
+                            .foregroundStyle(V4.ink(scheme))
+                        Text(String(format: session.t("monthAreaReward"), monthAreas)).font(.headline).foregroundStyle(V4.ink(scheme))
+                        if outcome == .achieved {
+                            Label(session.t("monthDecorationReward"), systemImage: "sparkles").foregroundStyle(V4.ink2(scheme))
+                        }
+                        Text("\(status.period.start.formatted) – \(status.period.end.formatted)").font(.footnote).foregroundStyle(V4.ink2(scheme))
+                        Text(session.t("lateDetail")).font(.footnote).foregroundStyle(V4.ink2(scheme)).accessibilityIdentifier("resultLateDetail")
+                    }
+                }
+            } else {
+                Plate {
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text("\(status.period.start.formatted) – \(status.period.end.formatted)").font(.footnote).foregroundStyle(V4.ink2(scheme))
+                        Text(session.t("lateDetail")).foregroundStyle(V4.ink2(scheme)).accessibilityIdentifier("resultLateDetail")
+                    }
+                }
+            }
+            IslandScene(growth: resultGrowth, festivals: isMonth ? monthAreas : status.isRewardEligible ? 1 : 0, dusk: status.isOver).frame(height: 180).accessibilityHidden(true)
             AllowancePlate(title: "remainingAllowance", status: status)
-            Text(session.t("lateDetail")).foregroundStyle(V4.ink(scheme))
             Button(session.t("done")) { dismiss() }.buttonStyle(PrimaryButton())
         }.padding(24) }.scrollEdgeEffectHidden(for: .bottom).background(V4.paper(scheme)).presentationCornerRadius(36).accessibilityIdentifier("resultSheet")
+    }
+    private var monthHeadlineKey: String {
+        switch outcome {
+        case .achieved: "monthAchieved"
+        case .over: "monthOver"
+        case .few: "monthFewDays"
+        case .unset: "monthUnset"
+        }
+    }
+    private var monthStickerKey: String {
+        switch outcome {
+        case .achieved: "monthAchieved"
+        case .over: "over"
+        case .few: "few"
+        case .unset: "unset"
+        }
     }
 }

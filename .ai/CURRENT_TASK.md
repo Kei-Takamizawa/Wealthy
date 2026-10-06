@@ -1,86 +1,33 @@
-# CURRENT TASK — Cycle 2a: New app shell on WealthyCore (design v4 foundation + core screens)
+# CURRENT TASK — Cycle 2a.1: Fix the blockers of PR #5 (same branch `codex/wealthy-c2a-shell`)
 
-Task ID: WEALTHY-C2A-SHELL
-Base: latest `main` (WealthyCore through PR #4). Work on a new branch, open a PR. Report in `.ai/LAST_REPORT.md`.
+Task ID: WEALTHY-C2A1-FIXES
+Base: PR #5 head `39ae7d5`. Push to the same branch; keep the PR as draft until the product owner approves. Read `.ai/LAST_REPORT.md` first; update it at the end. Scope is limited to the items below. Do not start Cycle 2b or 3 work.
 
-## 1. Goal
-This is an UPDATE of the existing app, not a second app: same Xcode project, same target and scheme (`Wealthy`), same bundle identifier, installed over the existing installation. The legacy screens and legacy SwiftData models are deleted from the target in this cycle (all of them, including calendar/analysis/receipt/wallet screens); WealthyCore stays a separate local Swift package used by the app. Nothing is kept running side by side.
+## 1. Fixes required
 
-Replace the legacy app UI and data layer with a new SwiftUI app that runs on WealthyCore (domain v2) and follows the approved design "v4". This cycle delivers the design system and the core screens with manual (typed) input. Voice, speech and Apple Intelligence interpretation are Cycle 3. The remaining screens listed in section 3.2 are Cycle 2b.
+1. **Result sheet contrast audit (blocker).** `Cycle2aUITests/testResultAccessibilityAudit` flags the late-entry explanation text. Put that text (and any other explanatory text in the result sheet) on an opaque Plate with the design `ink`/`ink2` colors. If the audit still fails, bisect by removing modifiers one by one (opacity, hierarchical/secondary styles, blend modes, material backgrounds) and report which one causes it. Do NOT exclude the element or weaken the audit.
+2. **Monthly result (blocker).** Implement the month achieved / over / too-few-days presentations as in boards `V4ResultMonth` / `V4Result` (kind=month): headline per state, island with the month's earned areas (festival count, max 4), month decoration reward line for achieved, "over" wording without punishment, too-few-days wording. Replace design copy that says "20 days or more" with the real rule from Core: logged on at least 70% of the month's days (show the actual number of days required, e.g. "22 of 31"). Weekly captions must not appear on month results.
+3. **Home envelope.** Home always shows the household envelope (island = household weekly allowance). It must NOT follow the envelope selected on Info. The child envelope is shown on Info and its detail screens only.
+4. **Goals.** Build the distinct `V4GoalsUnset` presentation for a month with no target set (not the same empty form). Amount fields in Goals and Edit must display grouped digits and the currency symbol per locale (currently raw "310000", "2400"); input must still accept plain digits.
+5. **No internal jargon in UI text.** Remove "Cycle 3" (or any cycle/task wording) from user-visible strings (e.g. the voice-page placeholder). Use a neutral localized message such as "Voice input is coming soon. For now, add entries by typing." in all 4 languages.
+6. **Persisted onboarding.** Verify on a real device with the real disk store: complete onboarding, force-quit, relaunch: the app opens on Home (not onboarding) with the chosen language, currency and target retained. Add a UI test (disk store in a temp location) and report the result.
+7. **Idle stall / continuous animation.** The normal-motion child-envelope UI test stalled in XCTest waiting for animation idle (repeated 60 s waits). Find the cause (likely a repeating animation or `TimelineView`/`Canvas` redraw loop on the island or elsewhere). Fix so that: ambient animations stop when the view is off-screen, when the app is not active, when Low Power Mode is on, and when Reduce Motion is on; the island redraw loop does not run continuously at full frame rate; the normal-motion child-envelope test passes without special-casing. Report battery-relevant measures you can actually measure (e.g. CPU % idle on Home over 60 s on device, before/after). Do not claim battery numbers you did not measure.
+8. **Launch performance (scope clarified).** Do not change the Core persistence boundary in this cycle: `LedgerStore`/`LedgerCore` stay `@MainActor` with synchronous reads. Instead: render the first frame (loading state) BEFORE the synchronous ledger open starts (e.g. start the open from a `.task` after the first render, yielding once so the frame is committed), keep the loading state minimal and accessible (VoiceOver announces loading), and measure on device with signposts / `XCTApplicationLaunchMetric` (not "accessibility element exists") at 1,000 / 10,000 / 50,000 entries, median of 5 warm launches each. Report two numbers per size: time to first frame, and time until Home is interactive. Targets: first frame under 1 s at all sizes; Home interactive under 2 s at 10,000 entries. If the interactive target is missed at 10,000, report the numbers and the cost split (store open vs. snapshot vs. first render); that result will trigger a separate Core task (async persistence boundary). Truly asynchronous loading is NOT blocked-by-you work in this cycle and is not required for acceptance.
 
-## 2. Background and decisions (already made by the product owner)
-- Product: household budget app. Wallets/assets are gone. The user sets a monthly overall target and optional per-category targets. The "island" shows the weekly allowance; fewer-than-daily-allowance days add things to the island, a week within target AND logged on at least 5 of 7 days earns a festival and a free sticker, a month earns island areas. Exceeding is never punished (dusk colors only). The number shown is a "usable allowance", never a balance: the words "Not a balance" (localized) must be visible wherever an allowance is shown.
-- Child envelope: separate envelope and separate evaluation; covers spending on the child and child-support payments paid out (preset category "child support payment", tax-exempt, fixed cost).
-- Consumption tax (Japan, JPY only): shown per entry, monthly total, per-rate breakdown, unknown-rate count, takeout saving estimate (labeled "estimate").
-- Apple Intelligence stays REQUIRED: keep the launch gate and add the "no Apple Intelligence" guidance screen.
-- No migration from the legacy store. The legacy app data and receipt images stay on disk untouched and are never opened by the new app. The new app starts empty with a new store file (`WealthyLedger.store` under Application Support). Features not yet ported (see 3.2) are simply absent until Cycle 2b; this is acceptable because the app is not released.
-- Languages: English (base), Japanese, Spanish, Korean. Handwritten-style fonts for headings and short labels only: en/es Patrick Hand, ja Klee One (400, 600), ko Poor Story. Amounts and long text use system fonts (SF Pro Rounded + monospaced digits for amounts; system body font for long text).
-- iOS 26+ only. Use real Liquid Glass (`glassEffect`, `GlassEffectContainer`) for chips, bars and sheets; amounts always sit on opaque "plates", never directly on glass; glass is never stacked on glass. The browser mockups only approximate glass.
-- Product owner decisions this cycle: month reward eligibility = logged on at least 70% of the month's days (ceil(0.7 x days), e.g. 22 of 31); week = 5 of 7 (unchanged). Adding forgotten days after a week/month ended is allowed for 3 days; results are computed from entries, so late entries change the result (see 4.3).
+## 2. Constraints
+Keep WealthyCore persistence, undo, backup and tax/target rules unchanged (small query additions allowed if strictly needed, tested). No new dependencies. No audit exclusions, no weakened assertions, no skipped tests. Do not merge; do not delete legacy user data.
 
-## 3. Requirements
+## 3. Acceptance
+- All previously passing tests still pass; `testResultAccessibilityAudit` passes unmodified in intent; the normal-motion child test passes.
+- Items 1–8 each have evidence in the report (test names, screenshots for 2, 3, 4, 5, measured numbers for 7 and 8).
+- Core tests and historical checks still pass; Simulator, Release and signed-device builds pass.
 
-### 3.1 In scope (this cycle)
-1. Design system module: color tokens (light/dark), type, radii, shadows, glass levels, Plate, Row, Pill, Sticker, PrimaryButton, motion ("jelly" 300–500 ms, none when Reduce Motion). Values: see the design handoff board `V4Handoff` (section 3 and 4 tables) and the exported design files (section 7). Reduce Transparency: glass becomes opaque cards with a 1.5 pt line. Dynamic Type must not break layouts up to the accessibility sizes; verify at least AX3.
-2. App shell (FINAL page structure): a horizontal pager with THREE pages in this order: [Voice] | [Home] | [Info]. The app opens on Home. Swipe right from Home reveals Voice; swipe left from Home reveals Info. Voice <-> Info is not adjacent: use the "to Info" control drawn on the voice board (animated jump over Home) and swipe/back via the "to island" control on the info board. Tapping the microphone on Home also moves to the Voice page. Voice page in this cycle = idle state only; its microphone control is a clearly non-functional placeholder (Cycle 3), no fake behavior. Info = V4Info (household / child envelope segment). Information is reachable from Home with one swipe or one tap (the "Info" chip on V4Home). Do not add a tab bar for these three pages; other destinations (goals, edit entry, tax, child setup, settings) are pushed or presented from Home/Info as in the boards. Implement with a native paging container (e.g. `TabView` page style or a scroll-view paging layout) that respects Reduce Motion (no bounce animation, instant or cross-fade switch) and exposes all three pages to VoiceOver with clear labels and rotor/escape actions. Later cycles (Cycle 3): Action Button / Siri / a setting can open the app directly on the Voice page; not in this cycle.
-3. First launch flow V4Onboard1–4 (language, currency, monthly target, child envelope yes/no) and the empty day (V4EmptyDay); Apple Intelligence gate (V4NoAI).
-4. Home with the island (V4Home) bound to real data: weekly allowance status, daily growth, week/month result sheets (V4Result: achieved, over, too few logged days).
-5. Information page (V4Info) for household and child envelope (V4InfoChild), child setup/detail (V4ChildSetup, V4ChildDetail).
-6. Goals/targets (V4Goals, V4GoalsUnset): overall + per-category, versions by month, "include fixed costs" switch (default off), week start (default Monday).
-7. Add/edit entry (V4Edit): expense/income, amount, date, category, envelope, how eaten (dine-in 10% / takeout 8% / delivery 8%), manual tax rate (10, 8, none, unknown), note, fixed-cost flag, needs-review state; "I spent nothing today" mark. Receipt image attach is Cycle 2b.
-8. Tax screen (V4Tax) using WealthyCore tax queries.
-9. Localization for the 4 languages (String Catalog), handwritten font bundling (subset), in-app OFL license screen (Settings entry may be minimal in this cycle: language, currency, licenses, About).
-10. Remove legacy UI/models from the app target once replaced (keep the legacy data files on disk; do not delete user data).
+## 4. Report
+Per-item status with evidence; measured numbers (first frame at 3 sizes, idle CPU before/after); what remains unverified (manual VoiceOver traversal, OS Reduce Motion/Transparency settings, iOS 26 hardware) stated explicitly; screenshots of month results (3 states, light/dark/AX3) and Goals unset.
 
-### 3.2 Out of scope (Cycle 2b / 3)
-Calendar and analysis, fixed-cost list/edit/catch-up notice, receipt scan/result, category management, backup/restore UI, undo history screen, iPad layout, voice/speech/AI interpretation, App Intents. Do not implement them and do not leave dead entry points to them.
-
-### 3.3 Where the design and WealthyCore differ: WealthyCore and these rules win
-- Unknown tax rate: WealthyCore excludes unknown-rate entries from tax totals and counts them. The V4Tax mock says they are included at a tentative 10%; do NOT do that. Show "N entries have an unknown rate; not included in the totals".
-- Takeout saving: WealthyCore compares tax portions of the same tax-inclusive amount (e.g. 2,400 inclusive: 218 at 10% vs 177 at 8% = 41). The mock shows a different formula (44). Use WealthyCore's number and describe the calculation accordingly, always labeled as an estimate.
-- Tax totals include fixed costs unless the entry is tax-exempt; ignore the mock sentence "fixed costs are not included" for the tax screen. Targets still follow `includeFixedCostsInTargets`.
-- Undo list is Cycle 2b. When it is built, recurring auto-posting is not an undo step in WealthyCore (remove that mock row then).
-
-## 4. Technical constraints
-- SwiftUI only, Swift 6 language mode for new code where feasible; if the app target must stay in Swift 5 mode, keep WealthyCore Swift 6 and say so.
-- All state flows through `LedgerCore` (observable, `revision`, `reload()`); no business logic, tax math, allowance math or validation in views. Views call commands and queries only.
-- Money is integer minor units; JPY has no decimals; display with locale-appropriate grouping (the mock formats: ja `¥1,234`, ko `JP¥1,234`, es `1.234 ¥`).
-- Accessibility: contrast >= 4.5:1 for text, >= 3:1 for meaningful non-text; status (ok/watch/over) always icon + word, never color alone; every control >= 44 pt; VoiceOver labels for the island (e.g. "Island, festival open, 6 of 7 days under allowance") and results; no time-limited controls when VoiceOver is on.
-- Performance: no regression of the WealthyCore benchmarks; home must render with a 50,000-entry store without visible stall (report measured time-to-first-render on device if you can measure it; do not claim without measuring).
-- Fonts: download only from the OFL sources below, verify SHA-256, subset (Klee One: Joyo kanji + kana + Latin; Poor Story: all Hangul; Patrick Hand: Latin incl. Spanish accents), keep the OFL texts, and show license and copyright in-app. Sources: https://raw.githubusercontent.com/google/fonts/main/ofl/kleeone/KleeOne-Regular.ttf (sha256 bf4063f030cc2ae6adf0a11424a1888e5c0eb4438f1f6d02f52294af868e9b3a), .../KleeOne-SemiBold.ttf (b031ec426c23ca1143ef1f7d58bee7a79efe119ed654152f121c922202b303fd), .../poorstory/PoorStory-Regular.ttf (831ab87f7b5463f9cd83ac249bf386816f3a478f1d226427c88cac907adb7ee2), .../patrickhand/PatrickHand-Regular.ttf (0f173b3e6cb6d1af25babf7f0057c5ac4ee11f9992b0469bb817e967ef4ad0fc); license files at the same folders as OFL.txt. Expected subset total about 7 MB raw. Use `Font.custom(_:size:relativeTo:)` so Dynamic Type applies. Characters missing from a subset fall back to the system font.
-- No new third-party dependencies.
-
-### 4.1 Core changes allowed in this cycle (WealthyCore)
-- Month reward eligibility becomes ceil(0.7 x days in month) logged days (was 0.8). Update tests.
-- Any small query/API addition the UI strictly needs (e.g. island state per day, result summaries). Keep them deterministic and tested; do not change persistence internals.
-### 4.2 Island/reward state
-Derive everything from WealthyCore queries: per-day under/over daily allowance, no-spend marks, week/month eligibility, number of festivals in the month (areas = festivals, max 4 in design). Do not store rewards yet except as derived values; sticker album persistence is Cycle 2b unless trivial.
-### 4.3 Late entries
-Results are recomputed from entries, so adding a forgotten day within 3 days after the period ends changes the result. Show the result sheet again with updated state; do not store a past result as a fixed fact in this cycle.
-
-## 5. Files to change
-App target (new UI, design system, localization, fonts, assets), WealthyCore (4.1 only), tests, Verification scripts if they reference removed legacy code (do not weaken them: update intent-preserving). Keep the legacy app's data on disk.
-
-## 6. Do not change
-WealthyCore persistence internals, change-set undo, backup format, tax/target rules beyond 4.1, user data on disk, bundle identifier and signing settings, Apple Intelligence launch gate behavior.
-
-## 7. Design source files
-Source of truth is the exported v4 boards (PNG/PDF from the Claude Design canvas, light/dark, standard/AX where available) placed by the product owner in the repo under `design/v4/`. Boards: V4Home, V4Voice (idle), V4Info, V4InfoChild, V4Result (week/month, achieved/missed/few), V4Goals, V4GoalsUnset, V4Edit, V4Tax, V4ChildSetup, V4ChildDetail, V4Onboard1–4, V4EmptyDay, V4NoAI, V4Handoff. Public canvas: https://claude.ai/artifact/TLRvuTMJnqSaAv4BGpR3YB (may not be readable by you). If `design/v4/` is missing, stop and report that instead of guessing the visuals.
-
-## 8. Acceptance criteria
-- App builds (Simulator, Release, signed device) and launches on a fresh install into onboarding; completing it yields an empty home on the new store.
-- All 4 languages render every in-scope screen with correct fonts; no truncation of buttons/headings in Spanish at default and AX3 sizes.
-- Adding a household expense, a child expense, a takeout vs dine-in food expense, a no-spend day and a target change updates home, info, tax screens correctly (verified against WealthyCore values, not recomputed in the UI).
-- "Not a balance" wording present wherever allowance is shown.
-- Reduce Transparency and Reduce Motion variants behave as specified.
-- No wallet/transfer/balance wording anywhere in UI or strings.
-- All previous WealthyCore tests plus new ones pass; existing verification scripts still pass or are updated with intent preserved and listed in the report.
-
-## 9. Build and test
-`sh Verification/verify_core.sh`; Simulator and Release builds; signed device build and launch; UI tests (XCUITest) for onboarding, add expense, take-out tax, no-spend mark, target edit; snapshot or screenshot comparison against `design/v4/` for each in-scope screen in light, dark and AX3 (attach screenshots to the report; they may contain only test data).
-
-## 10. GUI check
-On a real device (iPhone 15 Pro class or newer) run: fresh install flow; one full week of seeded entries to see festival / over / too-few-days results; dark mode; Reduce Transparency; Reduce Motion; AX3 text; VoiceOver pass over home, result sheet and entry form. Report what was and wasn't verified.
-
-## 11. Report back
-Branch and PR link; per-requirement status; list of screens with screenshots vs design (differences and why); tests/commands and results; measured performance numbers; decisions you had to make; anything in the design that could not be built as drawn (especially Liquid Glass differences); open questions.
+## 5. Design-vs-implementation comparison images (add to this cycle)
+Commit comparison material to the PR branch so the reviewer can read it from GitHub:
+- `design/v4/`: the exported v4 design boards (PNG or JPEG) if the product owner has placed them locally; do not generate them yourself. Name files by board (e.g. `V4Home-light.png`, `V4Home-dark.png`). If they are missing locally, say so in the report.
+- `Verification/Cycle2aEvidence/compare/`: for each in-scope screen, light and dark (AX3 optional), ONE side-by-side image: design board on the left, device screenshot on the right, same height, label on top (screen id, mode). JPEG quality about 80, long edge at most 2400 px, each file under 2 MB, total added under 30 MB. Names like `compare-V4Home-light.jpg`. Add `compare/INDEX.md` listing every file, the screen, and one line on known differences.
+- Synthetic data only; no real financial records or personal data in any image.
+- Do not commit the full 251-image inventory, videos or xcresult bundles.

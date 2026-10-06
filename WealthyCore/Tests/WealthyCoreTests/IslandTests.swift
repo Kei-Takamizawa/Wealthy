@@ -24,6 +24,22 @@ struct IslandTests {
             #expect(try LedgerQueries.monthTargetStatus(in:state,month:LedgerMonth(day:first),currencyCode:"JPY",calendar:calendar).isRewardEligible)
         }
     }
+    @Test func loggedDayRequirementMatchesRewardRule() throws {
+        let month31 = try LedgerPeriod.month(containing: day(2027,1,12), calendar: calendar)
+        let leapFebruary = try LedgerPeriod.month(containing: day(2028,2,12), calendar: calendar)
+        let week = try LedgerPeriod.week(containing: day(2027,1,12), calendar: calendar)
+        #expect(try LedgerQueries.loggedDayRequirement(in: month31, calendar: calendar) == LoggedDayRequirement(required: 22, total: 31))
+        #expect(try LedgerQueries.loggedDayRequirement(in: leapFebruary, calendar: calendar) == LoggedDayRequirement(required: 21, total: 29))
+        #expect(try LedgerQueries.loggedDayRequirement(in: week, calendar: calendar) == LoggedDayRequirement(required: 5, total: 7))
+    }
+    @Test func earnedFestivalCountIsMonthlyAndCappedAtFour() throws {
+        let start = try day(2027,2,1), month = try LedgerPeriod.month(containing: start, calendar: calendar)
+        var state = LedgerState(targets: [TargetValue(currencyCode: "JPY", amountMinor: 2800, effectiveMonth: LedgerMonth(day: start))])
+        state.noSpendMarks = try (1...28).map { NoSpendMarkValue(day: try day(2027,2,$0)) }
+        #expect(try LedgerQueries.earnedFestivalCount(in: state, monthPeriod: month, currencyCode: "JPY", calendar: calendar) == 4)
+        state.noSpendMarks.removeLast(4)
+        #expect(try LedgerQueries.earnedFestivalCount(in: state, monthPeriod: month, currencyCode: "JPY", calendar: calendar) == 3)
+    }
     @Test func lateEntryBoundariesAndRecomputedResult() throws {
         let monday = try day(2026,10,5), end = try day(2026,10,11)
         #expect(try LedgerQueries.canAddEntry(on:monday,today:day(2026,10,14),calendar:calendar))

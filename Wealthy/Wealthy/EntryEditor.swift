@@ -25,7 +25,9 @@ struct EntryEditor: View {
                 Picker(session.t("kind"), selection: Binding(get: { kind }, set: { kind = $0; category = nil })) { ForEach(EntryKind.allCases, id: \.self) { Text(session.t($0.rawValue)).tag($0) } }.pickerStyle(.segmented).frame(minHeight: 44)
                 Plate { VStack(alignment: .leading, spacing: 16) {
                     Text(session.t("amount"))
-                    TextField("", text: $amount).accessibilityLabel(session.t("amount")).keyboardType(.decimalPad).font(.system(.largeTitle, design: .rounded).monospacedDigit()).foregroundStyle(kind == .expense ? V4.expense(scheme) : V4.ok(scheme)).accessibilityIdentifier("entryAmount")
+                    MoneyInputField(text: $amount, label: session.t("amount"), identifier: "entryAmount",
+                                    font: .system(.largeTitle, design: .rounded),
+                                    foreground: kind == .expense ? V4.expense(scheme) : V4.ok(scheme))
                     VStack(alignment: .leading, spacing: 8) { Text(session.t("date")); DatePicker("", selection: $date, displayedComponents: .date).labelsHidden().frame(minHeight: 52).accessibilityLabel(session.t("date")).accessibilityIdentifier("entryDate") }
                     Picker(session.t("category"), selection: Binding(get: { category }, set: { category = $0; suggestTax(); if let selected = categories.first(where: { $0.id == category }), LedgerQueries.fixedCostDefault(for: selected) { fixed = true } })) { Text(session.t("none")).tag(nil as UUID?); ForEach(categories) { Text(session.categoryName($0)).tag(Optional($0.id)) } }.frame(minHeight: 52).accessibilityIdentifier("entryCategory")
                     Text(session.t("note"))
@@ -50,7 +52,7 @@ struct EntryEditor: View {
     }
     func load() {
         guard !loaded else { return }; loaded = true
-        envelope = entry?.envelopeID ?? session.envelopeID
+        envelope = entry?.envelopeID ?? EnvelopeValue.householdID
         guard let entry else { return }
         amount = (try? CoreCurrency.inputText(entry.amount, currencyCode: entry.currencyCode, locale: session.locale)) ?? ""
         date = (try? entry.day.date(calendar: .current)) ?? Date(); kind = entry.kind

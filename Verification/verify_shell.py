@@ -10,7 +10,7 @@ app = root / 'Wealthy/Wealthy'
 strings = json.loads((app/'Localizable.xcstrings').read_text())['strings']
 for key,row in strings.items():
     assert set(row['localizations']) == {'en','ja','es','ko'}, key
-    formats = [re.findall(r'%[d@sf]',v['stringUnit']['value']) for v in row['localizations'].values()]
+    formats = [sorted((int(position) if position else index, kind) for index, (position, kind) in enumerate(re.findall(r'%(?:(\d+)\$)?([d@sf])', v['stringUnit']['value']), start=1)) for v in row['localizations'].values()]
     assert all(value == formats[0] for value in formats), key
 for source in app.glob('*.swift'):
     text = source.read_text()

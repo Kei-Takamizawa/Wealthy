@@ -10,22 +10,88 @@ struct GoalsView: View {
     @State private var includeFixed = false
     @State private var weekStart = 2
     @State private var monthDate = Date()
+    @State private var editingUnset = false
     var month: LedgerMonth { LedgerMonth(day: try! LedgerDay(date: monthDate, calendar: .current)) }
+    var hasTargetVersion: Bool { session.core?.state.targets.contains { $0.envelopeID == envelopeID && $0.categoryID == nil && $0.currencyCode == session.currency && $0.effectiveMonth == month } ?? false }
+    var previousMonth: LedgerMonth? {
+        var calendar = Calendar(identifier: .gregorian); calendar.timeZone = session.locale.timeZone ?? .current
+        guard let date = calendar.date(from: DateComponents(year: month.year, month: month.month, day: 1)),
+              let previous = calendar.date(byAdding: .month, value: -1, to: date),
+              let day = try? LedgerDay(date: previous, calendar: calendar) else { return nil }
+        return LedgerMonth(day: day)
+    }
+    var previousTarget: TargetValue? {
+        guard let core = session.core, let previousMonth else { return nil }
+        return LedgerQueries.effectiveTarget(in: core.state, month: previousMonth, envelopeID: envelopeID, currencyCode: session.currency)
+    }
     var categories: [CategoryValue] { session.core?.state.categories.filter { $0.envelopeID == envelopeID && $0.kind == .expense && !$0.isArchived } ?? [] }
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
                 Text(session.t("goals")).font(V4.heading(session.language))
                 MonthControl(date: $monthDate)
-                Plate { VStack(alignment: .leading, spacing: 12) { Text(session.t("monthlyTarget")); amountField("overall"); Text(session.t("notBalance")).font(.footnote) } }
-                Plate { VStack(alignment: .leading, spacing: 16) { ForEach(categories) { category in Text(session.categoryName(category)); amountField(category.id.uuidString) } } }
-                Plate { VStack(spacing: 12) { Toggle(session.t("includeFixed"), isOn: $includeFixed).frame(minHeight: 52); Picker(session.t("weekStart"), selection: $weekStart) { ForEach(1...7, id: \.self) { Text(session.locale.calendar.weekdaySymbols[$0 - 1]).tag($0) } }.frame(minHeight: 52) } }
-                Text(session.t("targetVersionDetail")).font(.footnote)
-                Button(session.t("save")) { session.perform { try save() } }.buttonStyle(PrimaryButton()).accessibilityIdentifier("saveGoals")
+                if !hasTargetVersion && !editingUnset {
+                    unsetPresentation
+                } else {
+                    Plate { VStack(alignment: .leading, spacing: 12) { Text(session.t("monthlyTarget")); amountField("overall"); Text(session.t("notBalance")).font(.footnote) } }
+                    Plate { VStack(alignment: .leading, spacing: 16) { ForEach(categories) { category in Text(session.categoryName(category)); amountField(category.id.uuidString) } } }
+                    Plate { VStack(spacing: 12) { Toggle(session.t("includeFixed"), isOn: $includeFixed).frame(minHeight: 52); Picker(session.t("weekStart"), selection: $weekStart) { ForEach(1...7, id: \.self) { Text(session.locale.calendar.weekdaySymbols[$0 - 1]).tag($0) } }.frame(minHeight: 52) } }
+                    Text(session.t("targetVersionDetail")).font(.footnote)
+                    Button(session.t("save")) { session.perform { try save() } }.buttonStyle(PrimaryButton()).accessibilityIdentifier("saveGoals")
+                }
             }.padding(16)
-        }.background(V4.paper(scheme)).task { load() }.onChange(of: monthDate) { load() }
+        }.background(V4.paper(scheme)).task { load() }.onChange(of: monthDate) { editingUnset = false; load() }
     }
-    func amountField(_ key: String) -> some View { TextField("", text: Binding(get: { amounts[key] ?? "" }, set: { amounts[key] = $0 }), prompt: Text(session.t("targetUnset")).foregroundStyle(V4.ink2(scheme))).accessibilityLabel(key == "overall" ? session.t("monthlyTarget") : categories.first(where: { $0.id.uuidString == key }).map(session.categoryName) ?? session.t("category")).keyboardType(.decimalPad).font(.system(.title2, design: .rounded).monospacedDigit()).frame(minHeight: 52).accessibilityIdentifier(key == "overall" ? "overallTarget" : "categoryTarget-\(key)") }
+    var unsetPresentation: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            Plate {
+                VStack(alignment: .leading, spacing: 14) {
+                    Image(systemName: "star").font(.title2).foregroundStyle(V4.primary(scheme)).frame(maxWidth: .infinity)
+                    Text(session.t("goalsUnsetTitle")).font(V4.heading(session.language, size: 24)).multilineTextAlignment(.center).frame(maxWidth: .infinity)
+                    Text(session.t("goalsUnsetDetail")).font(.body).foregroundStyle(V4.ink2(scheme)).multilineTextAlignment(.center).fixedSize(horizontal: false, vertical: true)
+                    Button(session.t("copyPreviousTarget")) { session.perform { try copyPreviousTargets() } }
+                        .buttonStyle(PrimaryButton()).disabled(previousTarget == nil).accessibilityIdentifier("copyPreviousTarget")
+                    Button(session.t("setTargetManually")) { load(); editingUnset = true }
+                        .buttonStyle(.bordered).frame(maxWidth: .infinity, minHeight: 48).accessibilityIdentifier("setTargetManually")
+                }
+            }
+            targetHistory
+        }
+    }
+    var targetHistory: some View {
+        Group {
+            if let core = session.core {
+                let history = core.state.targets.filter { $0.envelopeID == envelopeID && $0.categoryID == nil && $0.currencyCode == session.currency && $0.effectiveMonth < month }.sorted { $0.effectiveMonth > $1.effectiveMonth }.prefix(4)
+                if !history.isEmpty {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text(session.t("targetHistory")).font(V4.heading(session.language, size: 20))
+                        Plate { VStack(spacing: 8) {
+                            ForEach(Array(history), id: \.id) { target in
+                                HStack {
+                                    Text(monthLabel(target.effectiveMonth)).foregroundStyle(V4.ink(scheme))
+                                    Spacer(minLength: 12)
+                                    Text(session.money(target.amountMinor)).font(.system(.body, design: .rounded).monospacedDigit()).foregroundStyle(V4.ink(scheme))
+                                }.frame(minHeight: 44)
+                            }
+                        } }
+                    }
+                }
+            }
+        }
+    }
+    func monthLabel(_ value: LedgerMonth) -> String {
+        var components = DateComponents(); components.year = value.year; components.month = value.month; components.day = 1
+        guard let date = session.locale.calendar.date(from: components) else { return "\(value.year)-\(value.month)" }
+        let formatter = DateFormatter(); formatter.locale = session.locale; formatter.setLocalizedDateFormatFromTemplate("yMMMM")
+        return formatter.string(from: date)
+    }
+    func amountField(_ key: String) -> some View {
+        MoneyInputField(text: Binding(get: { amounts[key] ?? "" }, set: { amounts[key] = $0 }),
+                        label: key == "overall" ? session.t("monthlyTarget") : categories.first(where: { $0.id.uuidString == key }).map(session.categoryName) ?? session.t("category"),
+                        identifier: key == "overall" ? "overallTarget" : "categoryTarget-\(key)",
+                        font: .system(.title2, design: .rounded),
+                        prompt: Text(session.t("targetUnset")).foregroundStyle(V4.ink2(scheme)))
+    }
     func load() {
         guard let core = session.core else { return }
         includeFixed = core.state.settings.includeFixedCostsInTargets; weekStart = core.state.settings.weekStart
@@ -51,6 +117,24 @@ struct GoalsView: View {
         }
         for command in commands { try session.run(command) }
         dismiss()
+    }
+    func copyPreviousTargets() throws {
+        guard let core = session.core, let previousMonth, previousTarget != nil else { throw CoreError.saveFailed }
+        let keys: [String?] = [nil] + categories.map { Optional($0.id.uuidString) }
+        var commands: [LedgerCommand] = []
+        for key in keys {
+            let categoryID = key.flatMap(UUID.init(uuidString:))
+            if let target = LedgerQueries.effectiveTarget(in: core.state, month: previousMonth, envelopeID: envelopeID, categoryID: categoryID, currencyCode: session.currency) {
+                commands.append(.setTarget(TargetValue(envelopeID: envelopeID, categoryID: categoryID, currencyCode: session.currency, amountMinor: target.amountMinor, effectiveMonth: month)))
+            }
+        }
+        guard !commands.isEmpty else { throw CoreError.saveFailed }
+        for command in commands {
+            guard let preview = session.core?.preview(command, now: Date()), preview.errors.isEmpty else { throw CoreError.saveFailed }
+        }
+        for command in commands { try session.run(command) }
+        load()
+        editingUnset = false
     }
 }
 struct TaxView: View {

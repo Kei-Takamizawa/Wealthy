@@ -4,6 +4,7 @@ import XCTest
     let app = XCUIApplication(bundleIdentifier: "com.harrison.Wealthy")
     override func setUpWithError() throws { continueAfterFailure = false }
     func capture(_ name: String) {
+        XCTAssertTrue(app.descendants(matching: .any).matching(identifier: "ledgerLoading").firstMatch.waitForNonExistence(timeout: 30), app.debugDescription)
         XCTAssertEqual(app.alerts.count, 0, app.debugDescription)
         let shot = XCTAttachment(screenshot: app.screenshot()); shot.name = name; shot.lifetime = .keepAlways; add(shot)
     }
@@ -20,7 +21,7 @@ import XCTest
     func onboard(_ language: String = "en", flags: [String] = []) throws {
         app.launchArguments = ["--cycle2a-test", "-v4.language", language, "-v4.currency", "JPY", "-v4.onboarded", "NO"] + flags
         app.launch()
-        if app.staticTexts["Apple Intelligence is required"].waitForExistence(timeout: 2) { throw XCTSkip("Real Apple Intelligence availability gate is closed; no bypass used.") }
+        if app.staticTexts["Apple Intelligence is required"].waitForExistence(timeout: 2) { XCTFail("Real Apple Intelligence availability gate is closed; no bypass used."); throw NSError(domain: "Cycle2aTests", code: 1) }
         XCTAssertTrue(app.buttons["onboardingNext"].waitForExistence(timeout: 20), app.debugDescription)
         capture("onboarding-language-\(language)-\(flags.joined(separator: "-"))"); app.buttons["onboardingNext"].tap(); capture("onboarding-currency-\(language)-\(flags.joined(separator: "-"))"); app.buttons["onboardingNext"].tap()
         enter("onboardingAmount", "40000"); capture("onboarding-target-\(language)-\(flags.joined(separator: "-"))"); tap("onboardingNext"); capture("onboarding-child-\(language)-\(flags.joined(separator: "-"))"); tap("onboardingNext")
@@ -96,11 +97,11 @@ import XCTest
         capture("manual-tax-preserved")
     }
     func testChildEnvelopeAndLicenseFlow() throws {
-        try onboard(flags: ["--reduce-motion"]); tap("Info"); tap("Child envelope setup")
-        app.switches["Use child envelope"].firstMatch.tap(); tap("Targets"); enter("overallTarget", "80000"); tap("saveGoals")
+        try onboard(); tap("Info"); tap("Child envelope setup")
+        app.switches["Use child envelope"].firstMatch.tap(); tap("Targets"); tap("setTargetManually"); enter("overallTarget", "80000"); tap("saveGoals")
         app.navigationBars.buttons.firstMatch.tap()
         for _ in 0..<6 { app.swipeDown() }
-        tap("Child envelope"); tap("To island"); tap("addEntry"); enter("entryAmount", "3600")
+        tap("Child envelope"); tap("To island"); tap("addEntry"); enter("entryAmount", "3600"); tap("Child envelope")
         app.buttons["entryCategory"].tap(); tap("Food"); app.buttons["entryService"].tap(); tap("Takeout (8%)"); tap("saveEntry")
         tap("Info"); tap("Consumption tax")
         XCTAssertTrue(app.staticTexts["¥266"].waitForExistence(timeout: 5), app.debugDescription); capture("child-tax")
@@ -133,6 +134,11 @@ import XCTest
             app.launchArguments = ["--cycle2a-test", "--cycle2a-seed", "-v4.language", "en", "--screen", screen]
             app.launch()
             XCTAssertTrue(app.staticTexts.firstMatch.waitForExistence(timeout: 15))
+            if screen == "result" {
+                let explanation = app.staticTexts["resultLateDetail"]
+                for _ in 0..<6 { if explanation.isHittable { break }; app.swipeUp() }
+                XCTAssertTrue(explanation.isHittable, app.debugDescription)
+            }
             capture("audit-preview-\(screen)")
             var issues: [String] = []
             try app.performAccessibilityAudit(for: [.contrast, .textClipped, .hitRegion, .sufficientElementDescription]) { issue in
@@ -168,10 +174,10 @@ import XCTest
                 app.launchArguments = ["--cycle2a-test", "--cycle2a-seed", "--unset", "-v4.language", language, "-v4.currency", "JPY", "--screen", "goals"]
                 if variant == "dark" { app.launchArguments.append("--dark") }
                 if variant == "ax3" { app.launchArguments.append("--ax3") }
-                app.launch(); XCTAssertTrue(app.textFields["overallTarget"].waitForExistence(timeout: 15))
-                XCTAssertTrue((app.textFields["overallTarget"].value as? String ?? "").isEmpty)
-                XCTAssertNotNil(app.textFields["overallTarget"].placeholderValue)
-                capture("matrix-\(language)-\(variant)-goals-unset"); app.terminate()
+                app.launch(); XCTAssertTrue(app.buttons["setTargetManually"].waitForExistence(timeout: 15))
+                XCTAssertFalse(app.textFields["overallTarget"].exists)
+                capture("matrix-\(language)-\(variant)-goals-unset")
+                app.buttons["setTargetManually"].tap(); XCTAssertTrue(app.textFields["overallTarget"].exists); app.terminate()
             }
         }
     }
@@ -210,7 +216,7 @@ import XCTest
         XCTAssertTrue(app.staticTexts["¥266"].waitForExistence(timeout: 5), app.debugDescription)
     }
     func testNormalNewStoreLaunch() throws {
-        app.launchArguments = ["--cycle2a-clear-created-preferences"]
+        app.launchArguments = ["--cycle2a-test", "--disk-test", UUID().uuidString]
         app.launch()
         XCTAssertTrue(app.buttons["onboardingNext"].waitForExistence(timeout: 30), app.debugDescription)
         capture("normal-new-store-onboarding")
@@ -274,4 +280,76 @@ import XCTest
         }
     }
 
+}
+
+// Persisted onboarding uses a real disk ledger and isolated preferences, retained across process termination.
+extension Cycle2aUITests {
+    func testPersistedOnboardingRelaunch() throws {
+        let id = UUID().uuidString
+        app.launchArguments = ["--cycle2a-test", "--disk-test", id]
+        app.launch()
+        XCTAssertTrue(app.buttons["onboardingNext"].waitForExistence(timeout: 20))
+        app.buttons["language"].tap(); tap("Español")
+        tap("onboardingNext")
+        app.buttons["currency"].tap(); tap("KRW")
+        tap("onboardingNext"); enter("onboardingAmount", "40000"); tap("onboardingNext"); tap("onboardingNext")
+        XCTAssertTrue(app.buttons["addEntry"].waitForExistence(timeout: 10)); capture("persisted-onboarding-home-before")
+        app.terminate(); app.launch()
+        XCTAssertTrue(app.buttons["addEntry"].waitForExistence(timeout: 20))
+        XCTAssertFalse(app.buttons["onboardingNext"].exists)
+        XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "40.000")).firstMatch.exists, app.debugDescription)
+        XCTAssertTrue(app.buttons["homeInfo"].label.contains("Información"), app.debugDescription)
+        capture("persisted-onboarding-home-after")
+        tap("Ajustes"); XCTAssertTrue(app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "KRW")).firstMatch.exists, app.debugDescription)
+        capture("persisted-onboarding-settings")
+    }
+    func testMonthResultStatesMatrix() throws {
+        for state in ["achieved", "over", "few"] {
+            for mode in ["light", "dark", "ax3"] {
+                app.launchArguments = ["--cycle2a-test", "--cycle2a-seed", "--month-" + state, "-v4.language", "en", "-v4.currency", "JPY", "--screen", "month-result"]
+                if mode == "dark" { app.launchArguments.append("--dark") }
+                if mode == "ax3" { app.launchArguments.append("--ax3") }
+                app.launch(); XCTAssertTrue(app.staticTexts.firstMatch.waitForExistence(timeout: 15)); capture("month-result-\(state)-\(mode)"); app.terminate()
+            }
+        }
+    }
+    func testHomeAlwaysHousehold() throws {
+        app.launchArguments = ["--cycle2a-test", "--cycle2a-seed", "--child-info", "-v4.language", "en", "-v4.currency", "JPY"]
+        app.launch(); XCTAssertTrue(app.buttons["addEntry"].waitForExistence(timeout: 20))
+        XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "307,100")).firstMatch.exists, app.debugDescription)
+        capture("home-household-child-selected")
+        tap("homeInfo"); XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "76,400")).firstMatch.exists, app.debugDescription)
+        capture("info-child-selected")
+        tap("infoIsland"); XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "307,100")).firstMatch.exists, app.debugDescription)
+    }
+    func testLocalizedGroupedAmountFields() throws {
+        for (language, goal, entry) in [("en", "¥310,000", "¥2,400"), ("ja", "¥310,000", "¥2,400"), ("es", "310.000 ¥", "2.400 ¥"), ("ko", "JP¥310,000", "JP¥2,400")] {
+            for (screen, identifier, expected) in [("goals", "overallTarget", goal), ("edit", "entryAmount", entry)] {
+                app.launchArguments = ["--cycle2a-test", "--cycle2a-seed", "-v4.language", language, "-v4.currency", "JPY", "--screen", screen]
+                app.launch(); XCTAssertTrue(app.textFields[identifier].waitForExistence(timeout: 20))
+                XCTAssertEqual(app.textFields[identifier].value as? String, expected)
+                capture("grouped-\(language)-\(screen)"); app.terminate()
+            }
+        }
+    }
+    func testLaunchMetric1000() throws { try launchMetric(entries: 1000) }
+    func testLaunchMetric10000() throws { try launchMetric(entries: 10000) }
+    func testLaunchMetric50000() throws { try launchMetric(entries: 50000) }
+    func testHomeInteractiveMetric1000() throws { try launchMetric(entries: 1000, interactive: true) }
+    func testHomeInteractiveMetric10000() throws { try launchMetric(entries: 10000, interactive: true) }
+    func testHomeInteractiveMetric50000() throws { try launchMetric(entries: 50000, interactive: true) }
+    private func launchMetric(entries: Int, interactive: Bool = false) throws {
+        app.launchArguments = ["--cycle2a-test", "--cycle2a-performance", "--entry-count", String(entries), "-v4.language", "en", "-v4.currency", "JPY"]
+        if interactive { app.launchArguments.append("--measure-home-launch") }
+        app.launch(); XCTAssertTrue(app.buttons["addEntry"].waitForExistence(timeout: 120)); app.terminate()
+        let options = XCTMeasureOptions(); options.iterationCount = 5
+        let metrics: [XCTMetric] = interactive
+            ? [XCTApplicationLaunchMetric(waitUntilResponsive: true)] + ["HomeInteractive", "StoreOpen", "Snapshot", "QuerySnapshot", "HomeRender"].map { XCTOSSignpostMetric(subsystem: "com.harrison.Wealthy", category: "LedgerLaunch", name: $0) }
+            : [XCTApplicationLaunchMetric(waitUntilResponsive: false)]
+        measure(metrics: metrics, options: options) {
+            app.launch(); XCTAssertTrue(app.buttons["addEntry"].waitForExistence(timeout: 60))
+            if interactive { XCTAssertTrue(app.buttons["homeInfo"].isHittable); XCTAssertEqual(app.alerts.count, 0) }
+            app.terminate()
+        }
+    }
 }

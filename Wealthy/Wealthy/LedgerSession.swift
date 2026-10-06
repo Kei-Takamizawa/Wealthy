@@ -2,6 +2,8 @@ import Foundation
 import Observation
 import WealthyCore
 import FoundationModels
+import os
+import MetricKit
 
 @Observable @MainActor final class LedgerSession {
     static var isUITest: Bool {
@@ -11,33 +13,52 @@ import FoundationModels
         false
         #endif
     }
+    private var interactiveInterval: OSSignpostIntervalState?
+    private var renderInterval: OSSignpostIntervalState?
+    private(set) var isOpening = false
+    private let loadLog = OSSignposter(subsystem: "com.harrison.Wealthy", category: "LedgerLaunch")
+    private static var testDiskID: String? {
+        #if DEBUG
+        let args = ProcessInfo.processInfo.arguments
+        if isUITest, let i = args.firstIndex(of: "--disk-test"), args.count > i + 1 { return args[i + 1] }
+        #endif
+        return nil
+    }
+    private static var preferences: UserDefaults {
+        if let id = testDiskID { return UserDefaults(suiteName: "Cycle2aOnboarding-" + id)! }
+        return .standard
+    }
+    private static var persistsPreferences: Bool { !isUITest || testDiskID != nil }
     private(set) var core: LedgerCore?
     var error: String?
-    var language: String { didSet { if !Self.isUITest { UserDefaults.standard.set(language, forKey: "v4.language") } } }
-    var currency: String { didSet { if !Self.isUITest { UserDefaults.standard.set(currency, forKey: "v4.currency") } } }
-    var onboarded: Bool { didSet { if !Self.isUITest { UserDefaults.standard.set(onboarded, forKey: "v4.onboarded") } } }
+    var language: String { didSet { if Self.persistsPreferences { Self.preferences.set(language, forKey: "v4.language") } } }
+    var currency: String { didSet { if Self.persistsPreferences { Self.preferences.set(currency, forKey: "v4.currency") } } }
+    var onboarded: Bool { didSet { if Self.persistsPreferences { Self.preferences.set(onboarded, forKey: "v4.onboarded") } } }
     var readiness = "notReady"
     private(set) var available = false
     var summary: IslandSummary?
+    var householdSummary: IslandSummary?
     var recentResults: [TargetStatus] = []
     var envelopeID = EnvelopeValue.householdID
     var today: LedgerDay {
         #if DEBUG
-        if Self.isUITest && ProcessInfo.processInfo.arguments.contains("--cycle2a-seed") { return try! LedgerDay(year: 2026, month: 10, day: 11) }
+        if Self.isUITest && ProcessInfo.processInfo.arguments.contains("--cycle2a-performance") { return try! LedgerDay(year: 2026, month: 10, day: 15) }
+        if Self.isUITest && ProcessInfo.processInfo.arguments.contains("--cycle2a-seed") { return try! LedgerDay(year: 2026, month: 10, day: ProcessInfo.processInfo.arguments.contains(where: { $0.hasPrefix("--month-") }) ? 31 : 11) }
         #endif
         return try! LedgerDay(date: Date(), calendar: .current)
     }
     var locale: Locale { Locale(identifier: ["en":"en_US", "ja":"ja_JP", "es":"es_ES", "ko":"ko_KR"][language] ?? "en_US") }
     init() {
+        language = Self.preferences.string(forKey: "v4.language") ?? "en"
+        currency = Self.preferences.string(forKey: "v4.currency") ?? "JPY"
+        onboarded = Self.preferences.bool(forKey: "v4.onboarded")
         #if DEBUG
-        if ProcessInfo.processInfo.arguments.contains("--cycle2a-clear-created-preferences") {
-            // Clear only the new keys created by this cycle's early test run; never legacy keys.
-            for key in ["v4.language", "v4.currency", "v4.onboarded"] { UserDefaults.standard.removeObject(forKey: key) }
+        if Self.isUITest && ProcessInfo.processInfo.arguments.contains("--measure-home-launch") {
+            do { try MXMetricManager.extendLaunchMeasurement(forTaskID: MXLaunchTaskID("ledger-home-ready")) }
+            catch { self.error = t("queryError"); print("EXTENDED_LAUNCH_TRACKING_FAILED: \(error)") }
         }
         #endif
-        language = UserDefaults.standard.string(forKey: "v4.language") ?? "en"
-        currency = UserDefaults.standard.string(forKey: "v4.currency") ?? "JPY"
-        onboarded = UserDefaults.standard.bool(forKey: "v4.onboarded")
+        interactiveInterval = loadLog.beginInterval("HomeInteractive")
         refreshAvailability()
     }
     func refreshAvailability() {
@@ -53,8 +74,31 @@ import FoundationModels
             }
         }
     }
+    /// Defer synchronous Core work until the loading view has been presented.
+    func openAfterPresentation() async {
+        guard !isOpening, core == nil else { return }
+        isOpening = true
+        defer { isOpening = false }
+        await Task.yield()
+        await DisplayFrameWaiter.wait()
+        guard !Task.isCancelled else { return }
+        open()
+    }
+    func homePresented() async {
+        await DisplayFrameWaiter.wait()
+        if let renderInterval { loadLog.endInterval("HomeRender", renderInterval); self.renderInterval = nil }
+        if let interactiveInterval { loadLog.endInterval("HomeInteractive", interactiveInterval); self.interactiveInterval = nil }
+        #if DEBUG
+        if Self.isUITest && ProcessInfo.processInfo.arguments.contains("--measure-home-launch") {
+            do { try MXMetricManager.finishExtendedLaunchMeasurement(forTaskID: MXLaunchTaskID("ledger-home-ready")) }
+            catch { self.error = t("queryError"); print("EXTENDED_LAUNCH_FINISH_FAILED: \(error)") }
+        }
+        #endif
+    }
     func open() {
         guard available, core == nil else { return }
+        let interval = loadLog.beginInterval("LedgerOpen")
+        defer { loadLog.endInterval("LedgerOpen", interval) }
         do {
             #if DEBUG
             let isolated = Self.isUITest
@@ -63,8 +107,19 @@ import FoundationModels
             #endif
             #if DEBUG
             let performance = isolated && ProcessInfo.processInfo.arguments.contains("--cycle2a-performance")
-            let directory = performance ? FileManager.default.temporaryDirectory.appendingPathComponent("Cycle2aPerformance", isDirectory: true) : nil
-            core = try LedgerCore(store: LedgerStore(inMemory: isolated && !performance, directory: directory))
+            let directory: URL?
+            if let id = Self.testDiskID { directory = FileManager.default.temporaryDirectory.appendingPathComponent("Cycle2aOnboarding-" + id, isDirectory: true) }
+            else if performance {
+                let args = ProcessInfo.processInfo.arguments
+                let size = args.firstIndex(of: "--entry-count").flatMap { $0 + 1 < args.count ? Int(args[$0 + 1]) : nil } ?? 50000
+                directory = FileManager.default.temporaryDirectory.appendingPathComponent("Cycle2aPerformance-\(size)", isDirectory: true)
+            } else { directory = nil }
+            let storeInterval = loadLog.beginInterval("StoreOpen")
+            let store = try LedgerStore(inMemory: isolated && !performance && Self.testDiskID == nil, directory: directory)
+            loadLog.endInterval("StoreOpen", storeInterval)
+            let snapshotInterval = loadLog.beginInterval("Snapshot")
+            core = try LedgerCore(store: store)
+            loadLog.endInterval("Snapshot", snapshotInterval)
             if performance { try preparePerformanceStore() }
             #else
             core = try LedgerCore(store: LedgerStore(inMemory: isolated))
@@ -73,6 +128,7 @@ import FoundationModels
             if isolated && ProcessInfo.processInfo.arguments.contains("--cycle2a-seed") { try seedUITest() }
             #endif
             refresh()
+            renderInterval = loadLog.beginInterval("HomeRender")
         }
         catch { self.error = t("storeError") }
     }
@@ -88,8 +144,20 @@ import FoundationModels
     }
     func input(_ amount: Int) -> String { (try? CoreCurrency.inputText(amount, currencyCode: currency, locale: locale)) ?? "" }
     func parse(_ text: String) throws -> Int {
-        guard let value = try CoreCurrency.parseMinorUnits(text, currencyCode: currency, locale: locale) else { throw CoreError.invalidField("amount", nil) }
+        var numeric = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        let formatter = NumberFormatter(); formatter.locale = locale; formatter.numberStyle = .currency; formatter.currencyCode = currency
+        let symbols = currency == "JPY" ? ["JP¥", "¥", currency] : [formatter.currencySymbol ?? currency, currency]
+        for symbol in symbols {
+            if numeric.hasPrefix(symbol) { numeric.removeFirst(symbol.count) }
+            if numeric.hasSuffix(symbol) { numeric.removeLast(symbol.count) }
+            numeric = numeric.trimmingCharacters(in: .whitespacesAndNewlines)
+        }
+        guard let value = try CoreCurrency.parseMinorUnits(numeric, currencyCode: currency, locale: locale) else { throw CoreError.invalidField("amount", nil) }
         return value
+    }
+    func formattedInput(_ text: String) -> String {
+        guard let amount = try? parse(text) else { return text }
+        return money(amount)
     }
     func run(_ command: LedgerCommand) throws {
         guard let core else { throw CoreError.saveFailed }
@@ -98,8 +166,11 @@ import FoundationModels
     func perform(_ action: () throws -> Void) { do { try action() } catch { self.error = t("invalidInput") } }
     func refresh() {
         guard let core else { return }
+        let interval = loadLog.beginInterval("QuerySnapshot")
+        defer { loadLog.endInterval("QuerySnapshot", interval) }
         do {
-            summary = try LedgerQueries.islandSummary(in: core.state, today: today, envelopeID: envelopeID, currencyCode: currency)
+            householdSummary = try LedgerQueries.islandSummary(in: core.state, today: today, envelopeID: EnvelopeValue.householdID, currencyCode: currency)
+            summary = envelopeID == EnvelopeValue.householdID ? householdSummary : try LedgerQueries.islandSummary(in: core.state, today: today, envelopeID: envelopeID, currencyCode: currency)
             recentResults = try LedgerQueries.recentlyEndedResults(in: core.state, today: today, envelopeID: envelopeID, currencyCode: currency)
         } catch { self.error = t("queryError") }
     }
@@ -121,9 +192,11 @@ import FoundationModels
     #if DEBUG
     private func preparePerformanceStore() throws {
         guard let core else { return }
-        if core.state.entries.count != 50000 {
+        let args = ProcessInfo.processInfo.arguments
+        let count = args.firstIndex(of: "--entry-count").flatMap { $0 + 1 < args.count ? Int(args[$0 + 1]) : nil } ?? 50000
+        if core.state.entries.count != count {
             var state = core.state
-            state.entries = (0..<50000).map { _ in EntryValue(kind: .expense, amount: 1, currencyCode: "JPY", day: today) }
+            state.entries = (0..<count).map { _ in EntryValue(kind: .expense, amount: 1, currencyCode: "JPY", day: today) }
             state.targets = [TargetValue(currencyCode: "JPY", amountMinor: 310000, effectiveMonth: LedgerMonth(day: today))]
             let archive = LedgerBackupArchive(exportDate: Date(), appVersion: "Cycle2aTest", coreVersion: "2", state: state)
             try LedgerBackup.restore(JSONEncoder().encode(archive), into: core)
@@ -134,6 +207,11 @@ import FoundationModels
         let args = ProcessInfo.processInfo.arguments
         let first = try LedgerDay(year: 2026, month: 10, day: 1)
         if !args.contains("--unset") { try run(.setTarget(TargetValue(currencyCode: "JPY", amountMinor: 310000, effectiveMonth: LedgerMonth(day: first)))) }
+        if args.contains("--month-achieved") || args.contains("--month-over") || args.contains("--month-few") {
+            let logged = args.contains("--month-few") ? 10 : 25
+            for offset in 0..<logged { try run(.markNoSpend(first.adding(days: offset, calendar: .current))) }
+            if args.contains("--month-over") { try run(.addEntry(EntryValue(kind: .expense, amount: 400000, currencyCode: "JPY", day: first, title: "Test month expense"))) }
+        }
         let week = try LedgerPeriod.week(containing: today)
         let logged = args.contains("--few") ? 2 : 6
         for offset in 0..<logged { try run(.markNoSpend(week.start.adding(days: offset, calendar: .current))) }
