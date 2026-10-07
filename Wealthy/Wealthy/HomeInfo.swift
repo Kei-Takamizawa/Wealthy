@@ -37,10 +37,10 @@ struct HomeView: View {
             Section {
                 if let summary = session.householdSummary {
                     IslandScene(growth: summary.days.filter(\.hasGrowth).count, festivals: summary.festivals, dusk: summary.week.isOver)
-                        .frame(height: 100)
+                        .frame(height: 72)
                         .accessibilityElement(children: .ignore)
                         .accessibilityLabel(String(format: session.t("islandLabel"), summary.festivals, summary.days.filter(\.hasGrowth).count))
-                    weeklyCard(summary.week, summary: summary)
+                    weeklyCard(summary.week)
                     monthCard(summary.month)
                 }
             }
@@ -57,10 +57,6 @@ struct HomeView: View {
                 Button { session.perform { try session.run(.markNoSpend(session.today, envelopeID: EnvelopeValue.householdID)) } } label: {
                     Label(session.t("noSpend"), systemImage: "checkmark.circle").frame(maxWidth: .infinity, minHeight: 44)
                 }.buttonStyle(.bordered).accessibilityIdentifier("noSpend")
-                HStack {
-                    NavigationLink { GoalsView(envelopeID: EnvelopeValue.householdID) } label: { Label(session.t("goals"), systemImage: "target") }.buttonStyle(.bordered)
-                    NavigationLink { SettingsView() } label: { Label(session.t("settings"), systemImage: "gear") }.buttonStyle(.bordered)
-                }
             }
         }
         .navigationTitle(session.t("home"))
@@ -81,19 +77,26 @@ struct HomeView: View {
         }
         .task { await session.homePresented() }
     }
-    private func weeklyCard(_ status: TargetStatus, summary: IslandSummary) -> some View {
-        Section {
-            LabeledContent(session.t("leftThisWeek"), value: status.remaining.map { session.money($0) } ?? session.t("targetUnset"))
-            Text(session.t("notBalance"))
-            if status.isSet { ProgressView(value: status.displayFill, total: 1).tint(status.isOver ? V4.over(scheme) : V4.ok(scheme)) }
-            if status.isSet, let allowance = status.allowance {
-                LabeledContent(session.t("allowance"), value: session.money(allowance))
-                LabeledContent(session.t("spent"), value: session.money(status.spent))
-            }
-            HStack(spacing: 8) {
-                Image(systemName: status.isOver ? "moon.fill" : status.isSet ? "checkmark.circle.fill" : "circle.dotted")
-                    .foregroundStyle(status.isOver ? V4.over(scheme) : status.isSet ? V4.ok(scheme) : .secondary)
-                Text(session.t(status.isOver ? "over" : status.isSet ? "within" : "unset"))
+    private func weeklyCard(_ status: TargetStatus) -> some View {
+        GroupBox {
+            VStack(alignment: .leading, spacing: 8) {
+                LabeledContent(session.t("leftThisWeek"), value: status.remaining.map { session.money($0) } ?? session.t("targetUnset"))
+                Text(session.t("notBalance")).font(.footnote)
+                if status.isSet { ProgressView(value: status.displayFill, total: 1).tint(status.isOver ? V4.over(scheme) : V4.ok(scheme)) }
+                if status.isSet, let allowance = status.allowance {
+                    HStack {
+                        Text(session.t("allowance")); Text(session.money(allowance)).monospacedDigit()
+                        Spacer(minLength: 8)
+                        Text(session.t("spent")); Text(session.money(status.spent)).monospacedDigit()
+                    }.font(.subheadline)
+                }
+                HStack(spacing: 8) {
+                    Image(systemName: status.isOver ? "moon.fill" : status.isSet ? "checkmark.circle.fill" : "circle.dotted")
+                        .foregroundStyle(status.isOver ? V4.over(scheme) : status.isSet ? V4.ok(scheme) : .secondary)
+                    Text(session.t(status.isOver ? "over" : status.isSet ? "within" : "unset"))
+                    Spacer()
+                    Text(String(format: session.t("loggedDays"), status.loggedDays)).font(.footnote)
+                }
             }
         }
         .accessibilityElement(children: .combine)
@@ -101,10 +104,16 @@ struct HomeView: View {
     }
     private func monthCard(_ status: TargetStatus) -> some View {
         Section {
-            VStack(alignment: .leading, spacing: 8) {
+            VStack(alignment: .leading, spacing: 4) {
                 Label(session.t("notBalance"), systemImage: "info.circle")
-                LabeledContent(session.t("spent"), value: session.money(status.spent))
-                LabeledContent(session.t("leftThisMonth"), value: status.remaining.map { session.money($0) } ?? session.t("targetUnset"))
+                HStack {
+                    Text(session.t("spent"))
+                    Spacer(minLength: 8)
+                    Text(session.money(status.spent)).monospacedDigit()
+                    Spacer(minLength: 16)
+                    Text(session.t("leftThisMonth"))
+                    Text(status.remaining.map { session.money($0) } ?? session.t("targetUnset")).monospacedDigit()
+                }
             }
         }
     }
@@ -123,7 +132,7 @@ struct HomeView: View {
                 Image(systemName: icon).font(.title3).foregroundStyle(state == .over ? V4.over(scheme) : state == .future || state == .unlogged ? .secondary : V4.ok(scheme)).frame(height: 32)
                 Text((try? day.day.date(calendar: .current))?.formatted(.dateTime.weekday(.narrow).locale(session.locale)) ?? "\(day.day.day)")
                     .font(.subheadline.weight(.semibold))
-            }.frame(maxWidth: .infinity).accessibilityElement(children: .ignore)
+            }.frame(width: 44, height: 52).contentShape(Rectangle()).accessibilityElement(children: .ignore)
                 .accessibilityLabel("\(day.day.formatted), \(session.t(day.presentationState == .noSpend ? "noSpendMarked" : day.presentationState.rawValue))")
         }
     }
@@ -144,6 +153,7 @@ struct InfoView: View {
                 }.pickerStyle(.segmented).frame(minHeight: 44)
                 if let s = session.summary { AllowanceSummary(title: "leftThisWeek", status: s.week); AllowanceSummary(title: "leftThisMonth", status: s.month) }
                 NavigationLink { GoalsView(envelopeID: session.envelopeID) } label: { Label(session.t("goals"), systemImage: "target").frame(minHeight: 52) }
+                NavigationLink { SettingsView() } label: { Label(session.t("settings"), systemImage: "gear").frame(minHeight: 52) }
                 categoryTargets
                 NavigationLink { TaxView() } label: { Label(session.t("tax"), systemImage: "percent").frame(minHeight: 52) }
                 if session.envelopeID != EnvelopeValue.householdID { NavigationLink { ChildDetailView() } label: { Label(session.t("childDetail"), systemImage: "leaf").frame(minHeight: 52) } }

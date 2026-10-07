@@ -6,14 +6,22 @@
 	objectVersion = 77;
 	objects = {
 
-
 /* Begin PBXBuildFile section */
         C10000000000000000000001 /* WealthyCore in Frameworks */ = {isa = PBXBuildFile; productRef = C10000000000000000000003 /* WealthyCore */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		84BE02D62EFFDCA6000C29F9 /* Wealthy.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Wealthy.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		C24000000000000000000001 /* WealthyUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = WealthyUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
+
+/* Begin PBXContainerItemProxy section */
+		C24000000000000000000002 /* Wealthy app test host proxy */ = {isa = PBXContainerItemProxy; containerPortal = 84BE02CE2EFFDCA6000C29F9 /* Project object */; proxyType = 1; remoteGlobalIDString = 84BE02D52EFFDCA6000C29F9; remoteInfo = Wealthy; };
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXTargetDependency section */
+		C24000000000000000000003 /* Wealthy app host dependency */ = {isa = PBXTargetDependency; target = 84BE02D52EFFDCA6000C29F9 /* Wealthy */; targetProxy = C24000000000000000000002 /* Wealthy app test host proxy */; };
+/* End PBXTargetDependency section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
 		844873CD2F035D0100E280FB /* Exceptions for "Wealthy" folder in "Wealthy" target */ = {
@@ -34,6 +42,7 @@
 			path = Wealthy;
 			sourceTree = "<group>";
 		};
+		C24000000000000000000004 /* WealthyUITests */ = {isa = PBXFileSystemSynchronizedRootGroup; path = ../WealthyUITests; sourceTree = SOURCE_ROOT; };
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -45,6 +54,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		C24000000000000000000007 /* Frameworks */ = {isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -68,6 +78,7 @@
 			isa = PBXGroup;
 			children = (
 				84BE02D62EFFDCA6000C29F9 /* Wealthy.app */,
+				C24000000000000000000001 /* WealthyUITests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -97,6 +108,18 @@
 			productName = Wealthy;
 			productReference = 84BE02D62EFFDCA6000C29F9 /* Wealthy.app */;
 			productType = "com.apple.product-type.application";
+		};
+		C24000000000000000000005 /* WealthyUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = C24000000000000000000013 /* Build configuration list for PBXNativeTarget "WealthyUITests" */;
+			buildPhases = (C24000000000000000000006 /* Sources */, C24000000000000000000007 /* Frameworks */, C24000000000000000000008 /* Resources */, );
+			buildRules = ();
+			dependencies = (C24000000000000000000003 /* Wealthy app host dependency */, );
+			fileSystemSynchronizedGroups = (C24000000000000000000004 /* WealthyUITests */, );
+			name = WealthyUITests;
+			productName = WealthyUITests;
+			productReference = C24000000000000000000001 /* WealthyUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
 		};
 /* End PBXNativeTarget section */
 
@@ -134,6 +157,7 @@
 			projectRoot = "";
 			targets = (
 				84BE02D52EFFDCA6000C29F9 /* Wealthy */,
+				C24000000000000000000005 /* WealthyUITests */,
 			);
 		};
 /* End PBXProject section */
@@ -146,6 +170,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		C24000000000000000000008 /* Resources */ = {isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
@@ -156,6 +181,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		C24000000000000000000006 /* Sources */ = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
 /* End PBXSourcesBuildPhase section */
 
 /* Begin XCBuildConfiguration section */
@@ -356,6 +382,12 @@
 			};
 			name = Release;
 		};
+		C24000000000000000000011 /* WealthyUITests Debug */ = {isa = XCBuildConfiguration; buildSettings = {
+				CODE_SIGN_STYLE = Automatic; DEVELOPMENT_TEAM = 8M8WLS24AG; GENERATE_INFOPLIST_FILE = YES; IPHONEOS_DEPLOYMENT_TARGET = 26.0; PRODUCT_BUNDLE_IDENTIFIER = com.harrison.WealthyUITests; PRODUCT_NAME = "$(TARGET_NAME)"; SWIFT_APPROACHABLE_CONCURRENCY = YES; SWIFT_VERSION = 6.0; TARGETED_DEVICE_FAMILY = "1,2"; TEST_TARGET_NAME = Wealthy;
+			}; name = Debug; };
+		C24000000000000000000012 /* WealthyUITests Release */ = {isa = XCBuildConfiguration; buildSettings = {
+				CODE_SIGN_STYLE = Automatic; DEVELOPMENT_TEAM = 8M8WLS24AG; GENERATE_INFOPLIST_FILE = YES; IPHONEOS_DEPLOYMENT_TARGET = 26.0; PRODUCT_BUNDLE_IDENTIFIER = com.harrison.WealthyUITests; PRODUCT_NAME = "$(TARGET_NAME)"; SWIFT_APPROACHABLE_CONCURRENCY = YES; SWIFT_VERSION = 6.0; TARGETED_DEVICE_FAMILY = "1,2"; TEST_TARGET_NAME = Wealthy;
+			}; name = Release; };
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -377,9 +409,8 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
+		C24000000000000000000013 /* Build configuration list for PBXNativeTarget "WealthyUITests" */ = {isa = XCConfigurationList; buildConfigurations = (C24000000000000000000011 /* WealthyUITests Debug */, C24000000000000000000012 /* WealthyUITests Release */, ); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
 /* End XCConfigurationList section */
-
-
 
 /* Begin XCLocalSwiftPackageReference section */
         C10000000000000000000002 /* XCLocalSwiftPackageReference "../WealthyCore" */ = {

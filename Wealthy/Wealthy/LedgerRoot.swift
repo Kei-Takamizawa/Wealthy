@@ -135,26 +135,14 @@ struct LedgerTabs: View {
         guard (0...2).contains(destination) else { return }
         withAnimation(reduce ? nil : .easeInOut(duration: 0.2)) { page = destination }
     }
-    private func swipeGesture(for index: Int) -> some Gesture {
-        DragGesture(minimumDistance: 80)
-            .onEnded { value in
-                guard !UIAccessibility.isVoiceOverRunning,
-                      abs(value.translation.width) > abs(value.translation.height) * 1.6,
-                      abs(value.translation.width) > 100 else { return }
-                move(index + (value.translation.width < 0 ? 1 : -1))
-            }
-    }
     var body: some View {
         TabView(selection: $page) {
             NavigationStack { VoiceView() }
                 .tabItem { Label(session.t("voice"), systemImage: "mic") }.tag(0)
-                .simultaneousGesture(swipeGesture(for: 0))
             NavigationStack { HomeView(showResult: { result = $0 }) }
                 .tabItem { Label(session.t("home"), systemImage: "house") }.tag(1)
-                .simultaneousGesture(swipeGesture(for: 1))
             NavigationStack { InfoView(showResult: { result = $0 }) }
                 .tabItem { Label(session.t("info"), systemImage: "info.circle") }.tag(2)
-                .simultaneousGesture(swipeGesture(for: 2))
         }
         .accessibilityIdentifier("mainTabs")
         .toolbarBackground(.visible, for: .tabBar)
