@@ -95,7 +95,7 @@ Simulator: Wealthy iPhone 15 Pro (iPhone 15 Pro device type), iOS 27.0, UDID `87
 - 5 retained signpost measurements for 10k/50k, and a direct CPU utilization/battery metric.
 - The physical device was iPhone 16 Pro Max, not an iOS 26 device; iOS 26 hardware behavior was not checked.
 - No design-vs-implementation comparisons were requested in Cycle 2a.4; screenshots are implementation captures only.
-- `git diff --check` — PASS. Commits `600ceda` (`Add Wealthy UI test target and verification evidence`) and `7b08429` (`Finalize Cycle 2a.4 verification report`) were pushed to `origin/codex/wealthy-c2a4-uitest`; remote ref confirmed at `7b084291f35dd6351ae332a99363a913984c52fb`. PR #7 is open as a draft; no merge performed.
+- `git diff --check` — PASS. Commits `600ceda`, `7b08429`, and `e0ef0da` (`Record final Cycle 2a.4 remote state`) were pushed to `origin/codex/wealthy-c2a4-uitest`; final remote ref confirmed at `e0ef0dae5fecfd13700e15e7d1405fd13b6caa49`. PR #7 is open as a draft; no merge performed.
 
 ## Intentionally not performed
 
