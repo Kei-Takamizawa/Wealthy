@@ -1,20 +1,23 @@
-import XCTest
+@preconcurrency import XCTest
 
-@MainActor final class Cycle2aUITests: XCTestCase {
-    let app = XCUIApplication(bundleIdentifier: "com.harrison.Wealthy")
-    override func setUpWithError() throws {
-        continueAfterFailure = false
+final class Cycle2aUITests: XCTestCase {
+    @MainActor lazy var app: XCUIApplication = {
+        let application = XCUIApplication(bundleIdentifier: "com.harrison.Wealthy")
         if ProcessInfo.processInfo.environment["SIMULATOR_DEVICE_NAME"] != nil {
-            app.launchEnvironment["WEALTHY_CYCLE2A_TEST_AI_AVAILABLE"] = "1"
+            application.launchEnvironment["WEALTHY_CYCLE2A_TEST_AI_AVAILABLE"] = "1"
         }
-    }
+        return application
+    }()
+    @MainActor
     func capture(_ name: String) {
         XCTAssertTrue(app.descendants(matching: .any).matching(identifier: "ledgerLoading").firstMatch.waitForNonExistence(timeout: 30), app.debugDescription)
         XCTAssertEqual(app.alerts.count, 0, app.debugDescription)
         let shot = XCTAttachment(screenshot: app.screenshot()); shot.name = name; shot.lifetime = .keepAlways; add(shot)
     }
+    @MainActor
     func tap(_ label: String) {
         let button = app.buttons[label].firstMatch
+        @MainActor
         func unobscuredCenter() -> Bool {
             let bounds = app.frame
             let keyboard = app.keyboards.firstMatch
@@ -28,11 +31,13 @@ import XCTest
         XCTAssertTrue(unobscuredCenter(), "Button center is not visible above the keyboard: \(button.frame), keyboard: \(app.keyboards.firstMatch.frame)\n\(app.debugDescription)")
         button.tap()
     }
+    @MainActor
     func enter(_ identifier: String, _ text: String) {
         let field = app.textFields[identifier]
         XCTAssertTrue(field.waitForExistence(timeout: 10), app.debugDescription)
         field.tap(); let old = field.value as? String ?? ""; field.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: old.count + 1)); field.typeText(text)
     }
+    @MainActor
     func onboard(_ language: String = "en", flags: [String] = []) throws {
         app.launchArguments = ["--cycle2a-test", "-v4.language", language, "-v4.currency", "JPY", "-v4.onboarded", "NO"] + flags
         app.launch()
@@ -42,6 +47,7 @@ import XCTest
         enter("onboardingAmount", "40000"); capture("onboarding-target-\(language)-\(flags.joined(separator: "-"))"); tap("onboardingNext"); capture("onboarding-child-\(language)-\(flags.joined(separator: "-"))"); tap("onboardingNext")
         XCTAssertTrue(app.buttons["addEntry"].waitForExistence(timeout: 10), app.debugDescription); capture("empty-home-\(language)-\(flags.joined(separator: "-"))-" + flags.joined(separator: "-"))
     }
+    @MainActor
     func testOnboardingEntryTaxNoSpendTarget() throws {
         try onboard()
         tap("addEntry"); enter("entryAmount", "2400"); capture("entry")
@@ -53,9 +59,11 @@ import XCTest
         tap("Info"); capture("info"); tap("Consumption tax"); capture("tax")
         XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "¥177")).firstMatch.waitForExistence(timeout: 5), app.debugDescription)
     }
+    @MainActor
     func testLocalizedOnboarding() throws {
         for language in ["ja", "es", "ko"] { try onboard(language); app.terminate() }
     }
+    @MainActor
     func testScreenMatrix() throws {
         for language in ["en", "ja", "es", "ko"] {
             for variant in ["light", "dark", "ax3"] {
@@ -71,6 +79,7 @@ import XCTest
             }
         }
     }
+    @MainActor
     func testResultAndAccessibilityVariants() throws {
         for flags in [["--few"], ["--over"], ["--opaque", "--reduce-motion", "--ax3"]] {
             app.launchArguments = ["--cycle2a-test", "--cycle2a-seed", "-v4.language", "en", "--screen", "result"] + flags
@@ -78,11 +87,14 @@ import XCTest
         }
     }
 
+    @MainActor
+
     func testAdditionalSetupMatrix() throws {
         for language in ["en", "ja", "es", "ko"] {
             for flags in [["--dark"], ["--ax3"]] { try onboard(language, flags: flags); app.terminate() }
         }
     }
+    @MainActor
     func testNavigationMatrix() throws {
         for language in ["en", "ja", "es", "ko"] {
             for variant in ["light", "dark", "ax3"] {
@@ -95,6 +107,7 @@ import XCTest
             }
         }
     }
+    @MainActor
     func testManualTaxAndMetadataSurviveReopening() throws {
         try onboard()
         tap("addEntry"); enter("entryAmount", "2400")
@@ -111,6 +124,7 @@ import XCTest
         XCTAssertTrue(app.buttons["entryCategory"].label.contains("Food"), app.debugDescription)
         capture("manual-tax-preserved")
     }
+    @MainActor
     func testChildEnvelopeAndLicenseFlow() throws {
         try onboard(); tap("Info"); tap("Child envelope setup")
         app.switches["Use child envelope"].firstMatch.tap(); tap("Targets"); tap("setTargetManually"); enter("overallTarget", "80000"); tap("saveGoals")
@@ -126,6 +140,8 @@ import XCTest
         XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "Copyright 2020")).firstMatch.waitForExistence(timeout: 5), app.debugDescription)
         capture("font-licenses")
     }
+
+    @MainActor
 
     func testHomeWithFiftyThousandPersistedEntries() throws {
         app.launchArguments = ["--cycle2a-test", "--cycle2a-performance", "-v4.language", "en", "-v4.currency", "JPY"]
@@ -145,6 +161,8 @@ import XCTest
         proof.name = "home-50000-performance"; proof.lifetime = .keepAlways; add(proof)
         print("HOME_50000_LAUNCH_TO_ACCESSIBILITY_READY_SECONDS \(samples)")
     }
+
+    @MainActor
 
     func audit(_ screen: String) throws {
             app.launchArguments = ["--cycle2a-test", "--cycle2a-seed", "-v4.language", "en", "--screen", screen]
@@ -180,10 +198,19 @@ import XCTest
             app.terminate()
     }
 
+    @MainActor
+
     func testHomeAccessibilityAudit() throws { try audit("home") }
+    @MainActor
+    func testVoiceAccessibilityAudit() throws { try audit("voice") }
+    @MainActor
     func testInfoAccessibilityAudit() throws { try audit("info") }
+    @MainActor
     func testResultAccessibilityAudit() throws { try audit("result") }
+    @MainActor
     func testEntryAccessibilityAudit() throws { try audit("edit") }
+
+    @MainActor
 
     func testChildAndResultMatrix() throws {
         for language in ["en", "ja", "es", "ko"] {
@@ -199,6 +226,8 @@ import XCTest
         }
     }
 
+    @MainActor
+
     func testGoalsUnsetMatrix() throws {
         for language in ["en", "ja", "es", "ko"] {
             for variant in ["light", "dark", "ax3"] {
@@ -212,6 +241,8 @@ import XCTest
             }
         }
     }
+
+    @MainActor
 
     func testFormMatrix() throws {
         for language in ["en", "ja", "es", "ko"] {
@@ -227,11 +258,14 @@ import XCTest
         }
     }
 
+    @MainActor
+
     func launchSeededWorkflow() {
         app.launchArguments = ["--cycle2a-test", "--cycle2a-seed", "--reset-test-preferences", "--reduce-motion", "-v4.language", "en", "-v4.currency", "JPY"]
         app.launch(); XCTAssertTrue(app.tabBars.buttons["Island"].waitForExistence(timeout: 30), app.debugDescription)
         XCTAssertTrue(app.tabBars.buttons["Island"].isSelected, app.debugDescription)
     }
+    @MainActor
     func testIncomeEntry() throws {
         launchSeededWorkflow(); tap("addEntry"); enter("entryAmount", "12000")
         app.buttons["Income"].tap(); app.buttons["entryCategory"].tap(); tap("Salary")
@@ -239,6 +273,7 @@ import XCTest
         tap("saveEntry"); tap("Info"); tap("Consumption tax")
         XCTAssertTrue(app.staticTexts["¥218"].waitForExistence(timeout: 5), app.debugDescription)
     }
+    @MainActor
     func testChildSupportDefaults() throws {
         launchSeededWorkflow(); tap("addEntry"); enter("entryAmount", "50000")
         app.buttons["Child envelope"].tap(); app.buttons["entryCategory"].tap(); tap("Child support payment")
@@ -247,12 +282,15 @@ import XCTest
         capture("child-support-defaults"); tap("saveEntry"); tap("Info"); app.buttons["Child envelope"].tap(); tap("Consumption tax")
         XCTAssertTrue(app.staticTexts["¥266"].waitForExistence(timeout: 5), app.debugDescription)
     }
+    @MainActor
     func testNormalNewStoreLaunch() throws {
         app.launchArguments = ["--cycle2a-test", "--disk-test", UUID().uuidString]
         app.launch()
         XCTAssertTrue(app.buttons["onboardingNext"].waitForExistence(timeout: 30), app.debugDescription)
         capture("normal-new-store-onboarding")
     }
+
+    @MainActor
 
     func testPagerNavigation() throws {
         app.launchArguments = ["--cycle2a-test", "--cycle2a-seed", "--reset-test-preferences", "--reduce-motion", "-v4.language", "en", "-v4.currency", "JPY"]
@@ -266,7 +304,9 @@ import XCTest
         capture("native-tab-bar")
     }
 
-    func testHorizontalTabSwipeAndVerticalScroll() throws {
+    @MainActor
+
+    func testHorizontalSwipeRemovedAndVerticalScrollDoesNotSwitchTabs() throws {
         launchSeededWorkflow()
         let home = app.tabBars.buttons["Island"]
         let info = app.tabBars.buttons["Info"]
@@ -274,12 +314,16 @@ import XCTest
         app.swipeUp()
         XCTAssertTrue(home.isSelected, "A vertical Home scroll must not select another tab.")
         app.swipeLeft()
-        XCTAssertTrue(info.waitForExistence(timeout: 5) && info.isSelected, app.debugDescription)
+        XCTAssertTrue(home.isSelected, "Horizontal tab paging was removed because it captured text-selection drags.")
+        info.tap()
+        XCTAssertTrue(info.isSelected, app.debugDescription)
         app.swipeUp()
         XCTAssertTrue(info.isSelected, "A vertical Info scroll must not select another tab.")
         app.swipeRight()
-        XCTAssertTrue(home.isSelected, "A right swipe from Info should select the adjacent Home tab.")
+        XCTAssertTrue(info.isSelected, "Horizontal swipes no longer change tabs; use the standard tab bar.")
     }
+
+    @MainActor
 
     func testEditorControlDragsDoNotSwitchTabs() throws {
         launchSeededWorkflow(); tap("addEntry")
@@ -310,6 +354,8 @@ import XCTest
         XCTAssertTrue(home.isSelected, "Editor control drags must return to the same Home tab.")
     }
 
+    @MainActor
+
     func testInfoSegmentedControlDragDoesNotSwitchTabs() throws {
         launchSeededWorkflow()
         let info = app.tabBars.buttons["Info"]
@@ -320,6 +366,7 @@ import XCTest
             .press(forDuration: 0.1, thenDragTo: picker.coordinate(withNormalizedOffset: CGVector(dx: 0.15, dy: 0.5)))
         XCTAssertTrue(info.isSelected, "Dragging the Info envelope picker must not change tabs.")
     }
+    @MainActor
     func testChildInfoMatrix() throws {
         for language in ["en", "ja", "es", "ko"] {
             for variant in ["light", "dark", "ax3"] {
@@ -332,12 +379,16 @@ import XCTest
         }
     }
 
+    @MainActor
+
     func testNoSpendDayFromEmptyLedger() throws {
         try onboard(flags: ["--reduce-motion"])
         tap("noSpend")
         XCTAssertTrue(app.staticTexts["1 days logged"].firstMatch.waitForExistence(timeout: 5), app.debugDescription)
         capture("no-spend-empty-day")
     }
+
+    @MainActor
 
     func testKoreanAmountsMatrix() throws {
         for screen in ["home", "info", "info-child", "child-detail", "result", "month-result"] {
@@ -348,6 +399,8 @@ import XCTest
         }
     }
 
+    @MainActor
+
     func testExistingChildSetupRemainsEnabled() throws {
         app.launchArguments = ["--cycle2a-test", "--cycle2a-seed", "-v4.language", "en", "--screen", "child-setup"]
         app.launch(); XCTAssertTrue(app.switches["Use child envelope"].firstMatch.waitForExistence(timeout: 15))
@@ -355,6 +408,7 @@ import XCTest
         XCTAssertTrue(app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "Food")).firstMatch.waitForExistence(timeout: 5), app.debugDescription)
         capture("existing-child-setup")
     }
+    @MainActor
     func testChildSetupMatrix() throws {
         for language in ["en", "ja", "es", "ko"] {
             for variant in ["light", "dark", "ax3"] {
@@ -371,6 +425,7 @@ import XCTest
 
 // Persisted onboarding uses a real disk ledger and isolated preferences, retained across process termination.
 extension Cycle2aUITests {
+    @MainActor
     func testPersistedOnboardingRelaunch() throws {
         let id = UUID().uuidString
         app.launchArguments = ["--cycle2a-test", "--disk-test", id]
@@ -390,6 +445,7 @@ extension Cycle2aUITests {
         tap("Ajustes"); XCTAssertTrue(app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "KRW")).firstMatch.exists, app.debugDescription)
         capture("persisted-onboarding-settings")
     }
+    @MainActor
     func testMonthResultStatesMatrix() throws {
         for state in ["achieved", "over", "few"] {
             for mode in ["light", "dark", "ax3"] {
@@ -400,6 +456,7 @@ extension Cycle2aUITests {
             }
         }
     }
+    @MainActor
     func testHomeAlwaysHousehold() throws {
         for mode in ["light", "dark"] {
             app.launchArguments = ["--cycle2a-test", "--cycle2a-seed", "--child-info", "-v4.language", "en", "-v4.currency", "JPY"]
@@ -415,6 +472,7 @@ extension Cycle2aUITests {
             app.terminate()
         }
     }
+    @MainActor
     func testVoicePlaceholderIsShownOnce() throws {
         for mode in ["light", "dark"] {
             app.launchArguments = ["--cycle2a-test", "--cycle2a-seed", "-v4.language", "en", "--screen", "voice"]
@@ -426,11 +484,12 @@ extension Cycle2aUITests {
             app.terminate()
         }
     }
+    @MainActor
     func testHomeAX3LanguageMatrix() throws {
         for language in ["en", "ja", "es", "ko"] {
             app.launchArguments = ["--cycle2a-test", "--cycle2a-seed", "--ax3", "-v4.language", language, "-v4.currency", "JPY"]
             app.launch()
-            XCTAssertTrue(app.staticTexts["homeWeeklyRemaining"].waitForExistence(timeout: 20), app.debugDescription)
+            XCTAssertTrue(app.buttons["addEntry"].waitForExistence(timeout: 30), app.debugDescription)
             XCTAssertTrue(app.tabBars.buttons["Home"].isSelected, app.debugDescription)
             try app.performAccessibilityAudit(for: [.textClipped]) { issue in
                 XCTFail("Home AX3 \(language): \(issue.compactDescription) / \(issue.detailedDescription)")
@@ -440,6 +499,7 @@ extension Cycle2aUITests {
             app.terminate()
         }
     }
+    @MainActor
     func testLocalizedGroupedAmountFields() throws {
         for (language, goal, entry) in [("en", "¥310,000", "¥2,400"), ("ja", "¥310,000", "¥2,400"), ("es", "310.000 ¥", "2.400 ¥"), ("ko", "JP¥310,000", "JP¥2,400")] {
             for (screen, identifier, expected) in [("goals", "overallTarget", goal), ("edit", "entryAmount", entry)] {
@@ -450,12 +510,74 @@ extension Cycle2aUITests {
             }
         }
     }
+    @MainActor
+    func testNativeScreenEvidenceLightAndDark() throws {
+        let screens: [(String, String, [String])] = [
+            ("voice", "voice", []),
+            ("home", "home", []),
+            ("info-household", "info", []),
+            ("info-child", "info", ["--child-info"]),
+            ("goals", "goals", []),
+            ("goals-unset", "goals", ["--unset"]),
+            ("edit", "edit", []),
+            ("tax", "tax", []),
+            ("result-week-achieved", "result", []),
+            ("result-week-over", "result", ["--over"]),
+            ("result-week-few", "result", ["--few"]),
+            ("result-month-achieved", "month-result", ["--month-achieved"]),
+            ("result-month-over", "month-result", ["--month-over"]),
+            ("result-month-few", "month-result", ["--month-few"]),
+            ("child-setup", "child-setup", []),
+            ("child-detail", "child-detail", []),
+            ("settings", "settings", [])
+        ]
+        for mode in ["light", "dark"] {
+            for (name, screen, flags) in screens {
+                app.launchArguments = ["--cycle2a-test", "--cycle2a-seed", "-v4.language", "en", "-v4.currency", "JPY", "--screen", screen] + flags
+                if mode == "dark" { app.launchArguments.append("--dark") }
+                app.launch()
+                XCTAssertTrue(app.wait(for: .runningForeground, timeout: 15), app.debugDescription)
+                XCTAssertTrue(app.staticTexts.firstMatch.waitForExistence(timeout: 20), app.debugDescription)
+                capture("native-\(name)-\(mode)")
+                app.terminate()
+            }
+        }
+    }
+    @MainActor
+    func testNativeHomeLanguageEvidence() throws {
+        for language in ["en", "ja", "es", "ko"] {
+            app.launchArguments = ["--cycle2a-test", "--cycle2a-seed", "-v4.language", language, "-v4.currency", "JPY"]
+            app.launch()
+            XCTAssertTrue(app.buttons["addEntry"].waitForExistence(timeout: 30), app.debugDescription)
+            capture("native-home-\(language)-light")
+            app.terminate()
+        }
+        app.launchArguments = ["--cycle2a-test", "--cycle2a-seed", "--ax3", "-v4.language", "en", "-v4.currency", "JPY"]
+        app.launch()
+        XCTAssertTrue(app.collectionViews["homePage"].waitForExistence(timeout: 30), app.debugDescription)
+        capture("native-home-en-ax3")
+        app.terminate()
+    }
+    @MainActor
+    func testNativeOnboardingEvidenceLightAndDark() throws {
+        try onboard("en", flags: [])
+        app.terminate()
+        try onboard("en", flags: ["--dark"])
+        app.terminate()
+    }
+    @MainActor
     func testLaunchMetric1000() throws { try launchMetric(entries: 1000) }
+    @MainActor
     func testLaunchMetric10000() throws { try launchMetric(entries: 10000) }
+    @MainActor
     func testLaunchMetric50000() throws { try launchMetric(entries: 50000) }
+    @MainActor
     func testHomeInteractiveMetric1000() throws { try launchMetric(entries: 1000, interactive: true) }
+    @MainActor
     func testHomeInteractiveMetric10000() throws { try launchMetric(entries: 10000, interactive: true) }
+    @MainActor
     func testHomeInteractiveMetric50000() throws { try launchMetric(entries: 50000, interactive: true) }
+    @MainActor
     private func launchMetric(entries: Int, interactive: Bool = false) throws {
         app.launchArguments = ["--cycle2a-test", "--cycle2a-performance", "--entry-count", String(entries), "-v4.language", "en", "-v4.currency", "JPY"]
         if interactive { app.launchArguments.append("--measure-home-launch") }
