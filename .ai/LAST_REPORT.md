@@ -7,7 +7,7 @@ Status: **PARTIAL**
 
 - Branch: `codex/wealthy-c2a4-uitest`.
 - Base: PR #6 head `96da9ee` because PR #6 was still an open draft during task setup; `origin/main` was `2cfe37b`. No PR was reused or merged.
-- New draft PR creation remains pending.
+- New draft PR #7: https://github.com/Kei-Takamizawa/Wealthy/pull/7; state OPEN, draft, base `main`.
 
 ## Implemented
 
@@ -95,7 +95,7 @@ Simulator: Wealthy iPhone 15 Pro (iPhone 15 Pro device type), iOS 27.0, UDID `87
 - 5 retained signpost measurements for 10k/50k, and a direct CPU utilization/battery metric.
 - The physical device was iPhone 16 Pro Max, not an iOS 26 device; iOS 26 hardware behavior was not checked.
 - No design-vs-implementation comparisons were requested in Cycle 2a.4; screenshots are implementation captures only.
-- `git diff --check` — PASS. Commit, push, and new draft PR are still to be completed.
+- `git diff --check` — PASS. Commit `600ceda` (`Add Wealthy UI test target and verification evidence`) was pushed to `origin/codex/wealthy-c2a4-uitest`; remote ref confirmed at `600cedaa5f7c7f231c0bb43c35f1c7b5e60c2973`. PR #7 is open as a draft; no merge performed.
 
 ## Intentionally not performed
 
