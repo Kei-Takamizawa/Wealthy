@@ -40,7 +40,7 @@ struct EvaluateTickerAdvice {
                 do {
                     let reply = try await service.generateAdvice(context: context)
                     let languageCode = language.languageIdentifier
-                    let countsCharacters = [.japanese, .chinese, .korean].contains(language)
+                    let countsCharacters = [.japanese, .korean].contains(language)
                     let length = countsCharacters ? reply.count : reply.split(whereSeparator: { $0.isWhitespace }).count
                     let limit = language == .japanese ? 70 : (countsCharacters ? 100 : 30)
                     let recognizer = NLLanguageRecognizer()

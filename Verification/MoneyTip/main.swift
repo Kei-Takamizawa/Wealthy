@@ -54,7 +54,7 @@ for fixture in fixtures {
             expect(opening.count <= 20, "Japanese opening fits budget: \(fixture.name)")
             expect(action.count + 20 < 70, "Japanese action reserves full opening budget: \(fixture.name)")
             expect((opening + action).count < 70, "complete Japanese fallback length: \(fixture.name)")
-        } else if language == "zh-Hans" || language == "ko" {
+        } else if language == "ko" {
             expect(opening.count <= 30, "CJK opening fits budget: \(fixture.name)/\(language)")
             expect(action.count + 30 < 100, "CJK action reserves opening budget: \(fixture.name)/\(language)")
             expect((opening + action).count < 100, "complete CJK fallback length: \(fixture.name)/\(language)")

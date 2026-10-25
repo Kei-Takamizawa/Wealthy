@@ -20,8 +20,8 @@ struct VerifyLocalization {
         expect(AppLanguage.saved == .english, "invalid saved choices fall back to English")
         expect(AppLanguage(rawValue: "English") == .english, "existing English preference remains readable")
         expect(AppLanguage(rawValue: "日本語") == .japanese, "existing Japanese preference remains readable")
-        expect(AppLanguage.allCases.count == 11, "eleven display languages")
-        expect(AppLanguage.allCases.filter(\.isRTL) == [.arabic], "Arabic layout direction")
+        expect(Set(AppLanguage.allCases.map(\.languageIdentifier)) == Set(["en", "ja", "es", "ko"]), "exactly four display languages")
+        expect(AppLanguage.allCases.allSatisfy { !$0.isRTL }, "supported display languages use left-to-right layout")
 
         let catalogs = [CoreTranslations.strings, UITranslations.strings, FinanceTranslations.strings]
         let placeholders = try NSRegularExpression(pattern: "%([0-9]+\\$)?([-+0 #]*[0-9]*(\\.[0-9]+)?)?(ll|l)?([@diuf])")
@@ -60,8 +60,8 @@ struct VerifyLocalization {
             expect(manager.translateCategory(name: "My custom grocery category") == "My custom grocery category", "custom names are preserved \(language.languageIdentifier)")
             expect(ReceiptCategoryPolicy.evidenceBasedCategory(text: food, existingCategories: [standardFood], language: language.languageIdentifier) == standardFood, "reuse translated category \(language.languageIdentifier)")
         }
-        expect(AppLanguage.from(identifier: "zh_CN") == .chinese, "Chinese locale variant")
-        expect(AppLanguage.from(identifier: "pt-BR") == .portuguese, "Portuguese locale variant")
-        print("PASS: \(checks) localization checks; \(englishKeys.count) keys in 11 languages. Catalog completeness is not native-speaker review or device interaction.")
+        expect(AppLanguage.from(identifier: "zh_CN") == .english, "unsupported locale falls back to English")
+        expect(AppLanguage.from(identifier: "pt-BR") == .english, "removed locale falls back to English")
+        print("PASS: \(checks) localization checks; \(englishKeys.count) keys x 4 languages; zero missing keys. Catalog completeness is not native-speaker review or device interaction.")
     }
 }

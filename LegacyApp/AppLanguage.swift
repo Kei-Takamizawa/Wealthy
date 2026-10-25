@@ -4,15 +4,8 @@ import Foundation
 nonisolated enum AppLanguage: String, CaseIterable, Identifiable {
     case english = "English"
     case japanese = "日本語"
-    case chinese = "简体中文"
-    case hindi = "हिन्दी"
     case spanish = "Español"
-    case arabic = "العربية"
-    case french = "Français"
-    case indonesian = "Bahasa Indonesia"
     case korean = "한국어"
-    case russian = "Русский"
-    case portuguese = "Português"
 
     var id: String { rawValue }
     var nativeName: String { rawValue }
@@ -20,34 +13,20 @@ nonisolated enum AppLanguage: String, CaseIterable, Identifiable {
         switch self {
         case .english: "en"
         case .japanese: "ja"
-        case .chinese: "zh-Hans"
-        case .hindi: "hi"
         case .spanish: "es"
-        case .arabic: "ar"
-        case .french: "fr"
-        case .indonesian: "id"
         case .korean: "ko"
-        case .russian: "ru"
-        case .portuguese: "pt"
         }
     }
     var englishName: String {
         switch self {
         case .english: "English"
         case .japanese: "Japanese"
-        case .chinese: "Simplified Chinese"
-        case .hindi: "Hindi"
         case .spanish: "Spanish"
-        case .arabic: "Arabic"
-        case .french: "French"
-        case .indonesian: "Indonesian"
         case .korean: "Korean"
-        case .russian: "Russian"
-        case .portuguese: "Portuguese"
         }
     }
     var locale: Locale { Locale(identifier: languageIdentifier) }
-    var isRTL: Bool { self == .arabic }
+    var isRTL: Bool { false }
     static var saved: AppLanguage {
         guard let value = UserDefaults.standard.string(forKey: "selectedLanguage") else { return .english }
         return AppLanguage(rawValue: value) ?? .english
@@ -56,15 +35,8 @@ nonisolated enum AppLanguage: String, CaseIterable, Identifiable {
         if let exact = AppLanguage(rawValue: identifier) { return exact }
         return switch identifier.lowercased().replacingOccurrences(of: "_", with: "-").split(separator: "-").first {
         case "ja": .japanese
-        case "zh": .chinese
-        case "hi": .hindi
         case "es": .spanish
-        case "ar": .arabic
-        case "fr": .french
-        case "id": .indonesian
         case "ko": .korean
-        case "ru": .russian
-        case "pt": .portuguese
         default: .english
         }
     }
