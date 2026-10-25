@@ -21,9 +21,9 @@ struct EntryEditor: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
-                Text(session.t(entry == nil ? "addEntry" : "editEntry")).font(V4.heading(session.language))
+                Text(session.t(entry == nil ? "addEntry" : "editEntry")).font(.title2.weight(.semibold))
                 Picker(session.t("kind"), selection: Binding(get: { kind }, set: { kind = $0; category = nil })) { ForEach(EntryKind.allCases, id: \.self) { Text(session.t($0.rawValue)).tag($0) } }.pickerStyle(.segmented).frame(minHeight: 44)
-                Plate { VStack(alignment: .leading, spacing: 16) {
+                GroupBox { VStack(alignment: .leading, spacing: 16) {
                     Text(session.t("amount"))
                     MoneyInputField(text: $amount, label: session.t("amount"), identifier: "entryAmount",
                                     font: .system(.largeTitle, design: .rounded),
@@ -35,7 +35,7 @@ struct EntryEditor: View {
                 } }
                 Picker(session.t("envelope"), selection: Binding(get: { envelope }, set: { envelope = $0; category = nil })) { Text(session.t("household")).tag(EnvelopeValue.householdID); if let child = session.child() { Text(session.t("child")).tag(child.id) } }.pickerStyle(.segmented).frame(minHeight: 44)
                 if kind == .expense {
-                    Plate { VStack(alignment: .leading, spacing: 16) {
+                    GroupBox { VStack(alignment: .leading, spacing: 16) {
                         Picker(session.t("service"), selection: Binding(get: { service }, set: { service = $0; suggestTax() })) { ForEach(ServiceMode.allCases, id: \.self) { Text(session.t($0.rawValue)).tag($0) } }.frame(minHeight: 52).accessibilityIdentifier("entryService")
                         Picker(session.t("taxRate"), selection: $tax) { ForEach(["standard", "reduced", "exempt", "unknown"], id: \.self) { Text(session.t($0)).tag($0) } }.frame(minHeight: 52).accessibilityIdentifier("entryTaxRate")
                         if (entry?.currencyCode ?? session.currency) == "JPY", let value = try? CoreCurrency.parseMinorUnits(amount, currencyCode: "JPY", locale: session.locale), let rate = TaxRate(rawValue: tax), let part = try? TaxMath.taxPart(inclusiveMinor: value, rate: rate) {
@@ -43,11 +43,11 @@ struct EntryEditor: View {
                         }
                     } }
                 }
-                Plate { VStack(alignment: .leading, spacing: 12) { Toggle(session.t("fixedCost"), isOn: $fixed).frame(minHeight: 52); Toggle(session.t("needsReview"), isOn: $review).frame(minHeight: 52) } }
-                Button(session.t("save")) { session.perform { try save() } }.buttonStyle(PrimaryButton()).accessibilityIdentifier("saveEntry")
+                GroupBox { VStack(alignment: .leading, spacing: 12) { Toggle(session.t("fixedCost"), isOn: $fixed).frame(minHeight: 52); Toggle(session.t("needsReview"), isOn: $review).frame(minHeight: 52) } }
+                Button(session.t("save")) { session.perform { try save() } }.buttonStyle(.borderedProminent).accessibilityIdentifier("saveEntry")
                 if let entry { Button(role: .destructive) { session.perform { try session.run(.deleteEntry(entry.id)); dismiss() } } label: { Text(session.t("deleteEntry")) }.frame(minHeight: 52) }
             }.padding(16)
-        }.background(V4.paper(scheme)).scrollDismissesKeyboard(.interactively)
+        }.scrollDismissesKeyboard(.interactively)
             .task { load() }
     }
     func load() {
