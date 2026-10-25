@@ -1,0 +1,221 @@
+{
+  "taskID": "WEALTHY-C2A5-SWIPE-LANG",
+  "completedAtUTC": "2026-10-25T03:09:08+00:00",
+  "device": {
+    "model": "iPhone 16 Pro Max",
+    "iOS": "27.2",
+    "build": "24B115"
+  },
+  "build": "Existing optimized Release build with WEALTHY_LAUNCH_MEASUREMENT; no rebuild or reinstall during resume",
+  "method": "Release -O, WEALTHY_LAUNCH_MEASUREMENT; isolated synthetic disk stores; one seed/warm-up then five warm launches without debugger. FirstFrame and HomeInteractive use in-app display callbacks from LedgerSession initialization, not OS process-start or injected-touch latency.",
+  "units": "seconds",
+  "measurementBoundaries": "FirstFrame ends at the loading view two-display-callback waiter after LedgerSession initialization. HomeInteractive ends at the Home display callback. These are in-app signpost boundaries, not OS process-start first-frame or injected-touch latency.",
+  "warmupPolicy": "One seed/warm-up launch per size excluded from all medians; five subsequent warm launches per size",
+  "freshnessValidation": "18 distinct increasing LaunchUptime values verified before omitting device uptime from this public artifact",
+  "status": "COMPLETED",
+  "target10k": {
+    "limitSeconds": 2,
+    "medianSeconds": 1.18407112499699,
+    "allFiveSamplesWithinLimit": true
+  },
+  "sizes": {
+    "1000": {
+      "warmup": {
+        "QuerySnapshot": 0.0005739583284594119,
+        "EntryCount": 1000,
+        "FirstFrame": 0.04460941666911822,
+        "Snapshot": 0.05490699999791104,
+        "HomeRender": 0.10064358334057033,
+        "HomeInteractive": 0.21109383333532605,
+        "StoreOpen": 0.010258875001454726
+      },
+      "samples": [
+        {
+          "Snapshot": 0.05888729165599216,
+          "FirstFrame": 0.05897641666524578,
+          "QuerySnapshot": 0.00040295833605341613,
+          "EntryCount": 1000,
+          "StoreOpen": 0.007407916666124947,
+          "HomeRender": 0.16349662499851547,
+          "HomeInteractive": 0.289479625003878
+        },
+        {
+          "FirstFrame": 0.05483729166735429,
+          "QuerySnapshot": 0.0006043333269190043,
+          "EntryCount": 1000,
+          "StoreOpen": 0.006565291667357087,
+          "HomeInteractive": 0.2214711250126129,
+          "Snapshot": 0.05653929166146554,
+          "HomeRender": 0.10283324999909382
+        },
+        {
+          "Snapshot": 0.05461958333035,
+          "QuerySnapshot": 0.0005832083406858146,
+          "EntryCount": 1000,
+          "FirstFrame": 0.05459129167138599,
+          "HomeRender": 0.10447487499914132,
+          "StoreOpen": 0.006759625000995584,
+          "HomeInteractive": 0.22112324999761768
+        },
+        {
+          "HomeInteractive": 0.2150207083323039,
+          "EntryCount": 1000,
+          "FirstFrame": 0.04831208332325332,
+          "Snapshot": 0.05483191667008214,
+          "QuerySnapshot": 0.0005792083393316716,
+          "HomeRender": 0.10483395833580289,
+          "StoreOpen": 0.006372458330588415
+        },
+        {
+          "HomeRender": 0.10506641666870564,
+          "HomeInteractive": 0.21906891666003503,
+          "QuerySnapshot": 0.0006394999945769086,
+          "Snapshot": 0.0543771250086138,
+          "EntryCount": 1000,
+          "FirstFrame": 0.05249375000130385,
+          "StoreOpen": 0.006380666658515111
+        }
+      ],
+      "medians": {
+        "HomeRender": 0.10483395833580289,
+        "HomeInteractive": 0.22112324999761768,
+        "QuerySnapshot": 0.0005832083406858146,
+        "Snapshot": 0.05483191667008214,
+        "FirstFrame": 0.05459129167138599,
+        "StoreOpen": 0.006565291667357087
+      }
+    },
+    "10000": {
+      "warmup": {
+        "EntryCount": 10000,
+        "HomeRender": 0.5919134583236882,
+        "StoreOpen": 0.01215354165469762,
+        "Snapshot": 0.4939157500048168,
+        "QuerySnapshot": 0.0017513749917270616,
+        "HomeInteractive": 1.149576583324233,
+        "FirstFrame": 0.04955583333503455
+      },
+      "samples": [
+        {
+          "HomeRender": 0.5953409583307803,
+          "HomeInteractive": 1.1611821666592732,
+          "StoreOpen": 0.00856841666973196,
+          "EntryCount": 10000,
+          "FirstFrame": 0.052890041668433696,
+          "Snapshot": 0.5023507916630479,
+          "QuerySnapshot": 0.0017889583396026865
+        },
+        {
+          "FirstFrame": 0.05559608332987409,
+          "Snapshot": 0.5009474166727159,
+          "StoreOpen": 0.007448374992236495,
+          "EntryCount": 10000,
+          "HomeInteractive": 1.1723275833355729,
+          "QuerySnapshot": 0.0018322499963687733,
+          "HomeRender": 0.6063015416730195
+        },
+        {
+          "EntryCount": 10000,
+          "StoreOpen": 0.006777125003281981,
+          "HomeInteractive": 1.18407112499699,
+          "Snapshot": 0.5132689166639466,
+          "QuerySnapshot": 0.0019150416628690436,
+          "FirstFrame": 0.04224358333158307,
+          "HomeRender": 0.6197087500040652
+        },
+        {
+          "StoreOpen": 0.008238958325819112,
+          "EntryCount": 10000,
+          "FirstFrame": 0.06030141666997224,
+          "Snapshot": 0.5208285416738363,
+          "QuerySnapshot": 0.0018748333386611193,
+          "HomeInteractive": 1.2479209583398188,
+          "HomeRender": 0.6563854583364446
+        },
+        {
+          "StoreOpen": 0.008106958339340053,
+          "HomeRender": 0.6231331666640472,
+          "Snapshot": 0.5376033750071656,
+          "HomeInteractive": 1.2477337500022259,
+          "QuerySnapshot": 0.0019547083356883377,
+          "FirstFrame": 0.07670120833790861,
+          "EntryCount": 10000
+        }
+      ],
+      "medians": {
+        "StoreOpen": 0.008106958339340053,
+        "HomeRender": 0.6197087500040652,
+        "Snapshot": 0.5132689166639466,
+        "HomeInteractive": 1.18407112499699,
+        "QuerySnapshot": 0.0018748333386611193,
+        "FirstFrame": 0.05559608332987409
+      }
+    },
+    "50000": {
+      "warmup": {
+        "StoreOpen": 0.008292708327644505,
+        "EntryCount": 50000,
+        "HomeRender": 2.7960782916779863,
+        "HomeInteractive": 5.677816125011304,
+        "Snapshot": 2.8075861666729907,
+        "QuerySnapshot": 0.00969437499588821,
+        "FirstFrame": 0.056505333341192454
+      },
+      "samples": [
+        {
+          "EntryCount": 50000,
+          "StoreOpen": 0.006717124997521751,
+          "FirstFrame": 0.06714245832699817,
+          "QuerySnapshot": 0.009883624996291474,
+          "HomeInteractive": 5.605066208328935,
+          "Snapshot": 2.6950351249979576,
+          "HomeRender": 2.8266022083262214
+        },
+        {
+          "HomeRender": 2.8286034166667378,
+          "EntryCount": 50000,
+          "Snapshot": 2.7346517916594166,
+          "FirstFrame": 0.07555604167282581,
+          "StoreOpen": 0.007016875009867363,
+          "QuerySnapshot": 0.009455458333832212,
+          "HomeInteractive": 5.655112916661892
+        },
+        {
+          "FirstFrame": 0.049445666663814336,
+          "StoreOpen": 0.0067834166693501174,
+          "Snapshot": 2.718279624998104,
+          "QuerySnapshot": 0.009482249995926395,
+          "EntryCount": 50000,
+          "HomeRender": 3.1521657916600816,
+          "HomeInteractive": 5.936416875003488
+        },
+        {
+          "HomeInteractive": 5.689736375003122,
+          "HomeRender": 2.8457452500006184,
+          "StoreOpen": 0.0072053333424264565,
+          "EntryCount": 50000,
+          "QuerySnapshot": 0.010107624999363907,
+          "FirstFrame": 0.05186574999243021,
+          "Snapshot": 2.774961291666841
+        },
+        {
+          "HomeInteractive": 5.788750874999096,
+          "EntryCount": 50000,
+          "QuerySnapshot": 0.010189416658249684,
+          "FirstFrame": 0.05515691665641498,
+          "HomeRender": 2.944772750008269,
+          "Snapshot": 2.7723038749973057,
+          "StoreOpen": 0.006527166668092832
+        }
+      ],
+      "medians": {
+        "HomeInteractive": 5.689736375003122,
+        "QuerySnapshot": 0.009883624996291474,
+        "FirstFrame": 0.05515691665641498,
+        "HomeRender": 2.8457452500006184,
+        "Snapshot": 2.7346517916594166,
+        "StoreOpen": 0.0067834166693501174
+      }
+    }
+  }
+}
