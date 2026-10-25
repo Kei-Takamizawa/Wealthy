@@ -69,3 +69,11 @@ ReceiptExample/
 
 # Python verification caches.
 __pycache__/
+
+# Claude + Codex loop: task inbox and Codex run logs stay local.
+.ai/inbox/
+.ai/runs/
+
+# Instruments traces and test result bundles stay local.
+*.trace/
+*.xcresult/
