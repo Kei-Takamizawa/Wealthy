@@ -1,6 +1,7 @@
 #!/bin/sh
 set -eu
 repo_root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
+python3 "$repo_root/Verification/verify_localization_catalog.py"
 build_dir=$(mktemp -d /private/tmp/wealthy-localization.XXXXXX)
 trap 'rm -rf "$build_dir"' EXIT
 xcrun swiftc -parse-as-library -module-cache-path "$build_dir/module-cache" \

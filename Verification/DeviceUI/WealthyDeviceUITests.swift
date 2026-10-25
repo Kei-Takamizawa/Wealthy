@@ -113,7 +113,7 @@ final class WealthyDeviceUITests: XCTestCase {
     }
 
     func test03LanguageSelectionAndPersistence() {
-        let choices = ["en", "ja", "zh-Hans", "hi", "es", "ar", "fr", "id", "ko", "ru", "pt"]
+        let choices = ["en", "ja", "es", "ko"]
         for language in choices {
             app.launchArguments = ["-hasSelectedLanguage", "NO"]
             app.launch()
@@ -130,7 +130,7 @@ final class WealthyDeviceUITests: XCTestCase {
         app.launch()
         XCTAssertTrue(app.tabBars.firstMatch.waitForExistence(timeout: 20), app.debugDescription)
         XCTAssertFalse(app.buttons["onboarding.language.en"].exists)
-        capture("persisted-portuguese-without-onboarding")
+        capture("persisted-korean-without-onboarding")
     }
 
     func test04SettingsLanguageAndRelaunch() {
@@ -138,7 +138,7 @@ final class WealthyDeviceUITests: XCTestCase {
         app.launch()
         XCTAssertTrue(app.tabBars.firstMatch.waitForExistence(timeout: 20), app.debugDescription)
         XCTAssertFalse(app.buttons["onboarding.language.en"].exists)
-        for choice in ["English", "हिन्दी", "العربية", "日本語"] {
+        for choice in ["English", "Español", "한국어", "日本語"] {
             app.buttons["settings.open"].tap()
             let picker = app.buttons["settings.language"]
             XCTAssertTrue(picker.waitForExistence(timeout: 5), app.debugDescription)

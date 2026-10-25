@@ -9,24 +9,37 @@ import MetricKit
     static var isUITest: Bool {
         #if DEBUG
         ProcessInfo.processInfo.arguments.contains("--cycle2a-test")
+        #elseif WEALTHY_LAUNCH_MEASUREMENT
+        measurementEntryCount != nil
         #else
         false
         #endif
     }
+    #if WEALTHY_LAUNCH_MEASUREMENT
+    /// Opt-in Release measurement build only. Never opens the owner's normal store.
+    private static var measurementEntryCount: Int? {
+        let args = ProcessInfo.processInfo.arguments
+        guard args.contains("--cycle2a-performance"), let index = args.firstIndex(of: "--entry-count"),
+              args.count > index + 1, let count = Int(args[index + 1]), [1000, 10000, 50000].contains(count) else { return nil }
+        return count
+    }
+    private let measurementStart = ProcessInfo.processInfo.systemUptime
+    private var measurementSamples: [String: Double] = [:]
+    #endif
     private var firstFrameInterval: OSSignpostIntervalState?
     private var interactiveInterval: OSSignpostIntervalState?
     private var renderInterval: OSSignpostIntervalState?
     private(set) var isOpening = false
     private let loadLog = OSSignposter(subsystem: "com.harrison.Wealthy", category: "LedgerLaunch")
     private static var testDiskID: String? {
-        #if DEBUG
+        #if DEBUG || WEALTHY_LAUNCH_MEASUREMENT
         let args = ProcessInfo.processInfo.arguments
         if isUITest, let i = args.firstIndex(of: "--disk-test"), args.count > i + 1 { return args[i + 1] }
         #endif
         return nil
     }
     private static var preferences: UserDefaults {
-        #if DEBUG
+        #if DEBUG || WEALTHY_LAUNCH_MEASUREMENT
         if isUITest && ProcessInfo.processInfo.arguments.contains("--reset-test-preferences") {
             return UserDefaults(suiteName: "Cycle2aUITestPreferences")!
         }
@@ -47,7 +60,7 @@ import MetricKit
     var recentResults: [TargetStatus] = []
     var envelopeID = EnvelopeValue.householdID
     var today: LedgerDay {
-        #if DEBUG
+        #if DEBUG || WEALTHY_LAUNCH_MEASUREMENT
         if Self.isUITest && ProcessInfo.processInfo.arguments.contains("--cycle2a-performance") { return try! LedgerDay(year: 2026, month: 10, day: 15) }
         if Self.isUITest && ProcessInfo.processInfo.arguments.contains("--cycle2a-seed") { return try! LedgerDay(year: 2026, month: 10, day: ProcessInfo.processInfo.arguments.contains(where: { $0.hasPrefix("--month-") }) ? 31 : 11) }
         #endif
@@ -59,7 +72,7 @@ import MetricKit
         language = Self.preferences.string(forKey: "v4.language") ?? "en"
         currency = Self.preferences.string(forKey: "v4.currency") ?? "JPY"
         onboarded = Self.preferences.bool(forKey: "v4.onboarded")
-        #if DEBUG
+        #if DEBUG || WEALTHY_LAUNCH_MEASUREMENT
         if Self.isUITest && ProcessInfo.processInfo.arguments.contains("--measure-home-launch") {
             do { try MXMetricManager.extendLaunchMeasurement(forTaskID: MXLaunchTaskID("ledger-home-ready")) }
             catch { self.error = t("queryError"); print("EXTENDED_LAUNCH_TRACKING_FAILED: \(error)") }
@@ -98,15 +111,34 @@ import MetricKit
         if let firstFrameInterval {
             loadLog.endInterval("FirstFrame", firstFrameInterval)
             self.firstFrameInterval = nil
+            #if WEALTHY_LAUNCH_MEASUREMENT
+            measurementSamples["FirstFrame"] = ProcessInfo.processInfo.systemUptime - measurementStart
+            #endif
         }
         guard !Task.isCancelled else { return }
         open()
     }
     func homePresented() async {
+        #if WEALTHY_LAUNCH_MEASUREMENT
+        guard measurementSamples["HomeInteractive"] == nil else { return }
+        #endif
         await DisplayFrameWaiter.wait()
         if let renderInterval { loadLog.endInterval("HomeRender", renderInterval); self.renderInterval = nil }
         if let interactiveInterval { loadLog.endInterval("HomeInteractive", interactiveInterval); self.interactiveInterval = nil }
-        #if DEBUG
+        #if WEALTHY_LAUNCH_MEASUREMENT
+        if let count = Self.measurementEntryCount {
+            let now = ProcessInfo.processInfo.systemUptime
+            measurementSamples["HomeInteractive"] = now - measurementStart
+            if let start = measurementSamples.removeValue(forKey: "HomeRenderStart") { measurementSamples["HomeRender"] = now - start }
+            measurementSamples["EntryCount"] = Double(count)
+            measurementSamples["LaunchUptime"] = measurementStart
+            do {
+                let data = try JSONEncoder().encode(measurementSamples)
+                try data.write(to: FileManager.default.temporaryDirectory.appendingPathComponent("Cycle2aLaunchMeasurement.json"), options: .atomic)
+            } catch { print("LAUNCH_MEASUREMENT_WRITE_FAILED: \(error)") }
+        }
+        #endif
+        #if DEBUG || WEALTHY_LAUNCH_MEASUREMENT
         if Self.isUITest && ProcessInfo.processInfo.arguments.contains("--measure-home-launch") {
             do { try MXMetricManager.finishExtendedLaunchMeasurement(forTaskID: MXLaunchTaskID("ledger-home-ready")) }
             catch { self.error = t("queryError"); print("EXTENDED_LAUNCH_FINISH_FAILED: \(error)") }
@@ -118,12 +150,12 @@ import MetricKit
         let interval = loadLog.beginInterval("LedgerOpen")
         defer { loadLog.endInterval("LedgerOpen", interval) }
         do {
-            #if DEBUG
+            #if DEBUG || WEALTHY_LAUNCH_MEASUREMENT
             let isolated = Self.isUITest
             #else
             let isolated = false
             #endif
-            #if DEBUG
+            #if DEBUG || WEALTHY_LAUNCH_MEASUREMENT
             let performance = isolated && ProcessInfo.processInfo.arguments.contains("--cycle2a-performance")
             let directory: URL?
             if let id = Self.testDiskID { directory = FileManager.default.temporaryDirectory.appendingPathComponent("Cycle2aOnboarding-" + id, isDirectory: true) }
@@ -133,20 +165,33 @@ import MetricKit
                 directory = FileManager.default.temporaryDirectory.appendingPathComponent("Cycle2aPerformance-\(size)", isDirectory: true)
             } else { directory = nil }
             let storeInterval = loadLog.beginInterval("StoreOpen")
+            #if WEALTHY_LAUNCH_MEASUREMENT
+            let storeStart = ProcessInfo.processInfo.systemUptime
+            #endif
             let store = try LedgerStore(inMemory: isolated && !performance && Self.testDiskID == nil, directory: directory)
             loadLog.endInterval("StoreOpen", storeInterval)
+            #if WEALTHY_LAUNCH_MEASUREMENT
+            measurementSamples["StoreOpen"] = ProcessInfo.processInfo.systemUptime - storeStart
+            let snapshotStart = ProcessInfo.processInfo.systemUptime
+            #endif
             let snapshotInterval = loadLog.beginInterval("Snapshot")
             core = try LedgerCore(store: store)
             loadLog.endInterval("Snapshot", snapshotInterval)
+            #if WEALTHY_LAUNCH_MEASUREMENT
+            measurementSamples["Snapshot"] = ProcessInfo.processInfo.systemUptime - snapshotStart
+            #endif
             if performance { try preparePerformanceStore() }
             #else
             core = try LedgerCore(store: LedgerStore(inMemory: isolated))
             #endif
-            #if DEBUG
+            #if DEBUG || WEALTHY_LAUNCH_MEASUREMENT
             if isolated && ProcessInfo.processInfo.arguments.contains("--cycle2a-seed") { try seedUITest() }
             #endif
             refresh()
             renderInterval = loadLog.beginInterval("HomeRender")
+            #if WEALTHY_LAUNCH_MEASUREMENT
+            measurementSamples["HomeRenderStart"] = ProcessInfo.processInfo.systemUptime
+            #endif
         }
         catch { self.error = t("storeError") }
     }
@@ -184,6 +229,10 @@ import MetricKit
     func perform(_ action: () throws -> Void) { do { try action() } catch { self.error = t("invalidInput") } }
     func refresh() {
         guard let core else { return }
+        #if WEALTHY_LAUNCH_MEASUREMENT
+        let queryStart = ProcessInfo.processInfo.systemUptime
+        defer { measurementSamples["QuerySnapshot"] = ProcessInfo.processInfo.systemUptime - queryStart }
+        #endif
         let interval = loadLog.beginInterval("QuerySnapshot")
         defer { loadLog.endInterval("QuerySnapshot", interval) }
         do {
@@ -207,7 +256,7 @@ import MetricKit
         if child { try createChild() }
         onboarded = true
     }
-    #if DEBUG
+    #if DEBUG || WEALTHY_LAUNCH_MEASUREMENT
     private func preparePerformanceStore() throws {
         guard let core else { return }
         let args = ProcessInfo.processInfo.arguments

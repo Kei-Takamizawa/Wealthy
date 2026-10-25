@@ -1,102 +1,222 @@
-# Cycle 2a.4 Report
+# Cycle 2a.5 Report
 
-Task ID: `WEALTHY-C2A4-UITEST-TARGET`
-Status: **PARTIAL**
+Task ID: WEALTHY-C2A5-SWIPE-LANG
+Status: DONE
 
-## Branch and base
+## Changed files
+- Verification/Cycle2aEvidence/c2a5-device-launch.json
+- .ai/LAST_REPORT.md
+- LegacyApp/AppLanguage.swift
+- LegacyApp/CoreTranslations.swift
+- LegacyApp/FinanceTranslations.swift
+- LegacyApp/UITranslations.swift
+- LegacyApp/ar.lproj/InfoPlist.strings
+- LegacyApp/fr.lproj/InfoPlist.strings
+- LegacyApp/hi.lproj/InfoPlist.strings
+- LegacyApp/id.lproj/InfoPlist.strings
+- LegacyApp/pt.lproj/InfoPlist.strings
+- LegacyApp/ru.lproj/InfoPlist.strings
+- LegacyApp/zh-Hans.lproj/InfoPlist.strings
+- Verification/DeviceUI/RESULTS.md
+- Verification/DeviceUI/WealthyDeviceUITests.swift
+- Verification/LEGACY_CHECKS.md
+- Verification/Localization/main.swift
+- Verification/MoneyTip/main.swift
+- Verification/README.md
+- Verification/TickerAdvice/Evaluate.swift
+- Verification/TickerAdvice/RESULTS.md
+- Verification/measure_device_launch.py
+- Verification/verify_localization.sh
+- Verification/verify_localization_catalog.py
+- Wealthy/Wealthy/LedgerRoot.swift
+- Wealthy/Wealthy/LedgerSession.swift
+- WealthyUITests/WealthyUITests.swift
 
-- Branch: `codex/wealthy-c2a4-uitest`.
-- Base: PR #6 head `96da9ee` because PR #6 was still an open draft during task setup; `origin/main` was `2cfe37b`. No PR was reused or merged.
-- New draft PR #7: https://github.com/Kei-Takamizawa/Wealthy/pull/7; state OPEN, draft, base `main`.
+## Requirements
 
-## Implemented
+### Preflight and scope — PASS
 
-- Added `WealthyUITests` UI test bundle target and shared `WealthyUITests` scheme, with UI tests copied into the target.
-- Home audit layout adjustment: compressed weekly status to keep content within the scrollable plate, made weekday controls at least 44 pt wide, and removed duplicate Home Goals/Settings buttons that sat behind the tab bar. Goals remains available in Info; Settings was added to Info.
-- Removed custom horizontal tab paging because a text-field selection drag switched pages in the earlier test run. Native tab bar navigation remains. The segmented gesture test crashed once when the XCTest runner was killed; rerunning that test alone passed.
-- No WealthyCore behavior or new dependency was changed.
+- Run on the Mac terminal: arm64, macOS 27.0.1, Xcode 27.1 (27A9275).
+- Branch `codex/wealthy-c2a5-swipe`; starting HEAD and `origin/main` were both `52d3839f479fd919e143ddc9903a366bc5a2e795`. `git ls-remote origin refs/heads/main` confirmed the same live remote SHA. `git merge-base --is-ancestor 5d53828 origin/main` succeeded; `git ls-tree --name-only origin/main AGENTS.md CLAUDE.md` listed both files. PR #7 and loop setup were already on main.
+- Read AGENTS.md, CURRENT_TASK.md, LAST_REPORT.md and CLAUDE.md. CURRENT_TASK.md already contained the complete approved task and was preserved.
+- The three dirty `.DS_Store` files and untracked `design/v4/引き渡しシート.pdf` predated the run and were left alone. No WealthyCore source, persistence, data model, tax/target rule, dependency, or font asset was changed.
+- No commit, stage, push, branch change, merge or PR operation was performed; these belong to the operator under AGENTS.md.
 
-## Files changed for this cycle
+### Physical-only resume — 2026-10-25
 
-- `.ai/CURRENT_TASK.md`
-- `.ai/LAST_REPORT.md`
-- `Wealthy/Wealthy.xcodeproj/project.pbxproj`
-- `Wealthy/Wealthy.xcodeproj/xcshareddata/xcschemes/WealthyUITests.xcscheme`
-- `WealthyUITests/WealthyUITests.swift`
-- `Wealthy/Wealthy/HomeInfo.swift`
-- `Wealthy/Wealthy/LedgerRoot.swift`
-- `Verification/Cycle2aEvidence/native/` (45 JPEG screenshots and `INDEX.md`, approx. 6.5 MB; each image <1 MB, long edge <=2000 px)
+- Operator-confirmed fact: the developer was trusted and a normal `devicectl` launch succeeded at **2026-10-25T03:06Z**, with the phone unlocked and `passcodeRequired false`. This supersedes the earlier launch blocker. The resumed collector subsequently launched and measured the app successfully.
+- Resume branch remained `codex/wealthy-c2a5-swipe`; HEAD was `f6c599629bdb5e818fe1591bb24c5a9bb3bcc909`. Earlier implementation changes had been recorded by the operator. This resume changes only this report and the new synthetic measurement JSON; the full cycle changed-files list above is retained.
+- The operator deleted the earlier `/tmp/wealthy-c2a5*` logs, xcresults and temporary tooling with owner approval; only `/tmp/wealthy-c2a5-device` remained from the earlier run. Historical paths below identify the earlier runs and **are no longer available**, except that retained device build folder. Their observed results are preserved as historical results and were not re-run.
+- Per the resume instruction, **no simulator tests, Core/language checks, builds, app installations or code changes were performed**. Only the remaining physical measurements and report/artifact validation ran. No commit, stage or push was performed.
 
-Pre-existing dirty `.DS_Store` files, two `Launch_Wealthy*.trace/` directories, and `design/v4/引き渡しシート.pdf` were not part of this task and must not be staged. `project.pbxproj` was already dirty before the task with whitespace changes; this task added UI test target settings while preserving the existing whitespace state.
+### Swipe — PASS on both requested simulators
 
-## Verification and exact commands
+- Retained the standard system TabView and tab bar, with the single selection binding shared by taps and swipes.
+- Added a UIKit pan recognizer through SwiftUI's UIGestureRecognizerRepresentable, attached only to the three root views. Only the selected, visible root is enabled; pushed destinations are excluded. The delegate rejects controls, text inputs, button/adjustable accessibility elements, first-responder focus and presented controllers. Result/error presentation and live VoiceOver state also gate navigation.
+- Minimum horizontal travel is 80 pt, with horizontal displacement and initial velocity greater than twice the vertical component. No wrap-around; Reduce Motion uses a nil animation.
+- iPhone 15 Pro and iPhone 17 Pro simulators both run iOS 27.0. The corrected four-test gesture run on 15 Pro passed 4/4 (`/tmp/wealthy-c2a5-gestures15-v3.xcresult`): full left/right/boundary swipes, Home/Info vertical scroll, editor kind/date/note drags, Info segmented drag, Reduce Motion and result-sheet isolation.
+- Full 17 Pro run passed 10/10 (`/tmp/wealthy-c2a5-17.xcresult`), including tab taps, the four gesture tests and Home/Voice/Info/Entry/Result accessibility audits. No audit was filtered or suppressed.
+- The final 15 Pro run passed **11/11** with zero failures (`/tmp/wealthy-c2a5-15-final.xcresult`): six navigation/gesture tests including short and diagonal drags, plus all five accessibility audits. It additionally verifies that the selected tab and hittable root content match after swipes. The supplemental 15 Pro long-selection/focus test passed **1/1** (`/tmp/wealthy-c2a5-15-selection.xcresult`). The 17 Pro supplemental run passed **3/3** (`/tmp/wealthy-c2a5-17-extra.xcresult`): strengthened tab/content synchronization, short/diagonal rejection and long-selection/focus isolation. Each simulator passed **12 distinct tests**, including all five audits. The 17 Pro horizontal test was repeated with the stronger visible-content assertions.
 
-### Target, scheme, build, unit tests
+### Exactly four UI languages — PASS
 
-- `xcodebuild -list -project Wealthy/Wealthy.xcodeproj` — PASS; targets `Wealthy`, `WealthyUITests`; schemes `WealthyCore`, `WealthyUITests`.
-- `xcodebuild -project Wealthy/Wealthy.xcodeproj -scheme WealthyUITests -destination 'platform=iOS Simulator,id=870430A8-E557-4CED-8A8E-079801D804B9' -derivedDataPath /tmp/wealthy-c2a4-clean -only-testing:WealthyUITests/Cycle2aUITests/testVoiceAccessibilityAudit test` — PASS from clean derived data, 1/1.
-- `xcodebuild -project Wealthy/Wealthy.xcodeproj -scheme WealthyUITests -destination 'platform=iOS Simulator,id=870430A8-E557-4CED-8A8E-079801D804B9' -derivedDataPath /tmp/wealthy-c2a4-derived -resultBundlePath /tmp/wealthy-c2a4-accessibility-15final.xcresult -parallel-testing-enabled NO -only-testing:WealthyUITests/Cycle2aUITests/testHomeAccessibilityAudit -only-testing:WealthyUITests/Cycle2aUITests/testVoiceAccessibilityAudit -only-testing:WealthyUITests/Cycle2aUITests/testInfoAccessibilityAudit test` — PASS (3/3), iPhone 15 Pro Simulator, iOS 27.0.
-- Same accessibility command with destination `DEA8D0DF-8BA2-4F70-B19C-BACAC400EAE0` and result `/tmp/wealthy-c2a4-accessibility-17final.xcresult` — PASS (3/3), iPhone 17 Pro Simulator, iOS 27.0.
-- Entry and Result accessibility audits — PASS on iPhone 15 Pro and iPhone 17 Pro in earlier runs; 15 Pro result `/tmp/wealthy-c2a4-accessibility-15pro.xcresult`, 17 Pro result `/tmp/wealthy-c2a4-accessibility-17pro.xcresult` (17 Pro run included Home, Voice, Info, Entry and Result; 5/5).
-- Physical device audits — NOT RUN. The iPhone 16 Pro Max UI runner installation was rejected because the free developer profile already had three test apps installed (`com.harrison.Wealthy.DeviceTestUITests.xctrunner`, `com.harrison.Wealthy.Cycle2aUITests.xctrunner`, and `com.harrison.Wealthy`). No app was uninstalled.
-- `sh Verification/verify_core.sh` — PASS, 117 tests in 13 suites; two opt-in disk/performance tests skipped by suite defaults.
-- `sh Verification/verify_localization.sh` — PASS, 6,634 checks; 196 keys in 11 languages.
-- Simulator Debug build using scheme `WealthyUITests` — PASS.
-- Simulator Release build using scheme `WealthyUITests` — PASS.
-- Generic signed iOS device build using `xcodebuild -project Wealthy/Wealthy.xcodeproj -scheme WealthyUITests -destination 'generic/platform=iOS' -derivedDataPath /tmp/wealthy-c2a4-device build` — PASS.
-- Initial build attempt using scheme `Wealthy` — FAIL: no scheme named `Wealthy` is shared; `xcodebuild -list` confirms the project exposes `WealthyCore` and `WealthyUITests` shared schemes. The UI test scheme builds the app host.
+- The former “196 keys in 11 languages / 6,634 checks” came from `verify_localization.sh` compiling the archived `LegacyApp` AppLanguage and Core/UI/Finance translation dictionaries. It did not inspect the shipping app's catalog. The shipping `Localizable.xcstrings` already had 149 keys in en, ja, es, ko.
+- Removed the seven archived UI choices, translation dictionaries and InfoPlist resource directories: zh-Hans, hi, ar, fr, id, ru, pt. Retained en, ja, es, ko translations verbatim. Unsupported saved choices/locales fall back to English.
+- Updated archived UI test language choices, money-tip checks/evaluator and documentation to four languages. Historical aggregate measurement totals remain explicitly historical; they were not relabeled as new measurements. Currency numeric-locale and natural-language detection fixtures remain because they are not supported UI language declarations.
+- `verify_localization.sh` now checks the shipping catalog before running the archived regression checks: **149 keys x 4 languages, zero missing keys**, then **2,420 archived assertions / 196 keys x 4 languages, zero missing keys**.
+- `verify_shell.py` passed: **149 keys x 4 languages**, placeholders, isolation, all four bundled font subset hashes, Hangul and Spanish glyph coverage. No font assets or font selection code changed (Patrick Hand, Klee One and Poor Story bundles preserved).
+- Built Simulator Debug and physical Release measurement app bundles both contained exactly `en.lproj`, `es.lproj`, `ja.lproj`, `ko.lproj`. Project developmentRegion remains en; knownRegions is en/ja/es/ko plus Base.
+- `verify_money_tip.sh` passed **572 checks across 17 synthetic fixtures**; this is deterministic policy verification, not new model generation.
 
-### Swipe and control tests
+### Physical device measurement — PASS
 
-- `testHorizontalSwipeRemovedAndVerticalScrollDoesNotSwitchTabs` — PASS; horizontal swipe is explicitly verified not to change page after removal, Home/Info vertical scrolling does not switch pages, and native tab taps still work.
-- `testEditorControlDragsDoNotSwitchTabs` — PASS; vertical Edit scroll, segmented kind picker, date picker drag, text-field selection drag leave the entry editor active.
-- `testInfoSegmentedControlDragDoesNotSwitchTabs` — PASS when rerun alone (`/tmp/wealthy-c2a4-info-gesture-retry.xcresult`). It was killed once as part of a longer multi-test run, then passed alone.
-- The earlier pre-removal run showed a text selection drag could leave the editor when the custom pager gesture was enabled. The custom horizontal paging gesture was therefore removed; tab navigation uses the standard tab bar.
-- No in-scope `List.swipeActions` surface exists. The only `List` found is font licenses; its rows have no swipe action. No artificial action was added, so an in-app List swipe-action interaction was not testable.
-- VoiceOver gesture-disabled navigation was not tested because the Computer Use prerequisite CLI was missing (`orca not found`).
+- Device freshly verified: **iPhone 16 Pro Max, iOS 27.2 (24B115)**. Device identifiers and uptime are omitted from public evidence.
+- Used the already installed, optimized **Release** measurement build in `/tmp/wealthy-c2a5-device`, with `WEALTHY_LAUNCH_MEASUREMENT`. No rebuild or reinstall was needed. The real Apple Intelligence availability gate remained active.
+- Used the existing app-level timing path instead of an XCTest runner. Valid measurement arguments select dedicated synthetic temporary disk stores, without opening the normal ledger or writing normal preferences. No app was uninstalled and no user data was deleted.
+- The collector completed one excluded seed/warm-up and **five warm launches at each size**, without a debugger: 18 fresh launches total, including three warm-ups. All 18 launch identifiers were distinct and increasing, and medians were independently recomputed from the five samples.
+- **10k HomeInteractive target: PASS**, median **1.184071 s**, with every warm sample <=2 s. The stop condition did not fire, so the collector proceeded to 50k. No Core persistence or performance optimization was changed.
+- Durable full-precision synthetic evidence: [`Verification/Cycle2aEvidence/c2a5-device-launch.json`](../Verification/Cycle2aEvidence/c2a5-device-launch.json). Tables below show every measured warm launch, rounded to six decimal places in seconds. The JSON also retains excluded warm-ups and full-precision medians.
+- FirstFrame is the loading view's two-display-callback boundary after LedgerSession initialization; HomeInteractive is Home's display callback. These are the existing in-app signpost boundaries, **not OS process-start first-frame or injected-touch-response measurements**. StoreOpen/Snapshot/QuerySnapshot/HomeRender are timings around those existing instrumented regions; per-column medians need not sum to the wall-clock median.
 
-### Screenshots
+| Synthetic entries | Warm samples | FirstFrame median (s) | HomeInteractive median (s) | StoreOpen median (s) | Snapshot median (s) | QuerySnapshot median (s) | HomeRender median (s) |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| 1,000 | 5/5 | 0.054591 | 0.221123 | 0.006565 | 0.054832 | 0.000583 | 0.104834 |
+| 10,000 | 5/5 | 0.055596 | 1.184071 | 0.008107 | 0.513269 | 0.001875 | 0.619709 |
+| 50,000 | 5/5 | 0.055157 | 5.689736 | 0.006783 | 2.734652 | 0.009884 | 2.845745 |
 
-- `testNativeScreenEvidenceLightAndDark` — PASS, 34 screenshots (17 screens × light/dark), captured on iPhone 15 Pro Simulator, iOS 27.0, synthetic fixture; attachments exported from `/tmp/wealthy-c2a4-native-screens.xcresult` and optimized to JPEG q80.
-- `testNativeHomeLanguageEvidence` — PASS; English/Japanese/Spanish/Korean Home plus English AX3 Home, captured on same simulator. Initial attempts used stale accessibility identifiers and failed; the final test waits for `homePage` for AX3 and passed.
-- Additional OS-setting screenshots: 6 images for Home/Voice/Info with Reduce Motion and Reduce Transparency enabled. The iOS preference values were set/read back using `xcrun simctl spawn <UDID> defaults write/read com.apple.Accessibility ReduceMotionEnabled|ReduceTransparencyEnabled`; Settings was launched with `xcrun simctl launch <UDID> com.apple.Preferences`, then Wealthy was launched to capture. This does **not** satisfy the requested Settings UI interaction: the switches were not toggled through XCUITest/computer use. Values were confirmed true before each capture. The capture screenshots are listed in `Verification/Cycle2aEvidence/native/INDEX.md`.
-- VoiceOver manual pass was not run; see Computer Use prerequisite failure above.
-- Home screenshot/crop and accessibility tree evidence from the initial failures were in temporary result bundles/logs, not committed as standalone images.
+All warm samples (seconds):
 
-### Performance and idle CPU
+| Entries | Launch | FirstFrame | HomeInteractive | StoreOpen | Snapshot | QuerySnapshot | HomeRender |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| 1,000 | 1 | 0.058976 | 0.289480 | 0.007408 | 0.058887 | 0.000403 | 0.163497 |
+| 1,000 | 2 | 0.054837 | 0.221471 | 0.006565 | 0.056539 | 0.000604 | 0.102833 |
+| 1,000 | 3 | 0.054591 | 0.221123 | 0.006760 | 0.054620 | 0.000583 | 0.104475 |
+| 1,000 | 4 | 0.048312 | 0.215021 | 0.006372 | 0.054832 | 0.000579 | 0.104834 |
+| 1,000 | 5 | 0.052494 | 0.219069 | 0.006381 | 0.054377 | 0.000639 | 0.105066 |
+| 10,000 | 1 | 0.052890 | 1.161182 | 0.008568 | 0.502351 | 0.001789 | 0.595341 |
+| 10,000 | 2 | 0.055596 | 1.172328 | 0.007448 | 0.500947 | 0.001832 | 0.606302 |
+| 10,000 | 3 | 0.042244 | 1.184071 | 0.006777 | 0.513269 | 0.001915 | 0.619709 |
+| 10,000 | 4 | 0.060301 | 1.247921 | 0.008239 | 0.520829 | 0.001875 | 0.656385 |
+| 10,000 | 5 | 0.076701 | 1.247734 | 0.008107 | 0.537603 | 0.001955 | 0.623133 |
+| 50,000 | 1 | 0.067142 | 5.605066 | 0.006717 | 2.695035 | 0.009884 | 2.826602 |
+| 50,000 | 2 | 0.075556 | 5.655113 | 0.007017 | 2.734652 | 0.009455 | 2.828603 |
+| 50,000 | 3 | 0.049446 | 5.936417 | 0.006783 | 2.718280 | 0.009482 | 3.152166 |
+| 50,000 | 4 | 0.051866 | 5.689736 | 0.007205 | 2.774961 | 0.010108 | 2.845745 |
+| 50,000 | 5 | 0.055157 | 5.788751 | 0.006527 | 2.772304 | 0.010189 | 2.944773 |
 
-Simulator: Wealthy iPhone 15 Pro (iPhone 15 Pro device type), iOS 27.0, UDID `870430A8-E557-4CED-8A8E-079801D804B9`. Data set is synthetic test data. Tests:
+Excluded warm-up launches (seconds; excluded regardless of whether seeding was necessary):
 
-`xcodebuild -project Wealthy/Wealthy.xcodeproj -scheme WealthyUITests -destination 'platform=iOS Simulator,id=870430A8-E557-4CED-8A8E-079801D804B9' -derivedDataPath /tmp/wealthy-c2a4-derived -resultBundlePath /tmp/wealthy-c2a4-performance.xcresult -parallel-testing-enabled NO -only-testing:WealthyUITests/Cycle2aUITests/testLaunchMetric1000 -only-testing:WealthyUITests/Cycle2aUITests/testLaunchMetric10000 -only-testing:WealthyUITests/Cycle2aUITests/testLaunchMetric50000 -only-testing:WealthyUITests/Cycle2aUITests/testHomeInteractiveMetric1000 -only-testing:WealthyUITests/Cycle2aUITests/testHomeInteractiveMetric10000 -only-testing:WealthyUITests/Cycle2aUITests/testHomeInteractiveMetric50000 test`
+| Entries | FirstFrame | HomeInteractive | StoreOpen | Snapshot | QuerySnapshot | HomeRender |
+| --- | --- | --- | --- | --- | --- | --- |
+| 1,000 | 0.044609 | 0.211094 | 0.010259 | 0.054907 | 0.000574 | 0.100644 |
+| 10,000 | 0.049556 | 1.149577 | 0.012154 | 0.493916 | 0.001751 | 0.591913 |
+| 50,000 | 0.056505 | 5.677816 | 0.008293 | 2.807586 | 0.009694 | 2.796078 |
 
-- `XCTApplicationLaunchMetric` AppLaunch averages over its five warm launches: 1k 2.748 s; 10k 3.188 s; 50k 3.298 s. These are XCTest AppLaunch values, not first-frame timing.
-- OS signpost FirstFrame: 1k samples `[0.221, 0.299, 0.474, 0.451, 0.486]` s (median 0.451 s); 10k one XCTest-retained sample 0.499 s; 50k one retained sample 0.299 s.
-- OS signpost HomeInteractive: 1k samples `[0.871, 1.135, 2.849, 1.728, 1.802]` s (median 1.728 s); 10k one retained sample 3.245 s; 50k one retained sample 5.890 s.
-- XCTest warned that the signpost metrics were not measured in the first iteration for the 10k/50k interactive tests, so XCTest retained one observation rather than the requested five. Those are single observed samples, **not medians**. 10k Home interactive exceeded the 2 s target in this sample. The five-run requirement is therefore incomplete for 10k/50k signposts.
-- Signpost cost split (single retained sample for 10k/50k): 10k StoreOpen 0.241 s, Snapshot 1.034 s, QuerySnapshot 0.061 s, HomeRender 1.409 s; 50k StoreOpen 0.142 s, Snapshot 4.019 s, QuerySnapshot 0.171 s, HomeRender 1.259 s. FirstFrame was 0.499/0.299 s respectively. These are disjoint instrument intervals from simulator runs; they should not be added as wall-clock totals.
-- 60 s idle Time Profiler: `xcrun xctrace record --template 'Time Profiler' --device 870430A8-E557-4CED-8A8E-079801D804B9 --attach 51439 --time-limit 60s --output /tmp/wealthy-c2a4-idle.trace --quiet`; trace duration 60.640591 s. Exported `time-sample` table had 232 samples, 1 in Running/Runnable state (0.43% sample share). This is simulator CPU profiler sample share, not device battery usage or a direct CPU utilization average.
+The earlier native Security launch error is resolved; it is retained below only as run history. No simulator measurements are substituted for device numbers.
 
-## Expected / actual
+## Verification commands
 
-- Expected: UI target and shared scheme; audits, gestures, screenshot evidence, 5-run metrics and idle CPU evidence; Settings UI automation for Reduce Motion/Transparency; VoiceOver attempt.
-- Actual: target/scheme, simulator audits, gestures (with swipe removed), required core screenshot matrices, simulator metrics and profiler samples were obtained. Acceptance is **not met** because physical audits were blocked by provisioning install limits, Settings switches were changed through `simctl defaults` rather than UI, VoiceOver was not run, 10k/50k signpost five-run medians were not available, and 10k interactive exceeded the target in the single retained sample. No hardware performance or battery claim is made.
+### Required checks and supporting checks
 
-## Errors / warnings / reproduction
+- `sh Verification/verify_core.sh` — PASS, **117 tests in 13 suites**; the Disk ledger benchmarks suite and PERF opt-in disk latency test remain skipped by their unchanged defaults. First sandboxed attempt failed with `sandbox-exec: sandbox_apply: Operation not permitted`; the same command succeeded with authorized host access. Log: `/tmp/wealthy-c2a5-core.log`.
+- `sh Verification/verify_localization.sh` — PASS, shipping 149 x 4 / archived 196 x 4, 2,420 assertions.
+- `PATH=/tmp/wealthy-c2a5-tools/bin:$PATH python3 Verification/verify_shell.py` — PASS. The first run lacked fontTools; installed fonttools 4.67.0 in a disposable `/tmp/wealthy-c2a5-tools` venv, without adding an app dependency or changing system Python.
+- `sh Verification/verify_money_tip.sh` — PASS, 572 checks / 17 fixtures.
+- Python `ast.parse` on `Verification/measure_device_launch.py` and `Verification/verify_localization_catalog.py` — PASS.
+- `git diff --check` — PASS (repeated after final report update).
 
-- Home audit initially reported a low-contrast “Not a balance” footer below the tab bar at AX3. The UI hierarchy showed that the bottom month summary and its “Not a balance” label were at y≈820 under the tab bar; after moving/compacting Home status content and removing duplicate bottom controls, final Home/Voice/Info audits passed on both simulators.
-- `testInfoSegmentedControlDragDoesNotSwitchTabs` runner was killed once in a 3-test run (`Test crashed with signal kill`); its isolated rerun passed.
-- Xcode emits `IDELaunchParametersSnapshot: debugger version lookup failed for path '<nil>': noURL` and a duplicate WebKit accessibility class warning in simulator runtime; neither blocked successful runs.
-- To reproduce screenshot export: `xcrun xcresulttool export attachments --path /tmp/wealthy-c2a4-native-screens.xcresult --output-path /tmp/wealthy-c2a4-exported-native`.
+### Simulator commands
 
-## Unresolved / not run
+Initial corrected gesture run:
 
-- Settings interaction via `com.apple.Preferences` XCUITest and VoiceOver manual pass.
-- Physical iPhone audit and performance measurement; free provisioning profile’s test app install limit prevented physical UI test runner install.
-- 5 retained signpost measurements for 10k/50k, and a direct CPU utilization/battery metric.
-- The physical device was iPhone 16 Pro Max, not an iOS 26 device; iOS 26 hardware behavior was not checked.
-- No design-vs-implementation comparisons were requested in Cycle 2a.4; screenshots are implementation captures only.
-- `git diff --check` — PASS. The task commits were pushed to `origin/codex/wealthy-c2a4-uitest`; final remote ref confirmed at `0ac28454c74854e6ab02d5ec049ee21cbd00103d`. PR #7 is open as a draft; no merge performed.
+```sh
+xcodebuild -project Wealthy/Wealthy.xcodeproj -scheme WealthyUITests \
+  -destination 'platform=iOS Simulator,id=870430A8-E557-4CED-8A8E-079801D804B9' \
+  -derivedDataPath /tmp/wealthy-c2a5 -resultBundlePath /tmp/wealthy-c2a5-gestures15-v3.xcresult \
+  -parallel-testing-enabled NO \
+  -only-testing:WealthyUITests/Cycle2aUITests/testHorizontalTabSwipeAndVerticalScroll \
+  -only-testing:WealthyUITests/Cycle2aUITests/testEditorControlDragsDoNotSwitchTabs \
+  -only-testing:WealthyUITests/Cycle2aUITests/testInfoSegmentedControlDragDoesNotSwitchTabs \
+  -only-testing:WealthyUITests/Cycle2aUITests/testReduceMotionSwipeAndSheetIsolation test
+```
 
-## Intentionally not performed
+PASS 4/4. The complete final simulator commands follow. Every command below passed; all tests use synthetic fixtures. The long-selection case enters synthetic text, holds for 1.2 seconds and drags within the note field, then attempts a horizontal swipe while editing. The editor remains active and Home remains selected.
 
-- No WealthyCore behavior changes, no dependency changes, no PR merge, no deletion of data or existing user files, and no staging of unrelated dirty files.
+iPhone 15 Pro: PASS 11/11, zero failures; log `/tmp/wealthy-c2a5-15-final.log`.
+
+```sh
+xcodebuild -project Wealthy/Wealthy.xcodeproj -scheme WealthyUITests -destination "platform=iOS Simulator,id=870430A8-E557-4CED-8A8E-079801D804B9" -derivedDataPath /tmp/wealthy-c2a5 -resultBundlePath /tmp/wealthy-c2a5-15-final.xcresult -parallel-testing-enabled NO "-only-testing:WealthyUITests/Cycle2aUITests/testPagerNavigation" "-only-testing:WealthyUITests/Cycle2aUITests/testHorizontalTabSwipeAndVerticalScroll" "-only-testing:WealthyUITests/Cycle2aUITests/testShortAndDiagonalDragsDoNotSwitchTabs" "-only-testing:WealthyUITests/Cycle2aUITests/testEditorControlDragsDoNotSwitchTabs" "-only-testing:WealthyUITests/Cycle2aUITests/testInfoSegmentedControlDragDoesNotSwitchTabs" "-only-testing:WealthyUITests/Cycle2aUITests/testReduceMotionSwipeAndSheetIsolation" "-only-testing:WealthyUITests/Cycle2aUITests/testHomeAccessibilityAudit" "-only-testing:WealthyUITests/Cycle2aUITests/testVoiceAccessibilityAudit" "-only-testing:WealthyUITests/Cycle2aUITests/testInfoAccessibilityAudit" "-only-testing:WealthyUITests/Cycle2aUITests/testEntryAccessibilityAudit" "-only-testing:WealthyUITests/Cycle2aUITests/testResultAccessibilityAudit" test
+```
+
+iPhone 15 Pro supplemental: PASS 1/1, zero failures; log `/tmp/wealthy-c2a5-15-selection.log`.
+
+```sh
+xcodebuild -project Wealthy/Wealthy.xcodeproj -scheme WealthyUITests -destination "platform=iOS Simulator,id=870430A8-E557-4CED-8A8E-079801D804B9" -derivedDataPath /tmp/wealthy-c2a5 -resultBundlePath /tmp/wealthy-c2a5-15-selection.xcresult -parallel-testing-enabled NO "-only-testing:WealthyUITests/Cycle2aUITests/testFocusedSelectionAndEditorSwipeIsolation" test
+```
+
+iPhone 17 Pro: PASS 10/10, zero failures; log `/tmp/wealthy-c2a5-17.log`.
+
+```sh
+xcodebuild -project Wealthy/Wealthy.xcodeproj -scheme WealthyUITests -destination "platform=iOS Simulator,id=DEA8D0DF-8BA2-4F70-B19C-BACAC400EAE0" -derivedDataPath /tmp/wealthy-c2a5-17 -resultBundlePath /tmp/wealthy-c2a5-17.xcresult -parallel-testing-enabled NO "-only-testing:WealthyUITests/Cycle2aUITests/testPagerNavigation" "-only-testing:WealthyUITests/Cycle2aUITests/testHorizontalTabSwipeAndVerticalScroll" "-only-testing:WealthyUITests/Cycle2aUITests/testEditorControlDragsDoNotSwitchTabs" "-only-testing:WealthyUITests/Cycle2aUITests/testInfoSegmentedControlDragDoesNotSwitchTabs" "-only-testing:WealthyUITests/Cycle2aUITests/testReduceMotionSwipeAndSheetIsolation" "-only-testing:WealthyUITests/Cycle2aUITests/testHomeAccessibilityAudit" "-only-testing:WealthyUITests/Cycle2aUITests/testVoiceAccessibilityAudit" "-only-testing:WealthyUITests/Cycle2aUITests/testInfoAccessibilityAudit" "-only-testing:WealthyUITests/Cycle2aUITests/testEntryAccessibilityAudit" "-only-testing:WealthyUITests/Cycle2aUITests/testResultAccessibilityAudit" test
+```
+
+iPhone 17 Pro supplemental: PASS 3/3, zero failures; log `/tmp/wealthy-c2a5-17-extra.log`.
+
+```sh
+xcodebuild -project Wealthy/Wealthy.xcodeproj -scheme WealthyUITests -destination "platform=iOS Simulator,id=DEA8D0DF-8BA2-4F70-B19C-BACAC400EAE0" -derivedDataPath /tmp/wealthy-c2a5-17 -resultBundlePath /tmp/wealthy-c2a5-17-extra.xcresult -parallel-testing-enabled NO "-only-testing:WealthyUITests/Cycle2aUITests/testHorizontalTabSwipeAndVerticalScroll" "-only-testing:WealthyUITests/Cycle2aUITests/testShortAndDiagonalDragsDoNotSwitchTabs" "-only-testing:WealthyUITests/Cycle2aUITests/testFocusedSelectionAndEditorSwipeIsolation" test
+```
+
+### Ordinary Release build — PASS
+
+```sh
+xcodebuild -project Wealthy/Wealthy.xcodeproj -scheme WealthyUITests -configuration Release -destination 'generic/platform=iOS Simulator' -derivedDataPath /tmp/wealthy-c2a5 build
+```
+
+PASS without the measurement compile condition, for arm64 and x86_64 Simulator. Log: `/tmp/wealthy-c2a5-release.log`.
+
+### Initial physical Release build and collector — historical attempt
+
+Device UDID is redacted as `$DEVICE_UDID` below; the actual paired identifier was supplied when running these commands.
+
+```sh
+xcodebuild -project Wealthy/Wealthy.xcodeproj -scheme WealthyUITests \
+  -configuration Release -destination "platform=iOS,id=$DEVICE_UDID" \
+  -derivedDataPath /tmp/wealthy-c2a5-device -allowProvisioningUpdates \
+  'SWIFT_ACTIVE_COMPILATION_CONDITIONS=$(inherited) WEALTHY_LAUNCH_MEASUREMENT' build
+xcrun devicectl device install app --device "$DEVICE_UDID" \
+  /tmp/wealthy-c2a5-device/Build/Products/Release-iphoneos/Wealthy.app
+python3 Verification/measure_device_launch.py --device "$DEVICE_UDID" \
+  --output /tmp/wealthy-c2a5-device-samples.json
+xcrun devicectl device process launch --device "$DEVICE_UDID" --terminate-existing \
+  com.harrison.Wealthy -- --cycle2a-performance --entry-count 1000 -v4.language en -v4.currency JPY
+codesign --verify --deep --strict /tmp/wealthy-c2a5-device/Build/Products/Release-iphoneos/Wealthy.app
+```
+
+Initial attempt: build PASS; install PASS; collector FAIL/BLOCKED at first launch; direct diagnostic launch FAIL with `CoreDeviceError 10002` / `FBSOpenApplicationErrorDomain 3 (Security)`: "Unable to launch com.harrison.Wealthy because it has an invalid code signature, inadequate entitlements or its profile has not been explicitly trusted by the user." Host codesign verification PASS. This earlier launch blocker is now resolved. The initial build without `-allowProvisioningUpdates` failed for a missing development profile; normal automatic signing resolved the build. Device launch subsequently succeeded after the operator confirmed trust. Build log: `/tmp/wealthy-c2a5-device-build-final.log`; collection log/result: `/tmp/wealthy-c2a5-device-measure.log`, `/tmp/wealthy-c2a5-device-samples.json`.
+
+### Resumed physical collector — PASS
+
+Device UDID is redacted as `$DEVICE_UDID`; the actual paired identifier was supplied. Executed only these device operations:
+
+```sh
+xcrun devicectl device info details --device "$DEVICE_UDID" \
+  --json-output /tmp/wealthy-c2a5-resume-device.json \
+  > /tmp/wealthy-c2a5-resume-device.log 2>&1
+python3 Verification/measure_device_launch.py --device "$DEVICE_UDID" \
+  --output /tmp/wealthy-c2a5-resume-samples.json \
+  > /tmp/wealthy-c2a5-resume-measure.log 2>&1
+```
+
+Both commands PASS; collector exit code **0**, status **COMPLETED**. Each collector launch uses `device process launch --terminate-existing com.harrison.Wealthy -- --cycle2a-performance --entry-count N -v4.language en -v4.currency JPY`. It copies only `tmp/Cycle2aLaunchMeasurement.json` from the app container after each launch. Local resumed logs and raw output are new files; the durable, identifier-free full-precision measurements are in the changed-files JSON artifact.
+
+Validation PASS: exactly 5 warm samples plus 1 excluded warm-up per size, expected entry counts, finite nonnegative metrics, 18 fresh launch identifiers, independently recomputed medians, and all five 10k HomeInteractive samples <=2 s. `git diff --check` PASS after the report/artifact update. No earlier automated test was rerun, as explicitly instructed.
+
+## Errors, expected / actual and not done / unverified
+
+- Expected: synchronized native tabs and safe root swipe, four-language checks, five warm physical samples at each size and 10k HomeInteractive <=2 s. Actual: earlier simulator results (12 distinct tests on each requested simulator) and language/Core passes are preserved; the resumed physical collector completed all 15 warm measurements and the 10k target passed. Status is DONE for this task. Earlier logs/xcresults were deleted with owner approval and are not claimed to be retained.
+- Initial recognizer attempt used an unsupported `simultaneousGesture` overload and failed to build; replaced it with the documented `.gesture` bridge and simultaneous-recognition delegate. A subsequent preliminary run exposed a selected-Home/visible-Voice mismatch and editor test failures; the final implementation restricts recognition to the selected visible root and uses SwiftUI global-coordinate conversion. The corrected four-test 15 Pro run passed. The earlier failed run was interrupted after simulator runner relaunch errors; it is not counted as a pass.
+- Xcode emitted simulator `invalidDigitCount(94232)`, debugger `noURL` and duplicate WebKit accessibility-class warnings. AppIntents metadata extraction was skipped because the app has no AppIntents dependency. No product changes were made for these tool/runtime warnings.
+- Actual VoiceOver navigation/gesture toggling was not exercised; the implementation checks live `UIAccessibility.isVoiceOverRunning` before recognition and switching. Reduce Motion's deterministic UI-test override was exercised, rather than changing the phone's Settings.
+- Baseline observation for the designer: current SwiftUI sources do not call `Font.custom`; bundled fonts/licenses are present. This cycle leaves that baseline unchanged and does not establish per-language handwritten rendering. No independent font/UI design change was made.
+- No real financial records, ReceiptExample files, camera input, production deployment, new app dependencies, physical-app removal, persistence change, historical data migration, or new performance optimization was performed.
+- The current free-provisioning runner app limit was not re-tested; the chosen app-level path installs no test runner. Physical UI audits, actual VoiceOver operation, Settings interaction and OS process-start/injected-touch latency were not newly tested; this resume was limited to the remaining app-level physical launch measurement. No remaining decision or external blocker is required for these measurements.

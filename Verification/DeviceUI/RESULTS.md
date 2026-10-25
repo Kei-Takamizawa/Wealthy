@@ -8,8 +8,8 @@ Tested on an **iPhone 16 Pro Max running iOS 27.2**, with Apple Intelligence ena
 | --- | --- |
 | Bookkeeping, points and backup dialog | Passed: a 1,200-yen expense created Cash at −1,200; setting the current balance to 5,000, cancelling an expense edit and then saving its 700-yen replacement produced the expected balances. Point-card registration and cancelling a points edit preserved 900 points. The receipt-image size/choice dialog, Calendar and Analysis opened. |
 | Actual chat replies | Passed: in English UI, a Japanese spending question received a Japanese answer containing the recorded 700 yen; a subsequent English question received an English answer with the same recorded amount. Generated wording varied between runs. |
-| Initial language choices | Passed: all 11 choices opened the app. A normal relaunch retained the last choice, Portuguese, without showing onboarding. |
-| Language changes in Settings | Passed: English, Hindi, Arabic and Japanese were selected from Settings in the same session. A normal relaunch retained Japanese without showing onboarding. |
+| Initial language choices | Historical pass across the former language set; a normal relaunch retained the last choice without showing onboarding. Current supported UI languages are en, ja, es, ko; this older run is not current four-language evidence. |
+| Language changes in Settings | Historical pass: several former language choices were selected from Settings in the same session. A normal relaunch retained Japanese without showing onboarding. |
 | iOS SwiftData ledger | Passed: one-time debit, discarded edits remaining outside autosave, saved amount changes, one persisted entry, and reversal on delete. |
 | Image/points backup | Passed: schema-4 backup and restore preserved the balance, point card and exact synthetic PNG bytes; the restored image decoded on iOS under a fresh filename. Chat was absent from the exported archive. |
 | Multiple currencies and onboarding | Passed: language selection preceded the currency popup; one JPY choice and multiple JPY/USD choices worked, while an empty selection could not be saved. The choice and USD default survived normal relaunches without either popup. A USD 12.34 expense created a separate wallet at −12.34; adding USD 100.00 produced 87.66 while JPY Cash stayed at 5,500. Settings, per-currency Analysis, and Calendar were checked. |
@@ -26,12 +26,12 @@ The initial-choice case intentionally launches the test app with an argument rep
 
 - Removed color inversion from the expense date picker and matched its system appearance to the dark editor; the date became readable.
 - Made payment-method and date input groups use the editor's full width.
-- Expanded the initial language popup and allowed longer Home button labels to wrap to two lines. English, Hindi, Arabic and Japanese screenshots were reviewed after the button change.
+- Expanded the initial language popup and allowed longer Home button labels to wrap to two lines. Screenshots in the former language set were reviewed after the button change; these are historical captures.
 - Kept currency confirmation and cancellation accessible while searching, above the keyboard.
 - Validated positive deposits through the ledger and used Decimal for historical totals to prevent integer-overflow crashes.
 - Added conservative food evidence for an explicit reduced-tax-rate subtotal when item names are unclear. Newspaper/subscription and mixed standard-tax evidence suppress that inference. The final photographed-receipt category result is a development-set measurement, not model-only accuracy.
 
-The device reported model support for English, Japanese, Simplified Chinese, Spanish, French, Korean and Portuguese. Hindi, Arabic, Indonesian and Russian were unsupported by its installed model. All 11 interface languages remain selectable; AI support is queried from Apple's API rather than inferred from interface availability.
+This historical run checked the former language set. Current interface languages are exactly English, Japanese, Spanish and Korean. AI support is queried from Apple's API rather than inferred from interface availability.
 
 ## Build checks and limits
 

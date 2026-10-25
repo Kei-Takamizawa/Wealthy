@@ -28,7 +28,7 @@ sh Verification/verify_payments.sh
 sh Verification/verify_migration.sh
 ```
 
-The 6,634 localization assertions cover all 196 catalog keys in 11 languages, formatting placeholders, persisted choices, English fallback, Arabic direction, and category aliases. They establish catalog completeness, not native-speaker translation review or device layout.
+The localization script checks the shipping catalog and all 196 archived catalog keys in exactly four languages (en, ja, es, ko), formatting placeholders, persisted choices, English fallback and category aliases. The former 6,634-check count came from the archived app before Cycle 2a.5 language cleanup. They establish catalog completeness, not native-speaker translation review or device layout.
 
 The 96 payment and ledger checks use synthetic OCR text and actual in-memory SwiftData. They check 24 payment identifiers, absence of payment evidence, advertising and transaction-ID exclusions, ambiguous methods/points redemption, negative provisional wallets, one-time debits, income signs, edited/deleted entries, separate points, and unfinished edits remaining outside autosave. They do not measure payment-method recognition on photographs or access bank accounts.
 
@@ -56,9 +56,9 @@ The 65 language checks cover language decisions and instructions across the disp
 sh Verification/verify_money_tip.sh
 ```
 
-The 1,524 checks across 17 fixtures and 11 languages test situation selection, bounded factual actions, fallback humor, and Codable round trips. Wallet balances are not substituted for unrecorded income. The model writes a short playful opening; the app appends a situation-appropriate action derived from the records. Invalid or unavailable generation uses the local fallback opening.
+The 572 checks across 17 fixtures and the four supported languages test situation selection, bounded factual actions, fallback humor, and Codable round trips. Wallet balances are not substituted for unrecorded income. The model writes a short playful opening; the app appends a situation-appropriate action derived from the records. Invalid or unavailable generation uses the local fallback opening.
 
-To measure the actual on-device service with three synthetic financial scenarios in each of the 11 display languages:
+To measure the actual on-device service with three synthetic financial scenarios in each of the four display languages:
 
 ```sh
 sh Verification/verify_ticker_model.sh /private/tmp/wealthy-ticker-model-results.json
@@ -91,7 +91,7 @@ xcodebuild -project /private/tmp/wealthy-device-verification/Wealthy.xcodeproj \
 
 Use `xcrun devicectl list devices` to find the connected device. The generator inherits the project’s signing team; use `--team YOUR_TEAM_ID` to override it. iOS may require trusting the development signer under **Settings → General → VPN & Device Management**. The test app has its own records, receipt files and language preferences; the normal Wealthy app's container is not reset. Tests create synthetic records and screenshot attachments. To rerun the initial negative-wallet checks, use a fresh test-app container; remove only the dedicated DeviceTest app, never the normal app or its data.
 
-The UI suite exercises negative provisional Cash, wallet editing, cancelling and saving expense edits, point-card registration/cancel, the backup size dialog, Calendar/Analysis, actual Japanese/English AI replies, all 11 initial language choices, and preference persistence. Its multi-currency cases cover language → currency onboarding, one/multiple choices, empty-selection prevention, persistent defaults, USD decimal expenses and income, independent JPY balances, and AI responses that keep JPY/USD spending separate. A separate settings case changes display languages without forcing onboarding and checks the saved choice after relaunch. Core tests exercise the real iOS SwiftData ledger, Decimal chart aggregates above the Int range, and schema-4 image/point/currency backup while excluding chat.
+The UI suite exercises negative provisional Cash, wallet editing, cancelling and saving expense edits, point-card registration/cancel, the backup size dialog, Calendar/Analysis, actual Japanese/English AI replies, initial language choices (historical suite; supported choices are now en, ja, es, ko), and preference persistence. Its multi-currency cases cover language → currency onboarding, one/multiple choices, empty-selection prevention, persistent defaults, USD decimal expenses and income, independent JPY balances, and AI responses that keep JPY/USD spending separate. A separate settings case changes display languages without forcing onboarding and checks the saved choice after relaunch. Core tests exercise the real iOS SwiftData ledger, Decimal chart aggregates above the Int range, and schema-4 image/point/currency backup while excluding chat.
 
 The initial-language case deliberately relaunches the separate test app with `-hasSelectedLanguage NO` to reproduce a fresh choice in each language. This override is a test launch argument, not normal app behavior. Normal relaunches retain the chosen language; the production app is never launched with this override.
 

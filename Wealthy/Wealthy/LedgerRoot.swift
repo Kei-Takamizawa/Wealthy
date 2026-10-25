@@ -135,13 +135,16 @@ struct LedgerTabs: View {
         guard (0...2).contains(destination) else { return }
         withAnimation(reduce ? nil : .easeInOut(duration: 0.2)) { page = destination }
     }
+    private func rootSwipe(_ index: Int) -> RootTabSwipeModifier {
+        RootTabSwipeModifier(enabled: page == index && result == nil && session.error == nil) { direction in move(page + direction) }
+    }
     var body: some View {
         TabView(selection: $page) {
-            NavigationStack { VoiceView() }
+            NavigationStack { VoiceView().modifier(rootSwipe(0)) }
                 .tabItem { Label(session.t("voice"), systemImage: "mic") }.tag(0)
-            NavigationStack { HomeView(showResult: { result = $0 }) }
+            NavigationStack { HomeView(showResult: { result = $0 }).modifier(rootSwipe(1)) }
                 .tabItem { Label(session.t("home"), systemImage: "house") }.tag(1)
-            NavigationStack { InfoView(showResult: { result = $0 }) }
+            NavigationStack { InfoView(showResult: { result = $0 }).modifier(rootSwipe(2)) }
                 .tabItem { Label(session.t("info"), systemImage: "info.circle") }.tag(2)
         }
         .accessibilityIdentifier("mainTabs")
@@ -168,5 +171,78 @@ struct VoiceView: View {
         }
         .navigationTitle(session.t("voice"))
         .accessibilityIdentifier("voiceScreen")
+    }
+}
+
+private struct RootTabSwipeModifier: ViewModifier {
+    let enabled: Bool
+    let move: (Int) -> Void
+    @State private var visible = false
+    func body(content: Content) -> some View {
+        content.gesture(RootTabSwipe(enabled: enabled && visible, move: move))
+            .onAppear { visible = true }
+            .onDisappear { visible = false }
+    }
+}
+
+/// Installed on the three root pages, never on their NavigationStacks or destinations.
+private struct RootTabSwipe: UIGestureRecognizerRepresentable {
+    let enabled: Bool
+    let move: (Int) -> Void
+
+    func makeCoordinator(converter: CoordinateSpaceConverter) -> Coordinator { Coordinator(converter: converter) }
+    func makeUIGestureRecognizer(context: Context) -> UIPanGestureRecognizer {
+        let pan = UIPanGestureRecognizer()
+        pan.maximumNumberOfTouches = 1
+        pan.cancelsTouchesInView = false
+        pan.delegate = context.coordinator
+        return pan
+    }
+    func updateUIGestureRecognizer(_ pan: UIPanGestureRecognizer, context: Context) {
+        pan.isEnabled = enabled && !UIAccessibility.isVoiceOverRunning
+    }
+    func handleUIGestureRecognizerAction(_ pan: UIPanGestureRecognizer, context: Context) {
+        guard pan.state == .ended, enabled, !UIAccessibility.isVoiceOverRunning,
+              context.coordinator.canNavigate(in: context.coordinator.window) else { return }
+        guard let delta = context.converter.translation(in: .global) else { return }
+        guard abs(delta.x) >= 80, abs(delta.x) > abs(delta.y) * 2 else { return }
+        move(delta.x < 0 ? 1 : -1)
+    }
+    final class Coordinator: NSObject, UIGestureRecognizerDelegate {
+        weak var window: UIWindow?
+        let converter: CoordinateSpaceConverter
+        init(converter: CoordinateSpaceConverter) { self.converter = converter }
+        func canNavigate(in window: UIWindow?) -> Bool {
+            guard let window, !UIAccessibility.isVoiceOverRunning else { return false }
+            func hasFocus(_ view: UIView) -> Bool {
+                view.isFirstResponder || view.subviews.contains(where: hasFocus)
+            }
+            func hasPresentation(_ controller: UIViewController) -> Bool {
+                controller.presentedViewController != nil || controller.children.contains(where: hasPresentation)
+            }
+            return !hasFocus(window) && !(window.rootViewController.map(hasPresentation) ?? true)
+        }
+        func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer, shouldReceive touch: UITouch) -> Bool {
+            window = touch.view?.window
+            guard canNavigate(in: window) else { return false }
+            var view = touch.view
+            while let current = view {
+                // Include SwiftUI controls exposed through accessibility, as well as UIKit controls.
+                if current is UIControl || current is UITextView || current is UITextField ||
+                    current.accessibilityTraits.contains(.button) || current.accessibilityTraits.contains(.adjustable) {
+                    return false
+                }
+                view = current.superview
+            }
+            return true
+        }
+        func gestureRecognizerShouldBegin(_ gestureRecognizer: UIGestureRecognizer) -> Bool {
+            guard gestureRecognizer is UIPanGestureRecognizer,
+                  canNavigate(in: window) else { return false }
+            guard let velocity = converter.velocity(in: .global) else { return false }
+            return abs(velocity.x) > abs(velocity.y) * 2
+        }
+        func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer,
+                               shouldRecognizeSimultaneouslyWith otherGestureRecognizer: UIGestureRecognizer) -> Bool { true }
     }
 }

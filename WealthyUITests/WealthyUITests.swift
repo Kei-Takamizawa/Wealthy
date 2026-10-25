@@ -260,8 +260,8 @@ final class Cycle2aUITests: XCTestCase {
 
     @MainActor
 
-    func launchSeededWorkflow() {
-        app.launchArguments = ["--cycle2a-test", "--cycle2a-seed", "--reset-test-preferences", "--reduce-motion", "-v4.language", "en", "-v4.currency", "JPY"]
+    func launchSeededWorkflow(flags: [String] = []) {
+        app.launchArguments = ["--cycle2a-test", "--cycle2a-seed", "--reset-test-preferences", "-v4.language", "en", "-v4.currency", "JPY"] + flags
         app.launch(); XCTAssertTrue(app.tabBars.buttons["Island"].waitForExistence(timeout: 30), app.debugDescription)
         XCTAssertTrue(app.tabBars.buttons["Island"].isSelected, app.debugDescription)
     }
@@ -305,22 +305,82 @@ final class Cycle2aUITests: XCTestCase {
     }
 
     @MainActor
+    private func assertRootVisible(_ identifier: String) {
+        let root = app.descendants(matching: .any).matching(identifier: identifier).firstMatch
+        XCTAssertTrue(root.waitForExistence(timeout: 5), app.debugDescription)
+        XCTAssertTrue(root.isHittable, "The visible content must match the selected tab: \(identifier)")
+    }
 
-    func testHorizontalSwipeRemovedAndVerticalScrollDoesNotSwitchTabs() throws {
+    /// Start in noninteractive root content, away from the navigation and tab bars.
+    @MainActor
+    private func swipeRoot(left: Bool) {
+        let start = app.coordinate(withNormalizedOffset: CGVector(dx: left ? 0.8 : 0.2, dy: 0.35))
+        let end = app.coordinate(withNormalizedOffset: CGVector(dx: left ? 0.2 : 0.8, dy: 0.35))
+        start.press(forDuration: 0.05, thenDragTo: end)
+    }
+
+    @MainActor
+    func testShortAndDiagonalDragsDoNotSwitchTabs() throws {
+        launchSeededWorkflow()
+        let home = app.tabBars.buttons["Island"]
+        let start = app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.35))
+        start.press(forDuration: 0.05, thenDragTo: start.withOffset(CGVector(dx: -45, dy: 0)))
+        XCTAssertTrue(home.isSelected, "A short horizontal drag must not switch tabs.")
+        start.press(forDuration: 0.05, thenDragTo: start.withOffset(CGVector(dx: -100, dy: 100)))
+        XCTAssertTrue(home.isSelected, "A diagonal drag without horizontal dominance must not switch tabs.")
+    }
+
+    @MainActor
+    func testReduceMotionSwipeAndSheetIsolation() throws {
+        launchSeededWorkflow(flags: ["--reduce-motion"])
+        let home = app.tabBars.buttons["Island"]
+        let info = app.tabBars.buttons["Info"]
+        swipeRoot(left: true)
+        XCTAssertTrue(info.isSelected)
+        swipeRoot(left: false)
+        XCTAssertTrue(home.isSelected)
+        app.buttons["resultMenu"].tap()
+        app.buttons["Your week"].tap()
+        let close = app.buttons["Done"]
+        XCTAssertTrue(close.waitForExistence(timeout: 5), app.debugDescription)
+        swipeRoot(left: true)
+        XCTAssertTrue(close.exists, "A sheet drag must keep the result sheet presented.")
+        close.tap()
+        XCTAssertTrue(home.isSelected, "A sheet drag must not change the underlying tab.")
+    }
+
+    @MainActor
+
+    func testHorizontalTabSwipeAndVerticalScroll() throws {
         launchSeededWorkflow()
         let home = app.tabBars.buttons["Island"]
         let info = app.tabBars.buttons["Info"]
         XCTAssertTrue(home.isSelected, app.debugDescription)
+        assertRootVisible("homePage")
         app.swipeUp()
         XCTAssertTrue(home.isSelected, "A vertical Home scroll must not select another tab.")
-        app.swipeLeft()
-        XCTAssertTrue(home.isSelected, "Horizontal tab paging was removed because it captured text-selection drags.")
+        swipeRoot(left: true)
+        XCTAssertTrue(info.isSelected, "A left swipe from Home selects Info.")
+        assertRootVisible("infoPage")
+        swipeRoot(left: true)
+        XCTAssertTrue(info.isSelected, "Info must not wrap to Voice.")
+        home.tap()
+        swipeRoot(left: false)
+        let voice = app.tabBars.buttons["Voice"]
+        XCTAssertTrue(voice.isSelected, "A right swipe from Home selects Voice.")
+        assertRootVisible("voiceScreen")
+        swipeRoot(left: false)
+        XCTAssertTrue(voice.isSelected, "Voice must not wrap to Info.")
+        swipeRoot(left: true)
+        XCTAssertTrue(home.isSelected, "A left swipe from Voice selects Home.")
+        assertRootVisible("homePage")
         info.tap()
         XCTAssertTrue(info.isSelected, app.debugDescription)
         app.swipeUp()
         XCTAssertTrue(info.isSelected, "A vertical Info scroll must not select another tab.")
-        app.swipeRight()
-        XCTAssertTrue(info.isSelected, "Horizontal swipes no longer change tabs; use the standard tab bar.")
+        swipeRoot(left: false)
+        XCTAssertTrue(home.isSelected, "A right swipe from Info selects Home.")
+        assertRootVisible("homePage")
     }
 
     @MainActor
@@ -352,6 +412,23 @@ final class Cycle2aUITests: XCTestCase {
         XCTAssertTrue(app.buttons["saveEntry"].exists, "A text-field selection drag must not leave the editor.")
         app.navigationBars.buttons.firstMatch.tap()
         XCTAssertTrue(home.isSelected, "Editor control drags must return to the same Home tab.")
+    }
+
+    @MainActor
+    func testFocusedSelectionAndEditorSwipeIsolation() throws {
+        launchSeededWorkflow(); tap("addEntry")
+        let note = app.textFields["entryNote"]
+        XCTAssertTrue(note.waitForExistence(timeout: 5), app.debugDescription)
+        for _ in 0..<4 { if note.isHittable { break }; app.swipeUp() }
+        XCTAssertTrue(note.isHittable)
+        note.tap()
+        note.typeText("Synthetic text for selection gesture regression")
+        note.coordinate(withNormalizedOffset: CGVector(dx: 0.8, dy: 0.5))
+            .press(forDuration: 1.2, thenDragTo: note.coordinate(withNormalizedOffset: CGVector(dx: 0.2, dy: 0.5)))
+        XCTAssertTrue(app.buttons["saveEntry"].exists, "A long text-selection drag must keep the editor active.")
+        swipeRoot(left: true)
+        XCTAssertTrue(app.buttons["saveEntry"].exists, "A horizontal drag while editing must not leave the editor.")
+        XCTAssertTrue(app.tabBars.buttons["Island"].isSelected)
     }
 
     @MainActor
