@@ -49,6 +49,9 @@ import MetricKit
     }
     private static var persistsPreferences: Bool { !isUITest || testDiskID != nil }
     private(set) var core: LedgerCore?
+    var recurringEntries: [EntryValue] = []
+    var recurringFailures: [String] = []
+    var showRecurringNotice = false
     var error: String?
     var language: String { didSet { if Self.persistsPreferences { Self.preferences.set(language, forKey: "v4.language") } } }
     var currency: String { didSet { if Self.persistsPreferences { Self.preferences.set(currency, forKey: "v4.currency") } } }
@@ -62,7 +65,7 @@ import MetricKit
     var today: LedgerDay {
         #if DEBUG || WEALTHY_LAUNCH_MEASUREMENT
         if Self.isUITest && ProcessInfo.processInfo.arguments.contains("--cycle2a-performance") { return try! LedgerDay(year: 2026, month: 10, day: 15) }
-        if Self.isUITest && ProcessInfo.processInfo.arguments.contains("--cycle2a-seed") { return try! LedgerDay(year: 2026, month: 10, day: ProcessInfo.processInfo.arguments.contains(where: { $0.hasPrefix("--month-") }) ? 31 : 11) }
+        if Self.isUITest && (ProcessInfo.processInfo.arguments.contains("--cycle2a-seed") || ProcessInfo.processInfo.arguments.contains("--cycle2b-seed")) { return try! LedgerDay(year: 2026, month: 10, day: ProcessInfo.processInfo.arguments.contains("--cycle2b-results") ? 2 : ProcessInfo.processInfo.arguments.contains(where: { $0.hasPrefix("--month-") }) ? 31 : 11) }
         #endif
         return try! LedgerDay(date: Date(), calendar: .current)
     }
@@ -186,6 +189,7 @@ import MetricKit
             #endif
             #if DEBUG || WEALTHY_LAUNCH_MEASUREMENT
             if isolated && ProcessInfo.processInfo.arguments.contains("--cycle2a-seed") { try seedUITest() }
+            if isolated && ProcessInfo.processInfo.arguments.contains("--cycle2b-seed") { try seedCycle2b() }
             #endif
             refresh()
             renderInterval = loadLog.beginInterval("HomeRender")
@@ -205,8 +209,9 @@ import MetricKit
     func reload() {
         do { try core?.reload(); refresh() } catch { self.error = t("queryError") }
     }
-    func input(_ amount: Int) -> String { (try? CoreCurrency.inputText(amount, currencyCode: currency, locale: locale)) ?? "" }
-    func parse(_ text: String) throws -> Int {
+    func input(_ amount: Int, code: String? = nil) -> String { (try? CoreCurrency.inputText(amount, currencyCode: code ?? currency, locale: locale)) ?? "" }
+    func parse(_ text: String, code: String? = nil) throws -> Int {
+        let currency = code ?? currency
         var numeric = text.trimmingCharacters(in: .whitespacesAndNewlines)
         let formatter = NumberFormatter(); formatter.locale = locale; formatter.numberStyle = .currency; formatter.currencyCode = currency
         let symbols = currency == "JPY" ? ["JP¥", "¥", currency] : [formatter.currencySymbol ?? currency, currency]
@@ -218,13 +223,21 @@ import MetricKit
         guard let value = try CoreCurrency.parseMinorUnits(numeric, currencyCode: currency, locale: locale) else { throw CoreError.invalidField("amount", nil) }
         return value
     }
-    func formattedInput(_ text: String) -> String {
-        guard let amount = try? parse(text) else { return text }
-        return money(amount)
+    func formattedInput(_ text: String, code: String? = nil) -> String {
+        guard let amount = try? parse(text, code: code) else { return text }
+        return money(amount, code: code)
+    }
+    var commandDate: Date {
+        #if DEBUG
+        if Self.isUITest && (ProcessInfo.processInfo.arguments.contains("--cycle2a-seed") || ProcessInfo.processInfo.arguments.contains("--cycle2b-seed")) {
+            return (try? today.date(calendar: .current)) ?? Date()
+        }
+        #endif
+        return Date()
     }
     func run(_ command: LedgerCommand) throws {
         guard let core else { throw CoreError.saveFailed }
-        try core.run(command, now: Date()); refresh()
+        try core.run(command, now: commandDate); refresh()
     }
     func perform(_ action: () throws -> Void) { do { try action() } catch { self.error = t("invalidInput") } }
     func refresh() {

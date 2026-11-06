@@ -45,6 +45,8 @@ final class Cycle2aUITests: XCTestCase {
         XCTAssertTrue(app.buttons["onboardingNext"].waitForExistence(timeout: 20), app.debugDescription)
         capture("onboarding-language-\(language)-\(flags.joined(separator: "-"))"); app.buttons["onboardingNext"].tap(); capture("onboarding-currency-\(language)-\(flags.joined(separator: "-"))"); app.buttons["onboardingNext"].tap()
         enter("onboardingAmount", "40000"); capture("onboarding-target-\(language)-\(flags.joined(separator: "-"))"); tap("onboardingNext"); capture("onboarding-child-\(language)-\(flags.joined(separator: "-"))"); tap("onboardingNext")
+        XCTAssertTrue(app.tabBars.firstMatch.waitForExistence(timeout: 10), app.debugDescription)
+        for _ in 0..<8 { if app.buttons["addEntry"].exists { break }; app.swipeUp() }
         XCTAssertTrue(app.buttons["addEntry"].waitForExistence(timeout: 10), app.debugDescription); capture("empty-home-\(language)-\(flags.joined(separator: "-"))-" + flags.joined(separator: "-"))
     }
     @MainActor
@@ -55,7 +57,7 @@ final class Cycle2aUITests: XCTestCase {
         app.buttons["entryService"].tap(); tap("Takeout (8%)")
         XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "¥177")).firstMatch.waitForExistence(timeout: 5), app.debugDescription)
         tap("saveEntry"); tap("noSpend"); capture("home-with-entry")
-        tap("Targets"); enter("overallTarget", "50000"); tap("saveGoals")
+        app.tabBars.buttons["Info"].tap(); tap("Targets"); enter("overallTarget", "50000"); tap("saveGoals")
         tap("Info"); capture("info"); tap("Consumption tax"); capture("tax")
         XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "¥177")).firstMatch.waitForExistence(timeout: 5), app.debugDescription)
     }
@@ -130,13 +132,13 @@ final class Cycle2aUITests: XCTestCase {
         app.switches["Use child envelope"].firstMatch.tap(); tap("Targets"); tap("setTargetManually"); enter("overallTarget", "80000"); tap("saveGoals")
         app.navigationBars.buttons.firstMatch.tap()
         for _ in 0..<6 { app.swipeDown() }
-        tap("Child envelope"); tap("To island"); tap("addEntry"); enter("entryAmount", "3600"); tap("Child envelope")
+        tap("Child envelope"); app.tabBars.buttons["Island"].tap(); tap("addEntry"); enter("entryAmount", "3600"); tap("Child envelope")
         app.buttons["entryCategory"].tap(); tap("Food"); app.buttons["entryService"].tap(); tap("Takeout (8%)"); tap("saveEntry")
         XCTAssertTrue(app.buttons["addEntry"].waitForExistence(timeout: 10), app.debugDescription)
         tap("Info"); tap("Child envelope"); tap("Consumption tax")
         XCTAssertTrue(app.staticTexts["¥266"].waitForExistence(timeout: 5), app.debugDescription); capture("child-tax")
         app.navigationBars.buttons.firstMatch.tap()
-        for _ in 0..<8 { app.swipeDown() }; tap("To island"); tap("Settings"); tap("Font licenses")
+        for _ in 0..<8 { app.swipeDown() }; app.tabBars.buttons["Island"].tap(); app.tabBars.buttons["Info"].tap(); tap("Settings"); tap("Font licenses")
         XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "Copyright 2020")).firstMatch.waitForExistence(timeout: 5), app.debugDescription)
         capture("font-licenses")
     }
@@ -519,7 +521,7 @@ extension Cycle2aUITests {
         XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "40.000")).firstMatch.exists, app.debugDescription)
         XCTAssertTrue(app.tabBars.buttons["Información"].exists, app.debugDescription)
         capture("persisted-onboarding-home-after")
-        tap("Ajustes"); XCTAssertTrue(app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "KRW")).firstMatch.exists, app.debugDescription)
+        app.tabBars.buttons["Información"].tap(); tap("Ajustes"); XCTAssertTrue(app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "KRW")).firstMatch.exists, app.debugDescription)
         capture("persisted-onboarding-settings")
     }
     @MainActor
@@ -540,12 +542,12 @@ extension Cycle2aUITests {
             if mode == "dark" { app.launchArguments.append("--dark") }
             app.launch(); XCTAssertTrue(app.buttons["addEntry"].waitForExistence(timeout: 20))
             XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "307,100")).firstMatch.exists, app.debugDescription)
-            XCTAssertTrue(app.staticTexts["homeWeeklyRemaining"].exists, app.debugDescription)
+            XCTAssertTrue(app.descendants(matching: .any).matching(NSPredicate(format: "label BEGINSWITH %@", "Left this week,")).firstMatch.exists, app.debugDescription)
             XCTAssertTrue(app.tabBars.buttons["Info"].exists, app.debugDescription)
             capture("home-household-child-selected---\(mode)")
             app.tabBars.buttons["Info"].tap(); XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "76,400")).firstMatch.exists, app.debugDescription)
             capture("info-child-selected---\(mode)")
-            app.tabBars.buttons["Home"].tap(); XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "307,100")).firstMatch.exists, app.debugDescription)
+            app.tabBars.buttons["Island"].tap(); XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "307,100")).firstMatch.exists, app.debugDescription)
             app.terminate()
         }
     }
@@ -567,7 +569,7 @@ extension Cycle2aUITests {
             app.launchArguments = ["--cycle2a-test", "--cycle2a-seed", "--ax3", "-v4.language", language, "-v4.currency", "JPY"]
             app.launch()
             XCTAssertTrue(app.buttons["addEntry"].waitForExistence(timeout: 30), app.debugDescription)
-            XCTAssertTrue(app.tabBars.buttons["Home"].isSelected, app.debugDescription)
+            XCTAssertTrue(app.tabBars.buttons["Island"].isSelected, app.debugDescription)
             try app.performAccessibilityAudit(for: [.textClipped]) { issue in
                 XCTFail("Home AX3 \(language): \(issue.compactDescription) / \(issue.detailedDescription)")
                 return true

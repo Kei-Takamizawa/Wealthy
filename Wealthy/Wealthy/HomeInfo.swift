@@ -152,6 +152,9 @@ struct InfoView: View {
                     if let child = session.child() { Text(session.t("child")).tag(child.id) }
                 }.pickerStyle(.segmented).frame(minHeight: 44)
                 if let s = session.summary { AllowanceSummary(title: "leftThisWeek", status: s.week); AllowanceSummary(title: "leftThisMonth", status: s.month) }
+                NavigationLink { FixedCostsView(envelopeID: session.envelopeID) } label: { Label(session.t("fixedCosts"), systemImage: "repeat").frame(minHeight: 52) }.accessibilityIdentifier("fixedCostsLink")
+                NavigationLink { CalendarView(envelopeID: session.envelopeID) } label: { Label(session.t("calendar"), systemImage: "calendar").frame(minHeight: 52) }.accessibilityIdentifier("calendarLink")
+                NavigationLink { AnalysisView(envelopeID: session.envelopeID) } label: { Label(session.t("analysis"), systemImage: "chart.bar").frame(minHeight: 52) }.accessibilityIdentifier("analysisLink")
                 NavigationLink { GoalsView(envelopeID: session.envelopeID) } label: { Label(session.t("goals"), systemImage: "target").frame(minHeight: 52) }
                 NavigationLink { SettingsView() } label: { Label(session.t("settings"), systemImage: "gear").frame(minHeight: 52) }
                 categoryTargets

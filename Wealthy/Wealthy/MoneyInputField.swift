@@ -9,18 +9,19 @@ struct MoneyInputField: View {
     let label: String
     let identifier: String
     let font: Font
+    var currencyCode: String? = nil
     var prompt: Text? = nil
     var foreground: Color? = nil
 
     var body: some View {
         TextField("", text: Binding(
-            get: { isFocused ? text : session.formattedInput(text) },
+            get: { isFocused ? text : session.formattedInput(text, code: currencyCode) },
             set: { text = $0 }
         ), prompt: prompt)
         .focused($isFocused)
         .onChange(of: isFocused) { _, focused in
-            guard focused, let value = try? session.parse(text) else { return }
-            text = session.input(value)
+            guard focused, let value = try? session.parse(text, code: currencyCode) else { return }
+            text = session.input(value, code: currencyCode)
         }
         .accessibilityLabel(label)
         .keyboardType(.decimalPad)
