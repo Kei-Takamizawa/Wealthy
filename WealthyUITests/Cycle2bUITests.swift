@@ -2,6 +2,43 @@
 
 extension Cycle2aUITests {
     @MainActor
+    func testC2bDynamicTypeGrowth() throws {
+        let screens: [(String, [(String, Bool)])] = [
+            ("rule-form", [("Category", false), ("Day of month", false)]),
+            ("home", [("Not a balance", false), ("Spent", false), ("¥2,900", false),
+                      ("This week", false), ("M", false), ("Add entry", false), ("I spent nothing today", false)])
+        ]
+        for (screen, targets) in screens {
+            var baseline: [String: CGFloat] = [:]
+            for ax3 in [false, true] {
+                if screen == "home" {
+                    app.launchArguments = ["--cycle2a-test", "--cycle2a-seed", "-v4.language", "en", "-v4.currency", "JPY", "--screen", "home"] + (ax3 ? ["--ax3"] : [])
+                    launchApp()
+                    XCTAssertTrue(app.descendants(matching: .any).matching(identifier: "ledgerLoading").firstMatch.waitForNonExistence(timeout: 30))
+                } else { launchC2b(screen, flags: ax3 ? ["--ax3"] : []) }
+                for (name, button) in targets {
+                    let element = button ? app.buttons[name].firstMatch : app.staticTexts[name].firstMatch
+                    for _ in 0..<10 {
+                        if element.exists && app.frame.contains(element.frame) && element.isHittable { break }
+                        app.swipeUp()
+                    }
+                    XCTAssertTrue(element.exists, "\(screen): missing \(name), AX3=\(ax3)")
+                    guard element.exists else { continue }
+                    let frame = element.frame
+                    print("DYNAMIC_TYPE_FRAME screen=\(screen) element=\(name) ax3=\(ax3) frame=\(NSCoder.string(for: frame)) window=\(NSCoder.string(for: app.frame))")
+                    XCTAssertTrue(app.frame.contains(frame), "\(screen): \(name) outside window, AX3=\(ax3), frame=\(frame), window=\(app.frame)")
+                    if ax3 {
+                        if let height = baseline[name] {
+                            XCTAssertGreaterThan(frame.height, height, "\(screen): \(name) did not grow at AX3")
+                        } else { XCTFail("\(screen): no default measurement for \(name)") }
+                    } else { baseline[name] = frame.height }
+                }
+                app.terminate()
+            }
+        }
+    }
+
+    @MainActor
     func testC2bInfoEntryPointsAndPushedSwipe() throws {
         launchSeededWorkflow()
         app.tabBars.buttons["Info"].tap()
@@ -131,7 +168,7 @@ extension Cycle2aUITests {
                 launchC2b(screen, flags: flags.filter { $0 != "--ax3" })
                 let title = ["fixed-costs": "Fixed costs", "rule-form": "Add fixed cost", "calendar": "Calendar", "analysis": "Analysis", "catch-up": "Recorded fixed costs"]
                 if let title = title[screen] { XCTAssertTrue(app.navigationBars[title].waitForExistence(timeout: 15), app.debugDescription) }
-                if screen != "catch-up" && screen != "day-detail" { try app.performAccessibilityAudit() }
+                if screen != "catch-up" && screen != "day-detail" { try auditWithSwiftUIException("\(screen)-\(mode)") }
                 if mode == "ax3" {
                     app.terminate()
                     launchC2b(screen, flags: flags)

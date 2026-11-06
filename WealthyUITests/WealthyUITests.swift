@@ -182,6 +182,27 @@ final class Cycle2aUITests: XCTestCase {
 
     @MainActor
 
+    func auditWithSwiftUIException(_ screen: String) throws {
+        var ignored: [String] = []
+        defer {
+            let attachment = XCTAttachment(string: ignored.joined(separator: "\n"))
+            attachment.name = "ignored-dynamic-type-\(screen)"
+            attachment.lifetime = .keepAlways
+            add(attachment)
+        }
+        // Owner decision 2026-11-06: only the SwiftUI audit false positive described
+        // at https://developer.apple.com/forums/thread/828525 may be ignored.
+        try app.performAccessibilityAudit { issue in
+            guard issue.auditType == .dynamicType,
+                  issue.detailedDescription.contains("SwiftUI.AccessibilityNode"),
+                  let element = issue.element, element.exists else { return false }
+            let details = "screen=\(screen) label=\(element.label) identifier=\(element.identifier) frame=\(NSCoder.string(for: element.frame))"
+            ignored.append(details)
+            print("IGNORED_SWIFTUI_DYNAMIC_TYPE \(details)")
+            return true
+        }
+    }
+    @MainActor
     func audit(_ screen: String) throws {
             app.launchArguments = ["--cycle2a-test", "--cycle2a-seed", "-v4.language", "en", "--screen", screen]
             launchApp()
@@ -213,7 +234,7 @@ final class Cycle2aUITests: XCTestCase {
             }
             let proof = XCTAttachment(string: issues.joined(separator: "\n")); proof.name = "audit-\(screen)"; proof.lifetime = .keepAlways; add(proof)
             XCTAssertTrue(issues.isEmpty, issues.joined(separator: "\n"))
-            if screen == "home" { try app.performAccessibilityAudit() }
+            if screen == "home" { try auditWithSwiftUIException(screen) }
             app.terminate()
     }
 

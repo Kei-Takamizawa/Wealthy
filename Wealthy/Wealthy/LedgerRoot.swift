@@ -146,7 +146,7 @@ struct OnboardingView: View {
                 }
                 if step == 3 { Toggle(session.t("useChild"), isOn: $child); Text(session.t("childExplanation")) }
             }
-            Section {
+        }.scrollDismissesKeyboard(.interactively).safeAreaInset(edge: .bottom) {
                 HStack {
                     if step > 0 { Button(session.t("back")) { step -= 1 }.frame(minHeight: 44) }
                     Spacer()
@@ -155,8 +155,9 @@ struct OnboardingView: View {
                         else { step += 1 }
                     }.buttonStyle(.borderedProminent).accessibilityIdentifier("onboardingNext")
                 }
-            }
-        }.scrollDismissesKeyboard(.interactively).navigationTitle(session.t(titles[step]))
+                .padding()
+                .background(.bar)
+        }.navigationTitle(session.t(titles[step]))
     }
 }
 struct LedgerTabs: View {

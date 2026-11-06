@@ -16,6 +16,19 @@ for source in app.glob('*.swift'):
     text = source.read_text()
     assert not any(word in text for word in ['import SwiftData','@Model','@Query','modelContainer(', 'default.store']), source
     for key in re.findall(r'\.t\("([^"\\]+)"\)', text): assert key in strings, (source,key)
+# Ignore Swift strings and comments when locating calls and argument labels.
+swift_ignored = re.compile(r'//[^\n]*|/\*[\s\S]*?\*/|"""[\s\S]*?"""|"(?:\\.|[^"\\])*"')
+for source in (root/'Wealthy').rglob('*.swift'):
+    text = source.read_text()
+    code = swift_ignored.sub(lambda match: ' ' * len(match.group()), text)
+    for call in re.finditer(r'\.\s*custom\s*\(', code):
+        depth, end, relative = 1, call.end(), False
+        while end < len(code) and depth:
+            if depth == 1 and (end == 0 or not (code[end - 1].isalnum() or code[end - 1] == '_')) and re.match(r'relativeTo\s*:', code[end:]): relative = True
+            if code[end] == '(': depth += 1
+            elif code[end] == ')': depth -= 1
+            end += 1
+        assert depth == 0 and relative, f'{source}:{text.count(chr(10), 0, call.start()) + 1}: custom font must specify relativeTo:'
 manifest = json.loads((root/'Verification/font_manifest.json').read_text())
 for item in manifest['fonts']:
     path = app/'Fonts'/item['file']
@@ -24,4 +37,4 @@ for item in manifest['fonts']:
     assert font['name'].getDebugName(6) == path.stem
     if 'PoorStory' in path.name: assert all(i in font.getBestCmap() for i in range(0xac00,0xd7a4))
     if 'PatrickHand' in path.name: assert all(ord(c) in font.getBestCmap() for c in 'áéíóúüñÁÉÍÓÚÜÑ¿¡')
-print(f'PASS: {len(strings)} keys x 4 languages, placeholder parity, new-target isolation, 4 subset hashes and Hangul/Spanish coverage')
+print(f'PASS: {len(strings)} keys x 4 languages, placeholder parity, new-target isolation, custom font relativeTo, 4 subset hashes and Hangul/Spanish coverage')
