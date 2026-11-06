@@ -26,21 +26,25 @@ Work folder on the Mac: `~/Documents/my-workspace/Hobby/Wealthy-main`. Stay insi
    - new branch: `git checkout -b <branch> origin/<base>` (base as the task doc says, normally `main`);
    - existing branch: `git checkout <branch> && git merge --ff-only origin/<branch>`.
 3. **Task doc.** If `.ai/inbox/CURRENT_TASK.md` exists and differs from `.ai/CURRENT_TASK.md`, copy it over. Confirm the Task ID matches the one the designer gave you.
-4. **Run Codex** from the repo root, however long it takes:
+4. **Run Codex** from the repo root, detached so it survives the operator session ending, however long it takes:
 
    ```sh
    mkdir -p .ai/runs
-   codex exec \
+   nohup caffeinate -i codex exec \
      --cd "$PWD" \
      --sandbox workspace-write \
+     -m gpt-6.1-terra \
+     -c model_reasoning_effort='"xhigh"' \
      -c approval_policy='"on-request"' \
      -c approvals_reviewer='"auto_review"' \
      "Read AGENTS.md, then .ai/CURRENT_TASK.md and .ai/LAST_REPORT.md. Do the task. Finish by rewriting .ai/LAST_REPORT.md as AGENTS.md requires." \
-     2>&1 | tee ".ai/runs/<TASK-ID>-$(date +%Y%m%d-%H%M).log"
+     > ".ai/runs/<TASK-ID>-$(date +%Y%m%d-%H%M).log" 2>&1 &
    ```
 
-   Before the first run on a new Codex version, check `codex exec --help` and the official config docs; if a key or flag above has been renamed, use the documented equivalent with the same meaning and note it in the cycle report. Never use `danger-full-access`, `--dangerously-bypass-approvals-and-sandbox`, `--yolo` or similar, and never edit `~/.codex/config.toml`.
-5. **Resume rules.** After a usage-limit stop or a "model is at capacity" error, resume (`codex exec resume --last` or the documented equivalent) — at most 3 times per cycle. If Codex stops as BLOCKED only because of a fact you can check from outside (for example a branch's state, a file's presence, a device's lock state), check it, pass the checked fact in, and resume once. Anything else: stop and report.
+   Poll the log and the process instead of holding Codex as a child of your shell (a child process dies when the operator session ends). Check that the log header shows model `gpt-6.1-terra` and reasoning effort `xhigh`. The owner set this model and effort on 2026-11-06; do not change them without the owner.
+
+   Before the first run on a new Codex version, check `codex exec --help`, `codex debug models` and the official config docs; if a key, flag or model id above has been renamed, stop and ask the owner rather than guessing (for keys and flags with the same meaning, use the documented equivalent and note it in the cycle report). Never use `danger-full-access`, `--dangerously-bypass-approvals-and-sandbox`, `--yolo` or similar, and never edit `~/.codex/config.toml`.
+5. **Resume rules.** After a usage-limit stop or a "model is at capacity" error, resume (`codex exec resume <session-id>` with the same model, effort and approval flags; `resume` has no `--sandbox` flag, so pass `-c sandbox_mode="workspace-write"`) — at most 3 times per cycle. If Codex stops as BLOCKED only because of a fact you can check from outside (for example a branch's state, a file's presence, a device's lock state), check it, pass the checked fact in, and resume once. Anything else: stop and report.
 6. **Check the report.** Read `.ai/LAST_REPORT.md`. Its Task ID must match. Compare its changed-file list with `git status`.
 7. **Commit and push.** Stage only the files the report lists (`git add -- <files>`), commit with a message that starts with the Task ID, and `git push -u origin <branch>`. Files changed but not listed: do not stage them; mention them in your report to the designer.
 8. **Draft PR.** Open a draft PR against the base branch (one PR per cycle; never reuse a merged PR). Title: `<Task ID>: <summary>`. Body: status, link to `.ai/LAST_REPORT.md`, failures.
