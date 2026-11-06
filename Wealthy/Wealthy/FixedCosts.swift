@@ -89,6 +89,9 @@ struct RuleEditor: View {
     private var categories: [CategoryValue] {
         session.core?.state.categories.filter { $0.envelopeID == envelope && $0.kind.rawValue == kind.rawValue && (!$0.isArchived || $0.id == category) } ?? []
     }
+    private var categoryName: String {
+        categories.first(where: { $0.id == category }).map { session.categoryName($0) } ?? session.t("none")
+    }
     var body: some View {
         Form {
             if let error { Section { Text(error).accessibilityIdentifier("ruleError") } }
@@ -108,10 +111,12 @@ struct RuleEditor: View {
                     Text(session.t("household")).tag(EnvelopeValue.householdID)
                     if let child = session.child() { Text(session.t("child")).tag(child.id) }
                 }.accessibilityIdentifier("ruleEnvelope")
-                Picker(session.t("category"), selection: $category) {
-                    Text(session.t("none")).tag(nil as UUID?)
-                    ForEach(categories) { Text(session.categoryName($0)).tag(Optional($0.id)) }
-                }.pickerStyle(.navigationLink).accessibilityIdentifier("ruleCategory")
+                NavigationLink {
+                    RuleChoiceList(title: session.t("category"), selection: $category,
+                                   choices: [(nil as UUID?, session.t("none"))] + categories.map { (Optional($0.id), session.categoryName($0)) })
+                } label: {
+                    LabeledContent(session.t("category")) { Text(categoryName) }
+                }.accessibilityIdentifier("ruleCategory").accessibilityValue(categoryName)
             }
             Section {
                 Picker(session.t("schedule"), selection: $schedule) {
@@ -129,9 +134,12 @@ struct RuleEditor: View {
                             ForEach(1...12, id: \.self) { Text(String($0)).tag($0) }
                         }.pickerStyle(.navigationLink)
                     }
-                    Picker(session.t("scheduleDay"), selection: $day) {
-                        ForEach(1...31, id: \.self) { Text(String($0)).tag($0) }
-                    }.pickerStyle(.navigationLink).accessibilityIdentifier("ruleDay")
+                    NavigationLink {
+                        RuleChoiceList(title: session.t("scheduleDay"), selection: $day,
+                                       choices: (1...31).map { ($0, String($0)) })
+                    } label: {
+                        LabeledContent(session.t("scheduleDay")) { Text(String(day)) }
+                    }.accessibilityIdentifier("ruleDay").accessibilityValue(String(day))
                 }
                 DatePicker(session.t("startDay"), selection: $start, displayedComponents: .date)
                 Toggle(session.t("hasEndDay"), isOn: $hasEnd)
@@ -181,6 +189,31 @@ struct RuleEditor: View {
             result.isFixedCost = fixed; result.taxRate = TaxRate(rawValue: tax); result.serviceMode = service
             try session.run(rule == nil ? .createRule(result) : .updateRule(result)); dismiss()
         } catch { self.error = session.message(error) }
+    }
+}
+
+private struct RuleChoiceList<Value: Hashable>: View {
+    @Environment(\.dismiss) private var dismiss
+    let title: String
+    @Binding var selection: Value
+    let choices: [(Value, String)]
+
+    var body: some View {
+        List(choices.indices, id: \.self) { index in
+            let choice = choices[index]
+            Button {
+                selection = choice.0
+                dismiss()
+            } label: {
+                HStack {
+                    Text(choice.1)
+                    Spacer()
+                    if selection == choice.0 { Image(systemName: "checkmark").accessibilityHidden(true) }
+                }
+            }
+            .accessibilityAddTraits(selection == choice.0 ? .isSelected : [])
+        }
+        .navigationTitle(title)
     }
 }
 

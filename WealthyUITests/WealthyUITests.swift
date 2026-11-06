@@ -15,8 +15,10 @@ final class Cycle2aUITests: XCTestCase {
         if let index = arguments.firstIndex(of: key), index + 1 < arguments.count {
             arguments.removeSubrange(index...index + 1)
         }
-        let category = arguments.contains("--ax3") ? "UICTContentSizeCategoryAccessibilityXL" : "UICTContentSizeCategoryL"
-        app.launchArguments = arguments + [key, category]
+        if arguments.contains("--ax3") {
+            arguments += [key, "UICTContentSizeCategoryAccessibilityXL"]
+        }
+        app.launchArguments = arguments
         app.launch()
     }
     @MainActor
@@ -140,10 +142,13 @@ final class Cycle2aUITests: XCTestCase {
     @MainActor
     func testChildEnvelopeAndLicenseFlow() throws {
         try onboard(); tap("Info"); tap("Child envelope setup")
-        app.switches["Use child envelope"].firstMatch.tap(); tap("Targets"); tap("setTargetManually"); enter("overallTarget", "80000"); tap("saveGoals")
+        let childToggle = app.switches["Use child envelope"].firstMatch
+        childToggle.coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: 0.5)).tap()
+        XCTAssertEqual(childToggle.value as? String, "1")
+        tap("Targets"); tap("setTargetManually"); enter("overallTarget", "80000"); tap("saveGoals")
         app.navigationBars.buttons.firstMatch.tap()
         for _ in 0..<6 { app.swipeDown() }
-        tap("Child envelope"); app.tabBars.buttons["Island"].tap(); tap("addEntry"); enter("entryAmount", "3600"); tap("Child envelope")
+        tap("Child envelope"); app.tabBars.buttons["Island"].tap(); tap("addEntry"); tap("Child envelope"); enter("entryAmount", "3600")
         app.buttons["entryCategory"].tap(); tap("Food"); app.buttons["entryService"].tap(); tap("Takeout (8%)"); tap("saveEntry")
         XCTAssertTrue(app.buttons["addEntry"].waitForExistence(timeout: 10), app.debugDescription)
         tap("Info"); tap("Child envelope"); tap("Consumption tax")
@@ -280,11 +285,20 @@ final class Cycle2aUITests: XCTestCase {
         XCTAssertTrue(app.tabBars.buttons["Island"].isSelected, app.debugDescription)
     }
     @MainActor
+    func selectSeededTaxMonth() {
+        let calendar = Calendar(identifier: .gregorian)
+        let current = calendar.date(from: calendar.dateComponents([.year, .month], from: Date()))!
+        let seeded = calendar.date(from: DateComponents(year: 2026, month: 10, day: 1))!
+        let offset = calendar.dateComponents([.month], from: current, to: seeded).month!
+        let direction = offset < 0 ? "Previous month" : "Next month"
+        for _ in 0..<abs(offset) { app.buttons[direction].tap() }
+    }
+    @MainActor
     func testIncomeEntry() throws {
         launchSeededWorkflow(); tap("addEntry"); enter("entryAmount", "12000")
         app.buttons["Income"].tap(); app.buttons["entryCategory"].tap(); tap("Salary")
         XCTAssertFalse(app.buttons["entryTaxRate"].exists); capture("income-entry")
-        tap("saveEntry"); tap("Info"); tap("Consumption tax")
+        tap("saveEntry"); tap("Info"); tap("Consumption tax"); selectSeededTaxMonth()
         XCTAssertTrue(app.staticTexts["¥218"].waitForExistence(timeout: 5), app.debugDescription)
     }
     @MainActor
@@ -293,7 +307,7 @@ final class Cycle2aUITests: XCTestCase {
         app.buttons["Child envelope"].tap(); app.buttons["entryCategory"].tap(); tap("Child support payment")
         XCTAssertTrue(app.buttons["entryTaxRate"].label.contains("Tax-exempt"), app.debugDescription)
         XCTAssertEqual(app.switches["Fixed cost"].firstMatch.value as? String, "1")
-        capture("child-support-defaults"); tap("saveEntry"); tap("Info"); app.buttons["Child envelope"].tap(); tap("Consumption tax")
+        capture("child-support-defaults"); tap("saveEntry"); tap("Info"); app.buttons["Child envelope"].tap(); tap("Consumption tax"); selectSeededTaxMonth()
         XCTAssertTrue(app.staticTexts["¥266"].waitForExistence(timeout: 5), app.debugDescription)
     }
     @MainActor
@@ -525,7 +539,15 @@ extension Cycle2aUITests {
         app.buttons["language"].tap(); tap("Español")
         tap("onboardingNext")
         app.buttons["currency"].tap(); tap("KRW")
-        tap("onboardingNext"); enter("onboardingAmount", "40000"); tap("onboardingNext"); tap("onboardingNext")
+        tap("onboardingNext"); enter("onboardingAmount", "40000")
+        for _ in 0..<5 {
+            let next = app.buttons["onboardingNext"]
+            let keyboard = app.keyboards.firstMatch
+            if next.isHittable && (!keyboard.exists || next.frame.midY < keyboard.frame.minY) { break }
+            app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.55)).press(
+                forDuration: 0.05, thenDragTo: app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.2)))
+        }
+        tap("onboardingNext"); tap("onboardingNext")
         XCTAssertTrue(app.buttons["addEntry"].waitForExistence(timeout: 10)); capture("persisted-onboarding-home-before")
         app.terminate(); launchApp()
         XCTAssertTrue(app.buttons["addEntry"].waitForExistence(timeout: 20))

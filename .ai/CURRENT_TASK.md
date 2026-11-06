@@ -87,3 +87,14 @@ Designer notes for the rest of Round 2:
 (c) testC2bChildIsolation: update it to assert the Category picker's accessibility value ('Food') instead of its label. This matches the standard control and keeps the assertion as strong.
 (d) Home baseline classification may stay inconclusive; just fix Home so the audit passes under (a).
 (e) Then the full suite on both simulators, single runs, as in the Round 2 text.
+
+
+## Round 2 further designer notes (checkpoint b81e9e2)
+
+Continue Round 2 of WEALTHY-C2B1-FIXED-CALENDAR. The checkpoint is committed. Apply these designer notes in order, then finish Round 2 and rewrite .ai/LAST_REPORT.md.
+(f) Both full audits report 'Dynamic Type font sizes are partially unsupported'. A pinned content size (in-app dynamicTypeSize override, or the -UIPreferredContentSizeCategoryName launch argument, which lands in the highest-priority defaults domain) can stop the app from following the audit's own size changes. Launch the audit tests (testC2bAccessibilityAndEvidence, testHomeAccessibilityAudit, and the rule-form audit if separate) with NO content-size launch argument and no in-app override, simulator at default size; keep the size argument only in tests that need a fixed AX3 layout (matrix and screenshot tests). Run only these audit tests once per simulator first and report each result.
+(g) If Category / Day of month in the rule form still fail after (f): replace each Picker(.navigationLink) with a standard NavigationLink whose label is LabeledContent(title) { Text(value) } and whose destination is a List of plain Button rows with a checkmark on the selection. Standard components only, no fixed sizes. Keep identifiers and the value tests read ('Food').
+(h) If Home still fails after (f): report label, frame and font of each flagged element; no Home layout changes beyond Round 2 item 2.
+(i) testIncomeEntry and testChildSupportDefaults assume October fixtures. Make the test data relative to the current month (or use an existing injectable test date) so the expected values hold in any month. Do not change expected numbers to match the screen; do not change WealthyCore.
+(j) testChildEnvelopeAndLicenseFlow and testPersistedOnboardingRelaunch (15 Pro): first check whether (f) fixes them. If not, find the cause and fix within task scope; if the cause is outside the task, keep red and report.
+(k) Then run the full WealthyUITests once per simulator with -parallel-testing-enabled NO. If budget looks short, run the full suites before re-capturing screenshots. Status DONE only if all acceptance items have evidence; otherwise PARTIAL with exact failures.

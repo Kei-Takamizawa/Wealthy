@@ -1,92 +1,165 @@
-# Cycle 2b.1 Round 2 Report
+# Cycle 2b.1 Round 2 Further Decisions Report
 
 Task ID: WEALTHY-C2B1-FIXED-CALENDAR
 Status: PARTIAL
 
-The final-source full UI runs are in progress; this checkpoint does not establish completion. The rule-form default audit and the strengthened, unfiltered Home audit have reported Dynamic Type issues. No audit is disabled or waived.
+Both full suites completed. The form and Home default accessibility audits still report Dynamic Type issues on both simulators; the 15 Pro persisted-onboarding test also fails because the Next button is obscured by the keyboard. No audit or test was excluded. The designer's decisions (f)–(k) were applied; the remaining failures need further investigation or direction.
 
 ## Changed files
-- .ai/CURRENT_TASK.md (pre-existing Round 2 task preserved; resume instructions appended)
+- .ai/CURRENT_TASK.md
 - .ai/LAST_REPORT.md
 - Wealthy/Wealthy/FixedCosts.swift
-- Wealthy/Wealthy/HomeInfo.swift
-- Wealthy/Wealthy/LedgerRoot.swift
 - WealthyUITests/Cycle2bUITests.swift
 - WealthyUITests/WealthyUITests.swift
 - Verification/Cycle2bEvidence/INDEX.md
 - Verification/Cycle2bEvidence/iphone15pro-rule-form-light.jpg
 - Verification/Cycle2bEvidence/iphone15pro-rule-form-dark.jpg
 - Verification/Cycle2bEvidence/iphone15pro-rule-form-ax3.jpg
-- Verification/Cycle2bEvidence/iphone15pro-home-light.jpg
-- Verification/Cycle2bEvidence/iphone15pro-home-dark.jpg
-- Verification/Cycle2bEvidence/iphone15pro-home-ax3.jpg
 - Verification/Cycle2bEvidence/iphone17pro-rule-form-light.jpg
 - Verification/Cycle2bEvidence/iphone17pro-rule-form-dark.jpg
 - Verification/Cycle2bEvidence/iphone17pro-rule-form-ax3.jpg
-- Verification/Cycle2bEvidence/iphone17pro-home-light.jpg
-- Verification/Cycle2bEvidence/iphone17pro-home-dark.jpg
-- Verification/Cycle2bEvidence/iphone17pro-home-ax3.jpg
 
 ## Requirements
 
-### Scope and environment
-- Mac arm64, macOS 27.2, Xcode 27.2 (27B52); iPhone 15 Pro (`870430A8-E557-4CED-8A8E-079801D804B9`) and iPhone 17 Pro (`DEA8D0DF-8BA2-4F70-B19C-BACAC400EAE0`) run iOS 27.0 (24A434). Branch `codex/wealthy-c2b1-fixed-calendar`, HEAD `5fee7164e7fac6536ed751091f53ab363ee257ff`; local `origin/main` was `5db23f05241cdfb77161aad8eb6b4e1005869e0f`.
-- Read AGENTS.md, CLAUDE.md, CURRENT_TASK.md and LAST_REPORT.md; appended the user's resume instructions without replacing the pre-existing task. Three unrelated pre-existing .DS_Store modifications and `design/v4/引き渡しシート.pdf` remain untouched. ReceiptExample was not read. No Core, persistence, schema, tax/target rule, font, localization or dependency changes.
-- No stage, commit, push, merge or branch switch. The specifically requested detached baseline worktree was created at `/tmp/wealthy-c2b1-baseline` and removed without committing.
+### Preflight and scope — PASS
+- Branch `codex/wealthy-c2b1-fixed-calendar`, starting and finishing HEAD `b81e9e2b632946bb9903ce3175e10e398c47d694` (committed Round 2 checkpoint). Read AGENTS.md, CURRENT_TASK.md and LAST_REPORT.md; appended the user's further decisions to the task.
+- macOS 27.2 arm64, Xcode 27.2 (27B52), iOS 27.0 (24A434). Simulator IDs: 15 Pro `870430A8-E557-4CED-8A8E-079801D804B9`; 17 Pro `DEA8D0DF-8BA2-4F70-B19C-BACAC400EAE0`. Both simulator system content sizes were `large` before and after the runs.
+- Preserved the three pre-existing .DS_Store modifications and untracked `design/v4/引き渡しシート.pdf`. ReceiptExample was not read. No WealthyCore, persistence, schema, tax/target rules, Home layout, fonts, localization or app dependencies changed in this continuation. No stage, commit, push, branch switch or merge was performed.
 
-### Test environment — implemented; final after-state pending
-- Before changes, both simulators reported content size `large` via `xcrun simctl ui <UDID> content_size`. The after readings will be recorded after the final suite.
-- Removed the SwiftUI `LegacyUITestTypeSize` override. All XCTest app launches use `-UIPreferredContentSizeCategoryName UICTContentSizeCategoryL`, or `UICTContentSizeCategoryAccessibilityXL` for `--ax3`; the production app follows the actual system category.
-- Before further UI changes, default form audits still reported Category and Day of month (15 Pro) and Day of month (17 Pro) as `Dynamic Type font sizes are partially unsupported`. The existing four-type Home audit still found `Not a balance` and `I spent nothing today` clipped (15 Pro), and `Not a balance` and `Within allowance` clipped (17 Pro). `testC2bChildIsolation`, updated to assert the Category Picker value `Food`, passed on both.
+### (f) Unpinned first audits — FAIL
+- Removed the default content-size launch argument; it is supplied only for `--ax3` layout/screenshot launches. No in-app content-size override exists. The combined C2b case performs each audit without a content-size argument and separately relaunches at AX3 for the screenshot.
+- Before any further UI changes, ran only `testC2bAccessibilityAndEvidence` and `testHomeAccessibilityAudit` once per simulator. Both cases failed on both simulators. The 15 Pro form audit flagged `Category` and `Day of month` in all three audit iterations (6 issues); the 17 Pro form audit flagged `Day of month` in all three (3 issues). Home's four-type audit did not report clipping, but the default full audit reported 15 Dynamic Type issues on each device. These findings did not change when the argument was removed.
+- Exact compact and detailed descriptions: `Dynamic Type font sizes are partially unsupported` / `User will not be able to change the font size of this SwiftUI.AccessibilityNode`. `/tmp/wealthy-c2b1-r2-f-audit{15,17}.log` and xcresult bundles retain the initial results.
 
-### Rule form — PARTIAL
-- Day is selected from 1...31, yearly month from 1...12, through plain numeric standard navigation-link Pickers; Category uses the plain title/selection Picker initializer and navigation-link style. Other pickers retain their original styles. Core still validates schedule values. The form-wide navigation-link experiment was reverted after new contrast warnings.
-- Removed fixed widths/heights and `fixedSize` from those rows. Inspection found no fixed font size, fixed height, `minimumScaleFactor`, or `lineLimit` on the Category/Day/Month Picker rows. Explicit `.font(.body)` did not change the finding and was reverted.
-- The unchanged default `performAccessibilityAudit()` reported `Dynamic Type font sizes are partially unsupported`; exact detail: `User will not be able to change the font size of this SwiftUI.AccessibilityNode`. A temporary diagnostic invoked the full audit, printed every element, called XCTFail for every issue and returned false. 15 Pro: `Category`, empty identifier, frame `{{32, 488.83334350585938}, {307, 20.333343505859375}}`; `Day of month`, empty identifier, frame `{{32, 627.83331298828125}, {307, 20.33331298828125}}`. 17 Pro: `Day of month`, empty identifier, frame `{{32, 630.83331298828125}, {316, 20.33331298828125}}`. Parent Picker identifiers are `ruleCategory` and `ruleDay`. The temporary diagnostic was removed after evidence collection; the default audit remains in `testC2bAccessibilityAndEvidence` and still fails. Evidence: `/tmp/wealthy-c2b1-r2-resume-diag{15,17}.log`, associated xcresults.
-- `testC2bChildIsolation` checks accessibility value `Food` before and after saving; both models passed. `testC2bForegroundCatchUp` was changed to select the day before entering the amount so the keyboard does not cover the Picker; focused follow-up passed on both (`...resume-follow{15,17}.log`).
+### (g) Rule form — implemented; audit FAIL
+- Replaced Category and Day of month Pickers with standard `NavigationLink` rows labeled by `LabeledContent`; their destination `List` has plain buttons and a checkmark on the selected row. Rows have no fixed sizes. The yearly month Picker remains unchanged. Parent links retain identifiers `ruleCategory` / `ruleDay` and expose their selected accessibility values.
+- `testC2bChildIsolation` passed on both, including Category value `Food` before and after save; `testC2bForegroundCatchUp` passed on both with day selection. The separate unpinned default form audit still flagged Category and Day of month (15 Pro) and Day of month (17 Pro); the original full audit remained enabled and failed in both full suites. The temporary separate diagnostic case was removed after recording its output; no existing audit was weakened.
 
-### Home — PARTIAL
-- Changed affected labels to wrapping standard text/image arrangements, removed fixed text-container dimensions, and stack week/month values and status at accessibility sizes. The weekly title/value also stack at accessibility sizes and logged-days text takes its natural vertical height. No UI arithmetic or domain behavior changed.
-- The existing Home audit's four types (contrast, text clipped, hit region, sufficient element description) passed on both in the completed prior full runs. To cover the requested no-exclusion criterion, the test now additionally invokes the default full `performAccessibilityAudit()` with no handler: focused follow-up failed on both with multiple `Dynamic Type font sizes are partially unsupported` reports for Home text. This is not claimed as a pass. The pre-final-layout focused full audit emitted 15 Dynamic Type issues per simulator for `This week`, `I spent nothing today`, `¥2,900`, weekday labels M/T/W/T/F/S/S, `¥307,100`, `Left this month`, `Not a balance`, `Add entry`, and `Spent`; the exact issue name was `Dynamic Type font sizes are partially unsupported`. The final-source suite is rechecking them.
-- Enhanced `testHomeAX3LanguageMatrix`: check the Home collection and second tab without an English-only label, and run the text-clipped audit both before and after scrolling to the add-entry button. The earlier full run failed on missing offscreen `addEntry` and localized tab name; following that correction, Spanish `Te queda esta semana` and then `6 días registrados` were reported clipped. After the targeted layout changes, `testHomeAX3LanguageMatrix` passed in en/ja/es/ko on both models, as did `testNativeHomeLanguageEvidence` (`...resume-axfinal{15,17}.log`).
-- Baseline classification remains inconclusive: one run on unmodified 5db23f0, 15 Pro, system content size `large`, failed at the zero-alert assertion because the ledger could not open (`Unable to complete` / `The new ledger could not be opened. Try again.`); the screen was onboarding, not Home. No baseline source or test was changed. `/tmp/wealthy-c2b1-r2-baseline.log` and corresponding xcresult retain the evidence.
+### (h) Home diagnostic — FAIL; no further Home layout changes
+- Home's default full audit reported 15 elements on each device. Identifiers were empty. Frames are `(x, y, width, height)` in points, rounded to 0.01. XCTest's exposed `XCUIElement` did not provide a runtime font face or point size; the final column records the semantic font explicitly specified or inherited in `HomeInfo.swift`, not an observed runtime font. Duplicate weekday letters are separate elements ordered by horizontal position.
 
-### Full UI suite — final-source runs IN PROGRESS
-- Previous resumed run, before the final Home fixes and stronger Home audit: 15 Pro 59 tests, 52 passed / 7 failed / 0 skipped; 17 Pro 59, 54 passed / 5 failed / 0 skipped. These are historical and do not establish the final-source result. Full results: `/tmp/wealthy-c2b1-r2-resume-summary{15,17}.json`.
-- Prior failures: `testC2bAccessibilityAndEvidence` (form audit, both); `testC2bForegroundCatchUp` (15 Pro Picker hidden by keyboard, subsequently passed focused on both); `testChildEnvelopeAndLicenseFlow` (both: child toggle remained off and Targets was absent); `testChildSupportDefaults` (both: expected October fixture tax ¥266 but displayed November ¥0); `testHomeAX3LanguageMatrix` (both: no scrolling / English-only tab lookup, subsequently fixed and focused pass on both); `testIncomeEntry` (both: expected October fixture tax ¥218 but November ¥0 displayed); `testPersistedOnboardingRelaunch` (15 Pro: keyboard covered Next). Existing unrelated flows were not altered.
-- The full runs on the latest sources, one per simulator, have no test filter and use `-parallel-testing-enabled NO`. Counts and every final failure remain pending. Launch/interactive metric methods run as part of the suite; simulator numbers are not judged against the physical-device target.
+| Label | 15 Pro frame | 17 Pro frame | Font from source |
+| --- | --- | --- | --- |
+| Add entry | (35.33, 666.83, 111.33, 20.33) | (35.33, 669.83, 111.33, 20.33) | inherited system body |
+| F | (239.74, 583.00, 8.67, 18.00) | (245.52, 586.00, 8.67, 18.00) | system subheadline, semibold |
+| I spent nothing today | (130.00, 736.83, 160.67, 20.33) | (134.50, 739.83, 160.67, 20.33) | inherited system body |
+| Left this month | (161.67, 407.67, 114.67, 20.33) | (170.67, 410.67, 114.67, 20.33) | inherited system body |
+| M | (47.12, 583.00, 13.33, 18.00) | (47.76, 586.00, 13.33, 18.00) | system subheadline, semibold |
+| Not a balance | (59.67, 383.33, 105.00, 20.33) | (59.67, 386.33, 105.00, 20.33) | inherited system body |
+| S | (286.64, 583.00, 10.00, 18.00) | (293.71, 586.00, 10.00, 18.00) | system subheadline, semibold |
+| S | (334.21, 583.00, 10.00, 18.00) | (342.57, 586.00, 10.00, 18.00) | system subheadline, semibold |
+| Spent | (32.00, 407.67, 45.00, 20.33) | (32.00, 410.67, 45.00, 20.33) | inherited system body |
+| T | (96.52, 583.00, 9.67, 18.00) | (98.45, 586.00, 9.67, 18.00) | system subheadline, semibold |
+| T | (191.67, 583.00, 9.67, 18.00) | (196.17, 586.00, 9.67, 18.00) | system subheadline, semibold |
+| This week | (16.00, 478.00, 361.00, 52.00) | (16.00, 481.00, 370.00, 52.00) | system headline |
+| W | (141.43, 583.00, 15.00, 18.00) | (144.64, 586.00, 15.00, 18.00) | system subheadline, semibold |
+| ¥2,900 | (89.67, 407.67, 56.00, 20.33) | (95.83, 410.67, 56.00, 20.33) | inherited system body, monospaced digits |
+| ¥307,100 | (284.33, 407.67, 76.67, 20.33) | (293.33, 410.67, 76.67, 20.33) | inherited system body, monospaced digits |
 
-### Screenshots — PASS for artifact validation; final suite pending
-- `Verification/Cycle2bEvidence/INDEX.md` indexes 42 JPEGs. Round 2 refreshed only the two devices' rule-form and Home images; other screens retain Round 1 images. Synthetic data only. Home AX3 images are from the final focused run; other refreshed images are from the previous completed resumed suite, with unchanged presentation at those sizes.
-- `sips` quality 80; all 42 images have long edge 2,000 px, total 5,439,353 bytes, largest 181,161 bytes, zero files >=1 MB. Representative Home AX3 and rule form images were visually inspected. Screenshots are not proof of a passing audit or of physical-device/VoiceOver behavior.
+- Each diagnostic issue was printed, explicitly failed via `XCTFail`, and returned false to retain the default audit failure. Full details and unrounded frames are in `/tmp/wealthy-c2b1-r2-g-check{15,17}.log`. No inference is made that the findings are false positives. The prior Round 2 Home baseline at 5db23f0 remains inconclusive because the ledger could not open, as documented in the checkpoint report.
+
+### (i) Fixture month — PASS
+- The two tests navigate the month control from the current Gregorian month to the existing injected October 2026 test date. Expected values remain `¥218` and `¥266`; Core and fixtures were not modified. `testIncomeEntry` and `testChildSupportDefaults` passed on both in the final full suites.
+
+### (j) Child flow and persisted onboarding — PARTIAL
+- With unpinned launches, `testChildEnvelopeAndLicenseFlow` initially failed on both: the test tapped the wide switch row's center while the actual switch was at its right edge. The test now taps the switch control, asserts value `1`, and selects the child envelope before opening the amount keyboard. The final full suite passed this test on both devices.
+- `testPersistedOnboardingRelaunch`: after (f), 15 Pro still failed, while 17 Pro passed. A downward swipe did not dismiss the keyboard; a further attempt scrolls from above the keyboard before using the unchanged visibility-checking tap. Final result: 17 Pro PASS, 15 Pro FAIL. On 15 Pro the `onboardingNext` button frame was `(265.67, 749.00, 95.33, 34.33)` and the keyboard frame `(0, 567, 393, 227)`, so the button center was below the keyboard top. Expected: Next is visible and advances; actual: the helper's visibility assertion failed. Reproduce with the final suite command below plus `-only-testing:WealthyUITests/Cycle2aUITests/testPersistedOnboardingRelaunch`. Onboarding layout is outside the authorized Home/form changes and was not modified.
+
+### (k) Full UI suites — FAIL, completed
+- iPhone 15 Pro: **59 tests, 56 passed, 3 failed, 0 skipped**. Failing methods: `testC2bAccessibilityAndEvidence`, `testHomeAccessibilityAudit`, `testPersistedOnboardingRelaunch`. XCTest reports 22 individual failure assertions across those cases (6 form issues, 15 Home issues, 1 visibility assertion).
+- iPhone 17 Pro: **59 tests, 57 passed, 2 failed, 0 skipped**. Failing methods: `testC2bAccessibilityAndEvidence`, `testHomeAccessibilityAudit`. XCTest reports 18 individual failure assertions (3 form, 15 Home).
+- Both runs were single unfiltered runs with `-parallel-testing-enabled NO`. All six launch/interactive metric methods and the persisted 50,000-entry method ran and passed on both. These are simulator results, not measurements against the physical-device target. Each `testScreenMatrix` completed all 144 cases.
+
+| UI test method | 15 Pro | 17 Pro |
+| --- | --- | --- |
+| `testAdditionalSetupMatrix` | PASS | PASS |
+| `testC2bAccessibilityAndEvidence` | FAIL | FAIL |
+| `testC2bAnalysisValuesAndEmptyMonth` | PASS | PASS |
+| `testC2bCalendarAndDayDetail` | PASS | PASS |
+| `testC2bCatchUpFailureNamesRule` | PASS | PASS |
+| `testC2bCatchUpRelaunch` | PASS | PASS |
+| `testC2bCatchUpWithPendingResults` | PASS | PASS |
+| `testC2bChildIsolation` | PASS | PASS |
+| `testC2bEditRuleKeepsItsCurrency` | PASS | PASS |
+| `testC2bForegroundCatchUp` | PASS | PASS |
+| `testC2bInfoEntryPointsAndPushedSwipe` | PASS | PASS |
+| `testC2bRuleLifecycle` | PASS | PASS |
+| `testC2bRuleValidation` | PASS | PASS |
+| `testChildAndResultMatrix` | PASS | PASS |
+| `testChildEnvelopeAndLicenseFlow` | PASS | PASS |
+| `testChildInfoMatrix` | PASS | PASS |
+| `testChildSetupMatrix` | PASS | PASS |
+| `testChildSupportDefaults` | PASS | PASS |
+| `testEditorControlDragsDoNotSwitchTabs` | PASS | PASS |
+| `testEntryAccessibilityAudit` | PASS | PASS |
+| `testExistingChildSetupRemainsEnabled` | PASS | PASS |
+| `testFocusedSelectionAndEditorSwipeIsolation` | PASS | PASS |
+| `testFormMatrix` | PASS | PASS |
+| `testGoalsUnsetMatrix` | PASS | PASS |
+| `testHomeAX3LanguageMatrix` | PASS | PASS |
+| `testHomeAccessibilityAudit` | FAIL | FAIL |
+| `testHomeAlwaysHousehold` | PASS | PASS |
+| `testHomeInteractiveMetric1000` | PASS | PASS |
+| `testHomeInteractiveMetric10000` | PASS | PASS |
+| `testHomeInteractiveMetric50000` | PASS | PASS |
+| `testHomeWithFiftyThousandPersistedEntries` | PASS | PASS |
+| `testHorizontalTabSwipeAndVerticalScroll` | PASS | PASS |
+| `testIncomeEntry` | PASS | PASS |
+| `testInfoAccessibilityAudit` | PASS | PASS |
+| `testInfoSegmentedControlDragDoesNotSwitchTabs` | PASS | PASS |
+| `testKoreanAmountsMatrix` | PASS | PASS |
+| `testLaunchMetric1000` | PASS | PASS |
+| `testLaunchMetric10000` | PASS | PASS |
+| `testLaunchMetric50000` | PASS | PASS |
+| `testLocalizedGroupedAmountFields` | PASS | PASS |
+| `testLocalizedOnboarding` | PASS | PASS |
+| `testManualTaxAndMetadataSurviveReopening` | PASS | PASS |
+| `testMonthResultStatesMatrix` | PASS | PASS |
+| `testNativeHomeLanguageEvidence` | PASS | PASS |
+| `testNativeOnboardingEvidenceLightAndDark` | PASS | PASS |
+| `testNativeScreenEvidenceLightAndDark` | PASS | PASS |
+| `testNavigationMatrix` | PASS | PASS |
+| `testNoSpendDayFromEmptyLedger` | PASS | PASS |
+| `testNormalNewStoreLaunch` | PASS | PASS |
+| `testOnboardingEntryTaxNoSpendTarget` | PASS | PASS |
+| `testPagerNavigation` | PASS | PASS |
+| `testPersistedOnboardingRelaunch` | FAIL | PASS |
+| `testReduceMotionSwipeAndSheetIsolation` | PASS | PASS |
+| `testResultAccessibilityAudit` | PASS | PASS |
+| `testResultAndAccessibilityVariants` | PASS | PASS |
+| `testScreenMatrix` | PASS | PASS |
+| `testShortAndDiagonalDragsDoNotSwitchTabs` | PASS | PASS |
+| `testVoiceAccessibilityAudit` | PASS | PASS |
+| `testVoicePlaceholderIsShownOnce` | PASS | PASS |
+
+### Screenshots — PASS for artifact validation
+- After the full suites, refreshed only the 6 rule-form JPEGs for both simulators and light/dark/AX3, and updated `Verification/Cycle2bEvidence/INDEX.md`. AX3 images are from the separate AX3 screenshot launches; audits ran without a content-size argument. Home and other previously committed images were not changed in this continuation.
+- Synthetic data only. 42 JPEGs total, 5,442,181 bytes; largest 181,161 bytes; every long edge <=2,000 px and each file <1 MB. JPEG quality set to 80 with `sips`. Representative light and AX3 form images were visually inspected. Images are not evidence that the full audit passed or that physical VoiceOver was exercised.
 
 ## Verification commands
 
 ```sh
-# Before/after simulator content size (after still pending)
+# First unpinned audit, one run per simulator
+xcodebuild -project Wealthy/Wealthy.xcodeproj -scheme WealthyUITests -destination 'platform=iOS Simulator,id=870430A8-E557-4CED-8A8E-079801D804B9' -derivedDataPath /tmp/wealthy-c2b1-r2 -resultBundlePath /tmp/wealthy-c2b1-r2-f-audit15.xcresult -parallel-testing-enabled NO -only-testing:WealthyUITests/Cycle2aUITests/testHomeAccessibilityAudit -only-testing:WealthyUITests/Cycle2aUITests/testC2bAccessibilityAndEvidence test > /tmp/wealthy-c2b1-r2-f-audit15.log 2>&1
+xcodebuild -project Wealthy/Wealthy.xcodeproj -scheme WealthyUITests -destination 'platform=iOS Simulator,id=DEA8D0DF-8BA2-4F70-B19C-BACAC400EAE0' -derivedDataPath /tmp/wealthy-c2b1-r2-17 -resultBundlePath /tmp/wealthy-c2b1-r2-f-audit17.xcresult -parallel-testing-enabled NO -only-testing:WealthyUITests/Cycle2aUITests/testHomeAccessibilityAudit -only-testing:WealthyUITests/Cycle2aUITests/testC2bAccessibilityAndEvidence test > /tmp/wealthy-c2b1-r2-f-audit17.log 2>&1
+# Final full suites, exit 65 on both; no filters
+xcodebuild -project Wealthy/Wealthy.xcodeproj -scheme WealthyUITests -destination 'platform=iOS Simulator,id=870430A8-E557-4CED-8A8E-079801D804B9' -derivedDataPath /tmp/wealthy-c2b1-r2 -resultBundlePath /tmp/wealthy-c2b1-r2-k-full15.xcresult -parallel-testing-enabled NO test > /tmp/wealthy-c2b1-r2-k-full15.log 2>&1
+xcodebuild -project Wealthy/Wealthy.xcodeproj -scheme WealthyUITests -destination 'platform=iOS Simulator,id=DEA8D0DF-8BA2-4F70-B19C-BACAC400EAE0' -derivedDataPath /tmp/wealthy-c2b1-r2-17 -resultBundlePath /tmp/wealthy-c2b1-r2-k-full17.xcresult -parallel-testing-enabled NO test > /tmp/wealthy-c2b1-r2-k-full17.log 2>&1
+sh Verification/verify_core.sh > /tmp/wealthy-c2b1-r2-f-core.log 2>&1
+PATH=/tmp/wealthy-c2b1-tools/bin:$PATH python3 Verification/verify_shell.py > /tmp/wealthy-c2b1-r2-f-shell.log 2>&1
+sh Verification/verify_localization.sh > /tmp/wealthy-c2b1-r2-f-localization.log 2>&1
+xcodebuild -project Wealthy/Wealthy.xcodeproj -scheme WealthyUITests -configuration Release -destination 'generic/platform=iOS Simulator' -derivedDataPath /tmp/wealthy-c2b1-r2-release build > /tmp/wealthy-c2b1-r2-f-release.log 2>&1
+xcodebuild -project Wealthy/Wealthy.xcodeproj -scheme WealthyUITests -configuration Release -destination 'generic/platform=iOS' -derivedDataPath /tmp/wealthy-c2b1-r2-device -allowProvisioningUpdates build > /tmp/wealthy-c2b1-r2-f-device.log 2>&1
+codesign --verify --deep --strict /tmp/wealthy-c2b1-r2-device/Build/Products/Release-iphoneos/Wealthy.app
 xcrun simctl ui 870430A8-E557-4CED-8A8E-079801D804B9 content_size
 xcrun simctl ui DEA8D0DF-8BA2-4F70-B19C-BACAC400EAE0 content_size
-# Final-source full runs, both still in progress
-xcodebuild -project Wealthy/Wealthy.xcodeproj -scheme WealthyUITests -destination 'platform=iOS Simulator,id=870430A8-E557-4CED-8A8E-079801D804B9' -derivedDataPath /tmp/wealthy-c2b1-r2 -resultBundlePath /tmp/wealthy-c2b1-r2-last-full15.xcresult -parallel-testing-enabled NO test > /tmp/wealthy-c2b1-r2-last-full15.log 2>&1
-xcodebuild -project Wealthy/Wealthy.xcodeproj -scheme WealthyUITests -destination 'platform=iOS Simulator,id=DEA8D0DF-8BA2-4F70-B19C-BACAC400EAE0' -derivedDataPath /tmp/wealthy-c2b1-r2-17 -resultBundlePath /tmp/wealthy-c2b1-r2-last-full17.xcresult -parallel-testing-enabled NO test > /tmp/wealthy-c2b1-r2-last-full17.log 2>&1
-# Final production source checks
-sh Verification/verify_core.sh > /tmp/wealthy-c2b1-r2-last-core.log 2>&1
-PATH=/tmp/wealthy-c2b1-tools/bin:$PATH python3 Verification/verify_shell.py > /tmp/wealthy-c2b1-r2-last-shell.log 2>&1
-sh Verification/verify_localization.sh > /tmp/wealthy-c2b1-r2-last-localization.log 2>&1
 git diff --check
-xcodebuild -project Wealthy/Wealthy.xcodeproj -scheme WealthyUITests -configuration Release -destination 'generic/platform=iOS Simulator' -derivedDataPath /tmp/wealthy-c2b1-r2-release build > /tmp/wealthy-c2b1-r2-resume-release-last.log 2>&1
-xcodebuild -project Wealthy/Wealthy.xcodeproj -scheme WealthyUITests -configuration Release -destination 'generic/platform=iOS' -derivedDataPath /tmp/wealthy-c2b1-r2-device -allowProvisioningUpdates build > /tmp/wealthy-c2b1-r2-resume-device-last.log 2>&1
-codesign --verify --deep --strict /tmp/wealthy-c2b1-r2-device/Build/Products/Release-iphoneos/Wealthy.app
 ```
 
-Core PASS: 117 tests in 13 suites. Shell PASS: 199 keys x four languages and zero missing. Localization PASS: shipping catalog and 2,420 archived checks. Simulator Release PASS; signed generic iOS Release PASS; signature PASS; diff check PASS. Builds reported the existing AppIntents metadata warning (no dependency found). Initial sandboxed Core test failed because nested sandbox-exec was not permitted; the authorized run passed. Result-bundle attachment exports initially conflicted when run against the same bundle concurrently; sequential exports succeeded.
-
-Focused commands use the same xcodebuild arguments with `-only-testing` for `testHomeAccessibilityAudit`, `testHomeAX3LanguageMatrix`, `testNativeHomeLanguageEvidence`, `testC2bForegroundCatchUp` or `testC2bChildIsolation`; exact command line and logs remain under `/tmp/wealthy-c2b1-r2-resume-*.log` with corresponding xcresults. Baseline command and original interrupted runs are in the previous checkpoint; original completed Round 1 report remains in HEAD.
+Core PASS: 117 tests / 13 suites. Shell PASS: 199 keys x four languages, no missing keys. Localization PASS: shipping catalog and 2,420 archived checks. Simulator Release, signed generic iOS Release and host signature verification PASS. Builds emitted `Metadata extraction skipped, no AppIntents.framework dependency found`. The earlier sandboxed Core invocation was blocked by sandbox-exec permissions; authorized execution passed. Exact focused invocation arguments and output are in `/tmp/wealthy-c2b1-r2-g-check{15,17}.log` and `/tmp/wealthy-c2b1-r2-j{15,17}.log`, with corresponding xcresults. Result summaries are `/tmp/wealthy-c2b1-r2-k-summary{15,17}.json`.
 
 ## Not done / unverified
-- Final-source full-suite completion, precise final failures and simulator content-size after values pending. Status remains PARTIAL even if other checks pass while required default audits report issues.
-- No physical install, launch, performance measurement or VoiceOver walkthrough was repeated in Round 2. Prior physical-device evidence is historical, not a new observation.
-- No deploy, Git recording, user-data deletion or unrelated cleanup. The operator owns Git. Round 1 board/Core differences are retained in the report at HEAD; this round does not alter them.
-
-
-Final-source run checkpoint: both devices reached `testScreenMatrix` after 55 of 59 tests. `testHomeAX3LanguageMatrix`, `testC2bForegroundCatchUp` and `testC2bChildIsolation` passed on both. Completed failures so far on both: `testC2bAccessibilityAndEvidence`, `testChildEnvelopeAndLicenseFlow`, `testChildSupportDefaults`, `testHomeAccessibilityAudit`, and `testIncomeEntry`. On 15 Pro, `testPersistedOnboardingRelaunch` also failed because the keyboard covered Next; 17 Pro passed that method. Remaining cases and final counts are pending.
+- Form and Home default full accessibility audits remain FAIL; the 15 Pro persisted-onboarding visibility assertion remains FAIL. Approval or designer direction is needed for any onboarding UI change outside this task.
+- Runtime font face and point size for flagged Home elements are unverified; the table reports source-level semantic fonts only.
+- No physical-device install, launch, performance measurement or VoiceOver walkthrough was repeated in this continuation. Prior physical-device evidence in the checkpoint is historical, not a new observation.
+- No production deployment, Git recording, user-data deletion or unrelated cleanup. The operator owns Git. Round 1 board/Core differences are retained in the committed checkpoint history; no corresponding product behavior changed here.

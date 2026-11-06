@@ -128,10 +128,14 @@ extension Cycle2aUITests {
                 var flags: [String] = []
                 if mode != "light" { flags.append("--" + mode) }
                 if screen == "catch-up" { flags.append("--cycle2b-catchup") }
-                launchC2b(screen, flags: flags)
+                launchC2b(screen, flags: flags.filter { $0 != "--ax3" })
                 let title = ["fixed-costs": "Fixed costs", "rule-form": "Add fixed cost", "calendar": "Calendar", "analysis": "Analysis", "catch-up": "Recorded fixed costs"]
                 if let title = title[screen] { XCTAssertTrue(app.navigationBars[title].waitForExistence(timeout: 15), app.debugDescription) }
                 if screen != "catch-up" && screen != "day-detail" { try app.performAccessibilityAudit() }
+                if mode == "ax3" {
+                    app.terminate()
+                    launchC2b(screen, flags: flags)
+                }
                 capture("c2b-\(screen)-\(mode)")
                 app.terminate()
             }
