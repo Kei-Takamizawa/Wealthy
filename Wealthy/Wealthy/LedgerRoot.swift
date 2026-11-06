@@ -16,7 +16,6 @@ struct LedgerRoot: View {
             else if !session.onboarded { OnboardingView() }
             else { mainContent }
         }
-        .modifier(LegacyUITestTypeSize())
         .preferredColorScheme(LedgerSession.isUITest ? (ProcessInfo.processInfo.arguments.contains("--dark") ? .dark : .light) : nil)
         .tint(V4.primary(scheme))
         .task(id: session.core != nil) { if session.core != nil { await session.catchUpAfterPresentation() } }
@@ -80,17 +79,6 @@ struct LedgerRoot: View {
         #endif
     }
 
-}
-private struct LegacyUITestTypeSize: ViewModifier {
-    @ViewBuilder func body(content: Content) -> some View {
-        #if DEBUG
-        if LedgerSession.isUITest && ProcessInfo.processInfo.arguments.contains("--ax3") {
-            content.environment(\.dynamicTypeSize, .accessibility3)
-        } else { content }
-        #else
-        content
-        #endif
-    }
 }
 private struct LedgerPresentation: Identifiable {
     let id = UUID()

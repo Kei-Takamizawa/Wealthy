@@ -61,3 +61,29 @@ WealthyCore behavior, persistence, data model, tax/target rules (small read-only
 
 ## Report (`.ai/LAST_REPORT.md`, format in `AGENTS.md`)
 Per requirement with evidence, exact commands, board-vs-Core differences, anything not run and why.
+
+## Round 2 (designer decisions, 2026-11-06, after PR #10 head 5fee716)
+Same Task ID, same branch `codex/wealthy-c2b1-fixed-calendar`, same PR #10. Read `.ai/LAST_REPORT.md` first. Only the items below; do not change anything else that already passes.
+
+1. **Rule form audit ("Dynamic Type font sizes are partially unsupported" on Category and Day of month).** Restructure with standard controls only:
+   - Day of month: replace the fixed-width (`frame(width: 100)`) number `TextField` with a standard `Picker` over 1...31 (and 1...12 for the yearly month), using `.pickerStyle(.navigationLink)` so the value list is a pushed list that scales with Dynamic Type. The value shown in the row is the plain number. Core still validates the day (month-end clamping stays a Core rule).
+   - Category (and other pickers in this form if the audit flags them): use the plain `Picker(title, selection:)` initializer without a custom label view, `.pickerStyle(.navigationLink)`.
+   - Remove fixed widths/heights around text in this form; rows may grow vertically.
+   - The audit stays the default `performAccessibilityAudit()` with no exclusions. A diagnostic issue handler is allowed only if it logs the element (label, identifier, frame) and still fails the test for every issue; if the automatic approval reviewer rejects it, skip the handler and report.
+2. **Home "Text clipped" (Not a balance, I spent nothing today).** Make every text on Home wrap at accessibility sizes: no `lineLimit(1)` or fixed heights on these texts or their containers; button labels may wrap to multiple lines (`.fixedSize(horizontal: false, vertical: true)` where needed). The big amount may keep `minimumScaleFactor` if the audit accepts it; otherwise let it wrap. Classify the failure: run `testHomeAccessibilityAudit` once on `origin/main` (5db23f0) in a temporary git worktree under `/tmp/wealthy-c2b1-baseline` with the same simulator Dynamic Type state and report whether it already failed there. Do not commit anything from that worktree; remove it afterwards.
+3. **Full UI suite.** After 1 and 2, run the whole `WealthyUITests` scheme once per simulator (iPhone 15 Pro, iPhone 17 Pro) in single runs, with `-parallel-testing-enabled NO`. Report counts and every failure. The launch/interactive metric tests may be slow; they must run, but their simulator numbers are not judged against the device target.
+4. Keep the screenshots in `Verification/Cycle2bEvidence/` in sync: re-capture only the rule form and Home-affected images if they change.
+
+Acceptance for round 2: rule-form audit and Home audit pass on both simulators with no exclusions; the full suite has zero failures on both simulators; required checks (`verify_core.sh`, `verify_shell.py`, `verify_localization.sh`, `git diff --check`, Simulator Release and signed generic iOS builds) pass. Then set `Status: DONE`. If a failure remains, keep it red, report the exact test, element and message, and set `Status: PARTIAL`.
+
+
+## Round 2 resume instructions (user, after usage-limit interruption)
+
+You stopped on a usage limit; the limit has reset. Continue Round 2 from where you stopped (your two full-suite runs ended when you stopped; no xcodebuild is running now) and finish with the full report.
+
+Designer notes for the rest of Round 2:
+(a) Test environment first. On main, UI tests pinned Dynamic Type with `.environment(\.dynamicTypeSize, LedgerSession.isUITest ? (--ax3 ? .accessibility3 : .large) : actual)`; this branch now pins only for --ax3 (LegacyUITestTypeSize) and otherwise inherits whatever the simulator is set to, which makes results depend on simulator state. Replace the SwiftUI environment pin with the system launch argument in the tests: launch with `-UIPreferredContentSizeCategoryName UICTContentSizeCategoryL` by default and `UICTContentSizeCategoryAccessibilityXL` (AX3) for AX3 cases, and remove the in-app environment override, so the app follows a real content size category and the audit can vary it. Record the simulator's own content size before and after. Then re-run the rule-form and Home audits before changing UI further; report whether the 'partially unsupported' and 'Text clipped' issues change.
+(b) Rule form: keep navigationLink Pickers for Day/Month/Category only (not form-wide). If the dynamic-type issue remains, check for anything in the row hierarchy that stops text scaling (fixed font sizes, fixedSize(), frame heights, minimumScaleFactor, lineLimit) and report the element's label, identifier, frame and the exact audit description.
+(c) testC2bChildIsolation: update it to assert the Category picker's accessibility value ('Food') instead of its label. This matches the standard control and keeps the assertion as strong.
+(d) Home baseline classification may stay inconclusive; just fix Home so the audit passes under (a).
+(e) Then the full suite on both simulators, single runs, as in the Round 2 text.

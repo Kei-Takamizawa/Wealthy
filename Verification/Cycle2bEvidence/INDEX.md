@@ -2,26 +2,28 @@
 
 Task ID: WEALTHY-C2B1-FIXED-CALENDAR
 
-Synthetic data only. Captured on iOS 27.0 with Xcode 27.2. Images come from the resumed `testC2bAccessibilityAndEvidence` runs; each complete test case failed because of the rule-form issues below. Screenshots are not proof that the test case passed.
-
-JPEG quality was set to 80 with `sips`; all long edges are at most 2,000 px and every image is below 1 MB.
+Synthetic data only. Both simulators used iOS 27.0 and Xcode 27.2. Round 2 replaced only the rule-form images and added Home images; other images are from the earlier Round 1 runs. JPEG quality is 80, long edges are at most 2,000 pixels, and each image is under 1 MB.
 
 ## Audit results
 
-| Screen | iPhone 15 Pro | iPhone 17 Pro |
-| --- | --- | --- |
-| Fixed costs list | PASS: light, dark, AX3 | PASS: light, dark, AX3 |
-| Calendar | PASS: light, dark, AX3 | PASS: light, dark, AX3 |
-| Analysis | PASS: light, dark, AX3 | PASS: light, dark, AX3 |
-| Rule form | FAIL: Category and Day of month, Dynamic Type partially unsupported | FAIL: Day of month, Dynamic Type partially unsupported |
-| Day detail / catch-up notice | Captured; no separate audit requested | Captured; no separate audit requested |
+The full resumed 59-test runs failed on both devices. Images do not establish test acceptance.
 
-The three required screens used the default full accessibility audit with no handler or exclusions. The optional rule-form audit also remains enabled and failing. AX3 uses the native `UICTContentSizeCategoryAccessibilityXL` launch preference.
+| Screen or audit | iPhone 15 Pro | iPhone 17 Pro |
+| --- | --- | --- |
+| Fixed costs list, Calendar, Analysis | Full default audits: light, dark, AX3 passed | Full default audits: light, dark, AX3 passed |
+| Rule form | Full default audit failed: Category and Day of month, Dynamic Type partially unsupported | Full default audit failed: Day of month, Dynamic Type partially unsupported |
+| Home, existing four-type audit | Passed in the full suite | Passed in the full suite |
+| Home, additional default full audit | Failed: multiple Dynamic Type partially unsupported issues | Failed: multiple Dynamic Type partially unsupported issues |
+| Home AX3 multilingual text clipping | Follow-up passed in en/ja/es/ko, top and scrolled | Follow-up passed in en/ja/es/ko, top and scrolled |
+| Day detail / catch-up notice | Round 1 images; no separate audit | Round 1 images; no separate audit |
+
+Home uses the system launch content-size category rather than an in-app environment override. The four-type Home audit covers contrast, text clipping, hit region and sufficient element description. The additional default audit uses all types and no issue handler. Simulator images do not establish physical-device UI or VoiceOver behavior.
 
 ## iPhone 15 Pro
 
 | Screen | Light | Dark | AX3 |
 | --- | --- | --- | --- |
+| Home | [Light](iphone15pro-home-light.jpg) | [Dark](iphone15pro-home-dark.jpg) | [AX3](iphone15pro-home-ax3.jpg) |
 | Fixed costs | [Light](iphone15pro-fixed-costs-light.jpg) | [Dark](iphone15pro-fixed-costs-dark.jpg) | [AX3](iphone15pro-fixed-costs-ax3.jpg) |
 | Rule form | [Light](iphone15pro-rule-form-light.jpg) | [Dark](iphone15pro-rule-form-dark.jpg) | [AX3](iphone15pro-rule-form-ax3.jpg) |
 | Catch-up notice | [Light](iphone15pro-catch-up-light.jpg) | [Dark](iphone15pro-catch-up-dark.jpg) | [AX3](iphone15pro-catch-up-ax3.jpg) |
@@ -33,6 +35,7 @@ The three required screens used the default full accessibility audit with no han
 
 | Screen | Light | Dark | AX3 |
 | --- | --- | --- | --- |
+| Home | [Light](iphone17pro-home-light.jpg) | [Dark](iphone17pro-home-dark.jpg) | [AX3](iphone17pro-home-ax3.jpg) |
 | Fixed costs | [Light](iphone17pro-fixed-costs-light.jpg) | [Dark](iphone17pro-fixed-costs-dark.jpg) | [AX3](iphone17pro-fixed-costs-ax3.jpg) |
 | Rule form | [Light](iphone17pro-rule-form-light.jpg) | [Dark](iphone17pro-rule-form-dark.jpg) | [AX3](iphone17pro-rule-form-ax3.jpg) |
 | Catch-up notice | [Light](iphone17pro-catch-up-light.jpg) | [Dark](iphone17pro-catch-up-dark.jpg) | [AX3](iphone17pro-catch-up-ax3.jpg) |
@@ -40,6 +43,6 @@ The three required screens used the default full accessibility audit with no han
 | Day detail | [Light](iphone17pro-day-detail-light.jpg) | [Dark](iphone17pro-day-detail-dark.jpg) | [AX3](iphone17pro-day-detail-ax3.jpg) |
 | Analysis | [Light](iphone17pro-analysis-light.jpg) | [Dark](iphone17pro-analysis-dark.jpg) | [AX3](iphone17pro-analysis-ax3.jpg) |
 
-36 JPEGs; 4,417,197 bytes total; largest image 181,161 bytes.
+42 JPEGs; 5,439,353 bytes total; largest 181,161 bytes.
 
-Raw result bundles remain under `/tmp/wealthy-c2b1-resume-15.xcresult` and `/tmp/wealthy-c2b1-resume-17.xcresult`. Physical-device startup is reported separately in `.ai/LAST_REPORT.md`; these images do not represent physical-device UI or VoiceOver operation.
+Final-source full-suite runs are in progress. The previous resumed results are under `/tmp/wealthy-c2b1-r2-resume-full15.xcresult` and `/tmp/wealthy-c2b1-r2-resume-full17.xcresult`. See `.ai/LAST_REPORT.md` for all failures and follow-up results.

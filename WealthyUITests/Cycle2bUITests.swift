@@ -23,12 +23,9 @@ extension Cycle2aUITests {
 extension Cycle2aUITests {
     @MainActor
     func launchC2b(_ screen: String? = nil, flags: [String] = []) {
-        app.launchArguments = ["--cycle2a-test", "--cycle2b-seed", "--reset-test-preferences", "-v4.language", "en", "-v4.currency", "JPY"] + flags.filter { $0 != "--ax3" }
-        if flags.contains("--ax3") {
-            app.launchArguments += ["-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXL"]
-        }
+        app.launchArguments = ["--cycle2a-test", "--cycle2b-seed", "--reset-test-preferences", "-v4.language", "en", "-v4.currency", "JPY"] + flags
         if let screen { app.launchArguments += ["--screen", screen] }
-        app.launch()
+        launchApp()
         XCTAssertTrue(app.descendants(matching: .any).matching(identifier: "ledgerLoading").firstMatch.waitForNonExistence(timeout: 30))
     }
     @MainActor
@@ -82,7 +79,7 @@ extension Cycle2aUITests {
         app.navigationBars.buttons.firstMatch.tap()
         tap("dismissCatchUp")
         XCTAssertFalse(app.buttons["viewCatchUp"].exists)
-        app.terminate(); app.launch()
+        app.terminate(); launchApp()
         XCTAssertTrue(app.tabBars.buttons["Info"].waitForExistence(timeout: 15))
         XCTAssertFalse(app.buttons["viewCatchUp"].exists)
         app.tabBars.buttons["Info"].tap(); tap("calendarLink")
@@ -155,9 +152,9 @@ extension Cycle2aUITests {
     @MainActor
     func testC2bForegroundCatchUp() throws {
         launchC2b("fixed-costs")
-        tap("addRule"); enter("ruleTitle", "Synthetic active rule"); enter("ruleAmount", "1200")
-        for _ in 0..<6 { if app.textFields["ruleDay"].exists { break }; app.swipeUp() }
-        enter("ruleDay", "11")
+        tap("addRule"); tap("ruleDay"); tap("11")
+        for _ in 0..<8 { if app.textFields["ruleTitle"].isHittable { break }; app.swipeDown() }
+        enter("ruleTitle", "Synthetic active rule"); enter("ruleAmount", "1200")
         saveC2bRule()
         XCTAssertTrue(app.buttons["rule-Synthetic active rule"].waitForExistence(timeout: 5))
         XCUIDevice.shared.press(.home)
@@ -176,10 +173,10 @@ extension Cycle2aUITests {
         XCTAssertTrue(app.buttons["rule-Synthetic child rule"].waitForExistence(timeout: 5))
         XCTAssertFalse(app.buttons["rule-Synthetic monthly"].exists)
         tap("rule-Synthetic child rule")
-        XCTAssertTrue(app.buttons["ruleCategory"].label.contains("Food"), app.debugDescription)
+        XCTAssertEqual(app.buttons["ruleCategory"].value as? String, "Food", app.debugDescription)
         saveC2bRule()
         tap("rule-Synthetic child rule")
-        XCTAssertTrue(app.buttons["ruleCategory"].label.contains("Food"), app.debugDescription)
+        XCTAssertEqual(app.buttons["ruleCategory"].value as? String, "Food", app.debugDescription)
         app.navigationBars.buttons.firstMatch.tap()
         app.navigationBars.buttons.firstMatch.tap(); tap("analysisLink")
         XCTAssertTrue(app.staticTexts["emptyAnalysis"].waitForExistence(timeout: 5))

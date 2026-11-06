@@ -75,7 +75,7 @@ struct RuleEditor: View {
     @State private var envelope = EnvelopeValue.householdID
     @State private var category: UUID?
     @State private var schedule = "monthly"
-    @State private var day = "25"
+    @State private var day = 25
     @State private var weekday = 2
     @State private var month = 4
     @State private var start = Date()
@@ -108,12 +108,10 @@ struct RuleEditor: View {
                     Text(session.t("household")).tag(EnvelopeValue.householdID)
                     if let child = session.child() { Text(session.t("child")).tag(child.id) }
                 }.accessibilityIdentifier("ruleEnvelope")
-                Picker(selection: $category) {
+                Picker(session.t("category"), selection: $category) {
                     Text(session.t("none")).tag(nil as UUID?)
                     ForEach(categories) { Text(session.categoryName($0)).tag(Optional($0.id)) }
-                } label: {
-                    Text(session.t("category")).lineLimit(nil).fixedSize(horizontal: false, vertical: true)
-                }.accessibilityIdentifier("ruleCategory")
+                }.pickerStyle(.navigationLink).accessibilityIdentifier("ruleCategory")
             }
             Section {
                 Picker(session.t("schedule"), selection: $schedule) {
@@ -128,16 +126,12 @@ struct RuleEditor: View {
                 } else {
                     if schedule == "yearly" {
                         Picker(session.t("scheduleMonth"), selection: $month) {
-                            ForEach(1...12, id: \.self) { Text(session.locale.calendar.monthSymbols[$0 - 1]).tag($0) }
-                        }
+                            ForEach(1...12, id: \.self) { Text(String($0)).tag($0) }
+                        }.pickerStyle(.navigationLink)
                     }
-                    LabeledContent {
-                        TextField("", text: $day).font(.body).keyboardType(.numberPad)
-                            .accessibilityLabel(session.t("scheduleDay")).accessibilityIdentifier("ruleDay")
-                            .frame(width: 100).frame(minHeight: 44)
-                    } label: {
-                        Text(session.t("scheduleDay")).lineLimit(nil).fixedSize(horizontal: false, vertical: true)
-                    }
+                    Picker(session.t("scheduleDay"), selection: $day) {
+                        ForEach(1...31, id: \.self) { Text(String($0)).tag($0) }
+                    }.pickerStyle(.navigationLink).accessibilityIdentifier("ruleDay")
                 }
                 DatePicker(session.t("startDay"), selection: $start, displayedComponents: .date)
                 Toggle(session.t("hasEndDay"), isOn: $hasEnd)
@@ -165,9 +159,9 @@ struct RuleEditor: View {
         category = rule.categoryID; fixed = rule.isFixedCost; tax = rule.taxRate?.rawValue ?? "unknown"; service = rule.serviceMode ?? .none
         hasEnd = rule.endDay != nil
         switch rule.schedule {
-        case let .monthly(n): schedule = "monthly"; day = String(n)
+        case let .monthly(n): schedule = "monthly"; day = n
         case let .weekly(n): schedule = "weekly"; weekday = n
-        case let .yearly(m, n): schedule = "yearly"; month = m; day = String(n)
+        case let .yearly(m, n): schedule = "yearly"; month = m; day = n
         }
     }
     private func save() {
@@ -175,8 +169,7 @@ struct RuleEditor: View {
             let code = rule?.currencyCode ?? session.currency
             let value = try session.parse(amount, code: code)
             let startDay = try LedgerDay(date: start, calendar: .current)
-            let scheduleDay = Int(day) ?? 0
-            let recurrence: RecurringSchedule = schedule == "weekly" ? .weekly(weekday: weekday) : schedule == "yearly" ? .yearly(month: month, day: scheduleDay) : .monthly(day: scheduleDay)
+            let recurrence: RecurringSchedule = schedule == "weekly" ? .weekly(weekday: weekday) : schedule == "yearly" ? .yearly(month: month, day: day) : .monthly(day: day)
             // Read fresh metadata: catch-up may have advanced cursors while this form was open.
             var result: RuleValue
             if let rule {
