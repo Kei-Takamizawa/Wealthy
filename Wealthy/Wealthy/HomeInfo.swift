@@ -20,7 +20,7 @@ struct AllowanceSummary: View {
                 if typeSize.isAccessibilitySize { VStack(alignment: .leading, spacing: 4) { Text(session.t("spent")); Text(session.money(status.spent)).monospacedDigit() } }
                 else { LabeledContent(session.t("spent"), value: session.money(status.spent)) }
                 Text(String(format: session.t("loggedDays"), status.loggedDays)).font(.footnote)
-                HStack(spacing: 8) {
+                (typeSize.isAccessibilitySize ? AnyLayout(VStackLayout(alignment: .leading, spacing: 8)) : AnyLayout(HStackLayout(spacing: 8))) {
                     Image(systemName: status.isOver ? "moon.fill" : "sun.max.fill").foregroundStyle(status.isOver ? V4.over(scheme) : V4.ok(scheme))
                     Text(session.t(status.isOver ? "over" : status.isSet ? "within" : "unset"))
                 }
@@ -29,6 +29,7 @@ struct AllowanceSummary: View {
     }
 }
 struct HomeView: View {
+    @Environment(\.dynamicTypeSize) private var typeSize
     @Environment(\.colorScheme) private var scheme
     @Environment(LedgerSession.self) private var session
     let showResult: (TargetStatus) -> Void
@@ -52,13 +53,17 @@ struct HomeView: View {
                 if session.core?.state.entries.isEmpty == true {
                     LabeledContent(session.t("emptyDay"), value: session.t("emptyDetail"))
                 }
-                NavigationLink { EntryEditor(entry: nil) } label: { Label(session.t("addEntry"), systemImage: "plus") }
+                NavigationLink { EntryEditor(entry: nil) } label: { Label { Text(session.t("addEntry")).fixedSize(horizontal: false, vertical: true) } icon: { Image(systemName: "plus") } }
                     .buttonStyle(.borderedProminent).accessibilityIdentifier("addEntry")
                 Button { session.perform { try session.run(.markNoSpend(session.today, envelopeID: EnvelopeValue.householdID)) } } label: {
-                    Label(session.t("noSpend"), systemImage: "checkmark.circle").frame(maxWidth: .infinity, minHeight: 44)
+                    HStack {
+                        Image(systemName: "checkmark.circle")
+                        Text(session.t("noSpend")).fixedSize(horizontal: false, vertical: true)
+                    }.frame(maxWidth: .infinity, minHeight: 44)
                 }.buttonStyle(.bordered).accessibilityIdentifier("noSpend")
             }
         }
+        .lineLimit(nil)
         .navigationTitle(session.t("home"))
         .navigationBarTitleDisplayMode(.inline)
         .accessibilityIdentifier("homePage")
@@ -80,22 +85,29 @@ struct HomeView: View {
     private func weeklyCard(_ status: TargetStatus) -> some View {
         GroupBox {
             VStack(alignment: .leading, spacing: 8) {
-                LabeledContent(session.t("leftThisWeek"), value: status.remaining.map { session.money($0) } ?? session.t("targetUnset"))
-                Text(session.t("notBalance")).font(.footnote)
+                if typeSize.isAccessibilitySize {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(session.t("leftThisWeek")).fixedSize(horizontal: false, vertical: true)
+                        Text(status.remaining.map { session.money($0) } ?? session.t("targetUnset")).monospacedDigit()
+                    }
+                } else {
+                    LabeledContent(session.t("leftThisWeek"), value: status.remaining.map { session.money($0) } ?? session.t("targetUnset"))
+                }
+                Text(session.t("notBalance")).font(.footnote).fixedSize(horizontal: false, vertical: true)
                 if status.isSet { ProgressView(value: status.displayFill, total: 1).tint(status.isOver ? V4.over(scheme) : V4.ok(scheme)) }
                 if status.isSet, let allowance = status.allowance {
-                    HStack {
+                    (typeSize.isAccessibilitySize ? AnyLayout(VStackLayout(alignment: .leading, spacing: 8)) : AnyLayout(HStackLayout())) {
                         Text(session.t("allowance")); Text(session.money(allowance)).monospacedDigit()
                         Spacer(minLength: 8)
                         Text(session.t("spent")); Text(session.money(status.spent)).monospacedDigit()
                     }.font(.subheadline)
                 }
-                HStack(spacing: 8) {
+                (typeSize.isAccessibilitySize ? AnyLayout(VStackLayout(alignment: .leading, spacing: 8)) : AnyLayout(HStackLayout(spacing: 8))) {
                     Image(systemName: status.isOver ? "moon.fill" : status.isSet ? "checkmark.circle.fill" : "circle.dotted")
                         .foregroundStyle(status.isOver ? V4.over(scheme) : status.isSet ? V4.ok(scheme) : .secondary)
-                    Text(session.t(status.isOver ? "over" : status.isSet ? "within" : "unset"))
+                    Text(session.t(status.isOver ? "over" : status.isSet ? "within" : "unset")).fixedSize(horizontal: false, vertical: true)
                     Spacer()
-                    Text(String(format: session.t("loggedDays"), status.loggedDays)).font(.footnote)
+                    Text(String(format: session.t("loggedDays"), status.loggedDays)).font(.footnote).fixedSize(horizontal: false, vertical: true)
                 }
             }
         }
@@ -105,8 +117,11 @@ struct HomeView: View {
     private func monthCard(_ status: TargetStatus) -> some View {
         Section {
             VStack(alignment: .leading, spacing: 4) {
-                Label(session.t("notBalance"), systemImage: "info.circle")
-                HStack {
+                HStack(alignment: .top) {
+                    Image(systemName: "info.circle")
+                    Text(session.t("notBalance")).fixedSize(horizontal: false, vertical: true)
+                }
+                (typeSize.isAccessibilitySize ? AnyLayout(VStackLayout(alignment: .leading, spacing: 8)) : AnyLayout(HStackLayout())) {
                     Text(session.t("spent"))
                     Spacer(minLength: 8)
                     Text(session.money(status.spent)).monospacedDigit()
@@ -132,7 +147,7 @@ struct HomeView: View {
                 Image(systemName: icon).font(.title3).foregroundStyle(state == .over ? V4.over(scheme) : state == .future || state == .unlogged ? .secondary : V4.ok(scheme)).frame(height: 32)
                 Text((try? day.day.date(calendar: .current))?.formatted(.dateTime.weekday(.narrow).locale(session.locale)) ?? "\(day.day.day)")
                     .font(.subheadline.weight(.semibold))
-            }.frame(width: 44, height: 52).contentShape(Rectangle()).accessibilityElement(children: .ignore)
+            }.frame(maxWidth: .infinity).fixedSize(horizontal: false, vertical: true).contentShape(Rectangle()).accessibilityElement(children: .ignore)
                 .accessibilityLabel("\(day.day.formatted), \(session.t(day.presentationState == .noSpend ? "noSpendMarked" : day.presentationState.rawValue))")
         }
     }
@@ -152,6 +167,9 @@ struct InfoView: View {
                     if let child = session.child() { Text(session.t("child")).tag(child.id) }
                 }.pickerStyle(.segmented).frame(minHeight: 44)
                 if let s = session.summary { AllowanceSummary(title: "leftThisWeek", status: s.week); AllowanceSummary(title: "leftThisMonth", status: s.month) }
+                NavigationLink { FixedCostsView(envelopeID: session.envelopeID) } label: { Label(session.t("fixedCosts"), systemImage: "repeat").frame(minHeight: 52) }.accessibilityIdentifier("fixedCostsLink")
+                NavigationLink { CalendarView(envelopeID: session.envelopeID) } label: { Label(session.t("calendar"), systemImage: "calendar").frame(minHeight: 52) }.accessibilityIdentifier("calendarLink")
+                NavigationLink { AnalysisView(envelopeID: session.envelopeID) } label: { Label(session.t("analysis"), systemImage: "chart.bar").frame(minHeight: 52) }.accessibilityIdentifier("analysisLink")
                 NavigationLink { GoalsView(envelopeID: session.envelopeID) } label: { Label(session.t("goals"), systemImage: "target").frame(minHeight: 52) }
                 NavigationLink { SettingsView() } label: { Label(session.t("settings"), systemImage: "gear").frame(minHeight: 52) }
                 categoryTargets
@@ -217,7 +235,7 @@ struct ResultView: View {
         return try? LedgerQueries.loggedDayRequirement(in: status.period)
     }
     var body: some View {
-        ScrollView { VStack(spacing: 24) {
+        ScrollView { VStack(spacing: 12) {
             Text(session.t(isMonth ? "monthResultTitle" : "weekResultTitle")).font(.headline)
             if isMonth {
                 Text(session.t(monthHeadlineKey)).font(.title2.weight(.semibold)).multilineTextAlignment(.center).foregroundStyle(.primary)
@@ -247,8 +265,11 @@ struct ResultView: View {
             }
             IslandScene(growth: resultGrowth, festivals: isMonth ? monthAreas : status.isRewardEligible ? 1 : 0, dusk: status.isOver).frame(height: 180).accessibilityHidden(true)
             AllowanceSummary(title: "remainingAllowance", status: status)
-            Button(session.t("done")) { dismiss() }.buttonStyle(.borderedProminent)
         }.padding(24) }.scrollEdgeEffectHidden(for: .bottom).accessibilityIdentifier("resultSheet")
+            .safeAreaInset(edge: .bottom) {
+                Button(session.t("done")) { dismiss() }.buttonStyle(.borderedProminent)
+                    .padding(.vertical, 12).frame(maxWidth: .infinity).background(.background)
+            }
     }
     private var monthHeadlineKey: String {
         switch outcome {

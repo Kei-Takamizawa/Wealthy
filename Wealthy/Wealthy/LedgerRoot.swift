@@ -4,7 +4,10 @@ import WealthyCore
 struct LedgerRoot: View {
     @Environment(LedgerSession.self) private var session
     @Environment(\.colorScheme) private var scheme
-    @Environment(\.dynamicTypeSize) private var actualType
+    @State private var presented: LedgerPresentation?
+    @State private var presentingRecurring = false
+    @State private var resultQueue: [TargetStatus] = []
+    @State private var lastResults: [TargetStatus] = []
     var body: some View {
         @Bindable var session = session
         Group {
@@ -13,12 +16,36 @@ struct LedgerRoot: View {
             else if !session.onboarded { OnboardingView() }
             else { mainContent }
         }
-        .environment(\.dynamicTypeSize, LedgerSession.isUITest ? (ProcessInfo.processInfo.arguments.contains("--ax3") ? .accessibility3 : .large) : actualType)
         .preferredColorScheme(LedgerSession.isUITest ? (ProcessInfo.processInfo.arguments.contains("--dark") ? .dark : .light) : nil)
         .tint(V4.primary(scheme))
+        .task(id: session.core != nil) { if session.core != nil { await session.catchUpAfterPresentation() } }
+        .sheet(item: $presented, onDismiss: {
+            if presentingRecurring { session.dismissRecurringNotice() }
+            presentingRecurring = false
+            presentNext()
+        }) { presentation in
+            if let result = presentation.result {
+                ResultView(status: result).presentationDetents([.medium, .large]).presentationDragIndicator(.visible)
+            } else { NavigationStack { RecurringNoticeView() }.tint(V4.primary(scheme)) }
+        }
+        .onChange(of: session.showRecurringNotice) { _, showing in
+            if showing { presentNext() }
+            else if presentingRecurring { presented = nil }
+        }
+        .onChange(of: session.recentResults, initial: true) { _, results in
+            let changed = results.filter { $0.isSet && !lastResults.contains($0) }
+            lastResults = results
+            if !changed.isEmpty { resultQueue = changed; presentNext() }
+        }
+
         .alert(session.t("error"), isPresented: Binding(get: { session.error != nil }, set: { if !$0 { session.error = nil } })) {
             Button(session.t("ok")) { session.error = nil }
         } message: { Text(session.error ?? "") }
+    }
+    private func presentNext() {
+        guard presented == nil else { return }
+        if !resultQueue.isEmpty { presented = LedgerPresentation(result: resultQueue.removeFirst()) }
+        else if session.showRecurringNotice { presentingRecurring = true; presented = LedgerPresentation(result: nil) }
     }
     @ViewBuilder private var mainContent: some View {
         #if DEBUG
@@ -26,6 +53,12 @@ struct LedgerRoot: View {
         if LedgerSession.isUITest, let position = args.firstIndex(of: "--screen"), args.count > position + 1 {
             NavigationStack {
                 switch args[position + 1] {
+                case "fixed-costs": FixedCostsView(envelopeID: session.envelopeID)
+                case "rule-form": RuleEditor(rule: nil, envelopeID: session.envelopeID)
+                case "calendar": CalendarView(envelopeID: session.envelopeID)
+                case "analysis": AnalysisView(envelopeID: session.envelopeID)
+                case "day-detail": DayDetailView(day: try! LedgerDay(year: 2026, month: 10, day: 8), envelopeID: session.envelopeID)
+                case "catch-up": Color.clear
                 case "goals": GoalsView(envelopeID: session.envelopeID)
                 case "edit": EntryEditor(entry: session.core?.state.entries.first)
                 case "tax": TaxView()
@@ -37,15 +70,19 @@ struct LedgerRoot: View {
                 case "no-ai": NoAIView(reasonOverride: "ineligible")
                 case "voice": VoiceView()
                 case "info", "info-child": InfoView(showResult: { _ in })
-                default: LedgerTabs()
+                default: LedgerTabs(isPresenting: presented != nil, showResult: { presented = LedgerPresentation(result: $0) })
                 }
             }
-        } else { LedgerTabs() }
+        } else { LedgerTabs(isPresenting: presented != nil, showResult: { presented = LedgerPresentation(result: $0) }) }
         #else
-        LedgerTabs()
+        LedgerTabs(isPresenting: presented != nil, showResult: { presented = LedgerPresentation(result: $0) })
         #endif
     }
 
+}
+private struct LedgerPresentation: Identifiable {
+    let id = UUID()
+    let result: TargetStatus?
 }
 struct NoAIView: View {
     var reasonOverride: String? = nil
@@ -90,11 +127,15 @@ struct OnboardingView: View {
     @State private var step = 0
     @State private var amount = ""
     @State private var child = false
+    @FocusState private var amountFocused: Bool
     private let titles = ["onboardLanguage", "onboardCurrency", "onboardTarget", "onboardChild"]
     var body: some View {
         Form {
             Section {
-                IslandScene(growth: 0, festivals: 0, dusk: false).frame(height: 180).accessibilityHidden(true)
+                if step != 2 || !amountFocused {
+                    IslandScene(growth: 0, festivals: 0, dusk: false).frame(height: 180).accessibilityHidden(true)
+                        .transition(.opacity)
+                }
                 Text(session.t(titles[step])).font(.title2.weight(.semibold)).frame(maxWidth: .infinity, alignment: .leading)
                 Text("\(step + 1) / 4")
             }
@@ -103,13 +144,13 @@ struct OnboardingView: View {
                 if step == 1 { CurrencyPicker() }
                 if step == 2 {
                     Text(session.t("monthlyTarget"))
-                    MoneyInputField(text: $amount, label: session.t("amount"), identifier: "onboardingAmount", font: .system(.largeTitle, design: .rounded).monospacedDigit())
+                    MoneyInputField(text: $amount, label: session.t("amount"), identifier: "onboardingAmount", font: .system(.largeTitle, design: .rounded).monospacedDigit(), focus: $amountFocused)
                     Text(session.t("notBalance")).font(.footnote)
                     Text(session.t("fixedOff"))
                 }
                 if step == 3 { Toggle(session.t("useChild"), isOn: $child); Text(session.t("childExplanation")) }
             }
-            Section {
+        }.animation(.default, value: amountFocused).scrollDismissesKeyboard(.interactively).safeAreaInset(edge: .bottom) {
                 HStack {
                     if step > 0 { Button(session.t("back")) { step -= 1 }.frame(minHeight: 44) }
                     Spacer()
@@ -118,8 +159,9 @@ struct OnboardingView: View {
                         else { step += 1 }
                     }.buttonStyle(.borderedProminent).accessibilityIdentifier("onboardingNext")
                 }
-            }
-        }.scrollDismissesKeyboard(.interactively).navigationTitle(session.t(titles[step]))
+                .padding()
+                .background(.bar)
+        }.navigationTitle(session.t(titles[step]))
     }
 }
 struct LedgerTabs: View {
@@ -128,35 +170,27 @@ struct LedgerTabs: View {
     private var reduce: Bool { systemReduce || (LedgerSession.isUITest && ProcessInfo.processInfo.arguments.contains("--reduce-motion")) }
     @Environment(\.colorScheme) private var scheme
     @State private var page = 1
-    @State private var result: TargetStatus?
-    @State private var resultQueue: [TargetStatus] = []
-    @State private var lastResults: [TargetStatus] = []
+    let isPresenting: Bool
+    let showResult: (TargetStatus) -> Void
     private func move(_ destination: Int) {
         guard (0...2).contains(destination) else { return }
         withAnimation(reduce ? nil : .easeInOut(duration: 0.2)) { page = destination }
     }
     private func rootSwipe(_ index: Int) -> RootTabSwipeModifier {
-        RootTabSwipeModifier(enabled: page == index && result == nil && session.error == nil) { direction in move(page + direction) }
+        RootTabSwipeModifier(enabled: page == index && !isPresenting && session.error == nil) { direction in move(page + direction) }
     }
     var body: some View {
         TabView(selection: $page) {
             NavigationStack { VoiceView().modifier(rootSwipe(0)) }
                 .tabItem { Label(session.t("voice"), systemImage: "mic") }.tag(0)
-            NavigationStack { HomeView(showResult: { result = $0 }).modifier(rootSwipe(1)) }
+            NavigationStack { HomeView(showResult: showResult).modifier(rootSwipe(1)) }
                 .tabItem { Label(session.t("home"), systemImage: "house") }.tag(1)
-            NavigationStack { InfoView(showResult: { result = $0 }).modifier(rootSwipe(2)) }
+            NavigationStack { InfoView(showResult: showResult).modifier(rootSwipe(2)) }
                 .tabItem { Label(session.t("info"), systemImage: "info.circle") }.tag(2)
         }
         .accessibilityIdentifier("mainTabs")
         .toolbarBackground(.visible, for: .tabBar)
-        .sheet(isPresented: Binding(get: { result != nil }, set: { if !$0 { result = nil } }), onDismiss: {
-            if !resultQueue.isEmpty { result = resultQueue.removeFirst() }
-        }) { if let result { ResultView(status: result).presentationDetents([.medium, .large]).presentationDragIndicator(.visible) } }
-        .onChange(of: session.recentResults, initial: true) { _, results in
-            let changed = results.filter { $0.isSet && !lastResults.contains($0) }
-            lastResults = results
-            if !changed.isEmpty { resultQueue = changed; if result == nil { result = resultQueue.removeFirst() } }
-        }
+
     }
 }
 struct VoiceView: View {

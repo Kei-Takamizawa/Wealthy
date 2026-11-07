@@ -39,7 +39,7 @@ struct GoalsView: View {
                     Button(session.t("save")) { session.perform { try save() } }.buttonStyle(.borderedProminent).accessibilityIdentifier("saveGoals")
                 }
             }.padding(16)
-        }.navigationTitle(session.t("goals")).navigationBarTitleDisplayMode(.inline).task { load() }.onChange(of: monthDate) { editingUnset = false; load() }
+        }.navigationTitle(session.t("goals")).navigationBarTitleDisplayMode(.inline).task { monthDate = (try? session.today.date(calendar: .current)) ?? Date(); load() }.onChange(of: monthDate) { editingUnset = false; load() }
     }
     var unsetPresentation: some View {
         VStack(alignment: .leading, spacing: 18) {
@@ -111,7 +111,7 @@ struct GoalsView: View {
         }
         commands.append(.updateSettings(LedgerSettings(includeFixedCostsInTargets: includeFixed, weekStart: weekStart)))
         for command in commands {
-            guard let preview = session.core?.preview(command, now: Date()) else { throw CoreError.saveFailed }
+            guard let preview = session.core?.preview(command, now: session.commandDate) else { throw CoreError.saveFailed }
             if let error = preview.errors.first { throw error }
         }
         for command in commands { try session.run(command) }
@@ -129,7 +129,7 @@ struct GoalsView: View {
         }
         guard !commands.isEmpty else { throw CoreError.saveFailed }
         for command in commands {
-            guard let preview = session.core?.preview(command, now: Date()), preview.errors.isEmpty else { throw CoreError.saveFailed }
+            guard let preview = session.core?.preview(command, now: session.commandDate), preview.errors.isEmpty else { throw CoreError.saveFailed }
         }
         for command in commands { try session.run(command) }
         load()

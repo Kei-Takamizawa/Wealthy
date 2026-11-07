@@ -9,6 +9,19 @@ final class Cycle2aUITests: XCTestCase {
         return application
     }()
     @MainActor
+    func launchApp() {
+        let key = "-UIPreferredContentSizeCategoryName"
+        var arguments = app.launchArguments
+        if let index = arguments.firstIndex(of: key), index + 1 < arguments.count {
+            arguments.removeSubrange(index...index + 1)
+        }
+        if arguments.contains("--ax3") {
+            arguments += [key, "UICTContentSizeCategoryAccessibilityXL"]
+        }
+        app.launchArguments = arguments
+        app.launch()
+    }
+    @MainActor
     func capture(_ name: String) {
         XCTAssertTrue(app.descendants(matching: .any).matching(identifier: "ledgerLoading").firstMatch.waitForNonExistence(timeout: 30), app.debugDescription)
         XCTAssertEqual(app.alerts.count, 0, app.debugDescription)
@@ -40,11 +53,13 @@ final class Cycle2aUITests: XCTestCase {
     @MainActor
     func onboard(_ language: String = "en", flags: [String] = []) throws {
         app.launchArguments = ["--cycle2a-test", "-v4.language", language, "-v4.currency", "JPY", "-v4.onboarded", "NO"] + flags
-        app.launch()
+        launchApp()
         if app.staticTexts["Apple Intelligence is required"].waitForExistence(timeout: 2) { XCTFail("Real Apple Intelligence availability gate is closed; no bypass used."); throw NSError(domain: "Cycle2aTests", code: 1) }
         XCTAssertTrue(app.buttons["onboardingNext"].waitForExistence(timeout: 20), app.debugDescription)
         capture("onboarding-language-\(language)-\(flags.joined(separator: "-"))"); app.buttons["onboardingNext"].tap(); capture("onboarding-currency-\(language)-\(flags.joined(separator: "-"))"); app.buttons["onboardingNext"].tap()
         enter("onboardingAmount", "40000"); capture("onboarding-target-\(language)-\(flags.joined(separator: "-"))"); tap("onboardingNext"); capture("onboarding-child-\(language)-\(flags.joined(separator: "-"))"); tap("onboardingNext")
+        XCTAssertTrue(app.tabBars.firstMatch.waitForExistence(timeout: 10), app.debugDescription)
+        for _ in 0..<8 { if app.buttons["addEntry"].exists { break }; app.swipeUp() }
         XCTAssertTrue(app.buttons["addEntry"].waitForExistence(timeout: 10), app.debugDescription); capture("empty-home-\(language)-\(flags.joined(separator: "-"))-" + flags.joined(separator: "-"))
     }
     @MainActor
@@ -55,7 +70,7 @@ final class Cycle2aUITests: XCTestCase {
         app.buttons["entryService"].tap(); tap("Takeout (8%)")
         XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "¥177")).firstMatch.waitForExistence(timeout: 5), app.debugDescription)
         tap("saveEntry"); tap("noSpend"); capture("home-with-entry")
-        tap("Targets"); enter("overallTarget", "50000"); tap("saveGoals")
+        app.tabBars.buttons["Info"].tap(); tap("Targets"); enter("overallTarget", "50000"); tap("saveGoals")
         tap("Info"); capture("info"); tap("Consumption tax"); capture("tax")
         XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "¥177")).firstMatch.waitForExistence(timeout: 5), app.debugDescription)
     }
@@ -71,7 +86,7 @@ final class Cycle2aUITests: XCTestCase {
                     app.launchArguments = ["--cycle2a-test", "--cycle2a-seed", "-v4.language", language, "-v4.currency", "JPY", "--screen", screen]
                     if variant == "dark" { app.launchArguments.append("--dark") }
                     if variant == "ax3" { app.launchArguments.append("--ax3") }
-                    app.launch()
+                    launchApp()
                     XCTAssertTrue(app.wait(for: .runningForeground, timeout: 15)); XCTAssertTrue(app.staticTexts.firstMatch.waitForExistence(timeout: 10))
                     capture("matrix-\(language)-\(variant)-\(screen)")
                     app.terminate()
@@ -83,7 +98,7 @@ final class Cycle2aUITests: XCTestCase {
     func testResultAndAccessibilityVariants() throws {
         for flags in [["--few"], ["--over"], ["--opaque", "--reduce-motion", "--ax3"]] {
             app.launchArguments = ["--cycle2a-test", "--cycle2a-seed", "-v4.language", "en", "--screen", "result"] + flags
-            app.launch(); XCTAssertTrue(app.wait(for: .runningForeground, timeout: 15)); XCTAssertTrue(app.staticTexts.firstMatch.waitForExistence(timeout: 10)); capture("result-" + flags.joined(separator: "-")); app.terminate()
+            launchApp(); XCTAssertTrue(app.wait(for: .runningForeground, timeout: 15)); XCTAssertTrue(app.staticTexts.firstMatch.waitForExistence(timeout: 10)); capture("result-" + flags.joined(separator: "-")); app.terminate()
         }
     }
 
@@ -102,7 +117,7 @@ final class Cycle2aUITests: XCTestCase {
                     app.launchArguments = ["--cycle2a-test", "--cycle2a-seed", "-v4.language", language, "-v4.currency", "JPY", "--screen", screen]
                     if variant == "dark" { app.launchArguments.append("--dark") }
                     if variant == "ax3" { app.launchArguments.append("--ax3") }
-                    app.launch(); XCTAssertTrue(app.staticTexts.firstMatch.waitForExistence(timeout: 15)); capture("matrix-\(language)-\(variant)-\(screen)"); app.terminate()
+                    launchApp(); XCTAssertTrue(app.staticTexts.firstMatch.waitForExistence(timeout: 15)); capture("matrix-\(language)-\(variant)-\(screen)"); app.terminate()
                 }
             }
         }
@@ -127,16 +142,19 @@ final class Cycle2aUITests: XCTestCase {
     @MainActor
     func testChildEnvelopeAndLicenseFlow() throws {
         try onboard(); tap("Info"); tap("Child envelope setup")
-        app.switches["Use child envelope"].firstMatch.tap(); tap("Targets"); tap("setTargetManually"); enter("overallTarget", "80000"); tap("saveGoals")
+        let childToggle = app.switches["Use child envelope"].firstMatch
+        childToggle.coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: 0.5)).tap()
+        XCTAssertEqual(childToggle.value as? String, "1")
+        tap("Targets"); tap("setTargetManually"); enter("overallTarget", "80000"); tap("saveGoals")
         app.navigationBars.buttons.firstMatch.tap()
         for _ in 0..<6 { app.swipeDown() }
-        tap("Child envelope"); tap("To island"); tap("addEntry"); enter("entryAmount", "3600"); tap("Child envelope")
+        tap("Child envelope"); app.tabBars.buttons["Island"].tap(); tap("addEntry"); tap("Child envelope"); enter("entryAmount", "3600")
         app.buttons["entryCategory"].tap(); tap("Food"); app.buttons["entryService"].tap(); tap("Takeout (8%)"); tap("saveEntry")
         XCTAssertTrue(app.buttons["addEntry"].waitForExistence(timeout: 10), app.debugDescription)
         tap("Info"); tap("Child envelope"); tap("Consumption tax")
         XCTAssertTrue(app.staticTexts["¥266"].waitForExistence(timeout: 5), app.debugDescription); capture("child-tax")
         app.navigationBars.buttons.firstMatch.tap()
-        for _ in 0..<8 { app.swipeDown() }; tap("To island"); tap("Settings"); tap("Font licenses")
+        for _ in 0..<8 { app.swipeDown() }; app.tabBars.buttons["Island"].tap(); app.tabBars.buttons["Info"].tap(); tap("Settings"); tap("Font licenses")
         XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "Copyright 2020")).firstMatch.waitForExistence(timeout: 5), app.debugDescription)
         capture("font-licenses")
     }
@@ -145,13 +163,13 @@ final class Cycle2aUITests: XCTestCase {
 
     func testHomeWithFiftyThousandPersistedEntries() throws {
         app.launchArguments = ["--cycle2a-test", "--cycle2a-performance", "-v4.language", "en", "-v4.currency", "JPY"]
-        app.launch()
+        launchApp()
         XCTAssertTrue(app.buttons["addEntry"].waitForExistence(timeout: 120), app.debugDescription)
         app.terminate()
         var samples: [Double] = []
         for _ in 0..<5 {
             let start = Date()
-            app.launch()
+            launchApp()
             XCTAssertTrue(app.buttons["addEntry"].waitForExistence(timeout: 30), app.debugDescription)
             samples.append(Date().timeIntervalSince(start))
             XCTAssertEqual(app.alerts.count, 0)
@@ -164,9 +182,30 @@ final class Cycle2aUITests: XCTestCase {
 
     @MainActor
 
-    func audit(_ screen: String) throws {
-            app.launchArguments = ["--cycle2a-test", "--cycle2a-seed", "-v4.language", "en", "--screen", screen]
-            app.launch()
+    func auditWithSwiftUIException(_ screen: String) throws {
+        var ignored: [String] = []
+        defer {
+            let attachment = XCTAttachment(string: ignored.joined(separator: "\n"))
+            attachment.name = "ignored-dynamic-type-\(screen)"
+            attachment.lifetime = .keepAlways
+            add(attachment)
+        }
+        // Owner decision 2026-11-06: only the SwiftUI audit false positive described
+        // at https://developer.apple.com/forums/thread/828525 may be ignored.
+        try app.performAccessibilityAudit { issue in
+            guard issue.auditType == .dynamicType,
+                  issue.detailedDescription.contains("SwiftUI.AccessibilityNode"),
+                  let element = issue.element, element.exists else { return false }
+            let details = "screen=\(screen) label=\(element.label) identifier=\(element.identifier) frame=\(NSCoder.string(for: element.frame))"
+            ignored.append(details)
+            print("IGNORED_SWIFTUI_DYNAMIC_TYPE \(details)")
+            return true
+        }
+    }
+    @MainActor
+    func audit(_ screen: String, flags: [String] = []) throws {
+            app.launchArguments = ["--cycle2a-test", "--cycle2a-seed", "-v4.language", "en", "--screen", screen] + flags
+            launchApp()
             XCTAssertTrue(app.staticTexts.firstMatch.waitForExistence(timeout: 15))
             if screen == "result" {
                 let explanation = app.staticTexts["resultLateDetail"]
@@ -195,6 +234,7 @@ final class Cycle2aUITests: XCTestCase {
             }
             let proof = XCTAttachment(string: issues.joined(separator: "\n")); proof.name = "audit-\(screen)"; proof.lifetime = .keepAlways; add(proof)
             XCTAssertTrue(issues.isEmpty, issues.joined(separator: "\n"))
+            if screen == "home" { try auditWithSwiftUIException(screen) }
             app.terminate()
     }
 
@@ -206,7 +246,30 @@ final class Cycle2aUITests: XCTestCase {
     @MainActor
     func testInfoAccessibilityAudit() throws { try audit("info") }
     @MainActor
-    func testResultAccessibilityAudit() throws { try audit("result") }
+    func testResultAccessibilityAudit() throws {
+        try audit("result")
+        try audit("result", flags: ["--ax3"])
+    }
+    @MainActor
+    func testResultDoneInsideSafeArea() throws {
+        // Both supported iPhone Pro simulators have a 34-point bottom safe area.
+        let bottomSafeArea: CGFloat = 34
+        for flags in [[], ["--ax3"]] {
+            app.launchArguments = ["--cycle2a-test", "--cycle2a-seed", "-v4.language", "en", "--screen", "result"] + flags
+            launchApp()
+            let done = app.buttons["Done"].firstMatch
+            XCTAssertTrue(done.waitForExistence(timeout: 15), app.debugDescription)
+            for _ in 0..<8 { if done.isHittable { break }; app.swipeUp() }
+            let frame = done.frame
+            let window = app.windows.firstMatch.frame
+            let details = "size=\(flags.isEmpty ? "default" : "AX3") button=\(frame) window=\(window) safeBottom=\(window.maxY - bottomSafeArea) hittable=\(done.isHittable)"
+            print("RESULT_DONE_FRAME \(details)")
+            XCTAssertTrue(done.isHittable, details)
+            XCTAssertTrue(window.contains(frame), details)
+            XCTAssertLessThanOrEqual(frame.maxY, window.maxY - bottomSafeArea, details)
+            app.terminate()
+        }
+    }
     @MainActor
     func testEntryAccessibilityAudit() throws { try audit("edit") }
 
@@ -219,7 +282,7 @@ final class Cycle2aUITests: XCTestCase {
                     app.launchArguments = ["--cycle2a-test", "--cycle2a-seed", "-v4.language", language, "-v4.currency", "JPY", "--screen", screen]
                     if variant == "dark" { app.launchArguments.append("--dark") }
                     if variant == "ax3" { app.launchArguments.append("--ax3") }
-                    app.launch(); XCTAssertTrue(app.staticTexts.firstMatch.waitForExistence(timeout: 15))
+                    launchApp(); XCTAssertTrue(app.staticTexts.firstMatch.waitForExistence(timeout: 15))
                     capture("matrix-\(language)-\(variant)-\(screen)"); app.terminate()
                 }
             }
@@ -234,7 +297,7 @@ final class Cycle2aUITests: XCTestCase {
                 app.launchArguments = ["--cycle2a-test", "--cycle2a-seed", "--unset", "-v4.language", language, "-v4.currency", "JPY", "--screen", "goals"]
                 if variant == "dark" { app.launchArguments.append("--dark") }
                 if variant == "ax3" { app.launchArguments.append("--ax3") }
-                app.launch(); XCTAssertTrue(app.buttons["setTargetManually"].waitForExistence(timeout: 15))
+                launchApp(); XCTAssertTrue(app.buttons["setTargetManually"].waitForExistence(timeout: 15))
                 XCTAssertFalse(app.textFields["overallTarget"].exists)
                 capture("matrix-\(language)-\(variant)-goals-unset")
                 app.buttons["setTargetManually"].tap(); XCTAssertTrue(app.textFields["overallTarget"].exists); app.terminate()
@@ -251,7 +314,7 @@ final class Cycle2aUITests: XCTestCase {
                     app.launchArguments = ["--cycle2a-test", "--cycle2a-seed", "-v4.language", language, "-v4.currency", "JPY", "--screen", screen]
                     if variant == "dark" { app.launchArguments.append("--dark") }
                     if variant == "ax3" { app.launchArguments.append("--ax3") }
-                    app.launch(); XCTAssertTrue(app.staticTexts.firstMatch.waitForExistence(timeout: 15))
+                    launchApp(); XCTAssertTrue(app.staticTexts.firstMatch.waitForExistence(timeout: 15))
                     capture("matrix-\(language)-\(variant)-\(screen)"); app.terminate()
                 }
             }
@@ -262,15 +325,24 @@ final class Cycle2aUITests: XCTestCase {
 
     func launchSeededWorkflow(flags: [String] = []) {
         app.launchArguments = ["--cycle2a-test", "--cycle2a-seed", "--reset-test-preferences", "-v4.language", "en", "-v4.currency", "JPY"] + flags
-        app.launch(); XCTAssertTrue(app.tabBars.buttons["Island"].waitForExistence(timeout: 30), app.debugDescription)
+        launchApp(); XCTAssertTrue(app.tabBars.buttons["Island"].waitForExistence(timeout: 30), app.debugDescription)
         XCTAssertTrue(app.tabBars.buttons["Island"].isSelected, app.debugDescription)
+    }
+    @MainActor
+    func selectSeededTaxMonth() {
+        let calendar = Calendar(identifier: .gregorian)
+        let current = calendar.date(from: calendar.dateComponents([.year, .month], from: Date()))!
+        let seeded = calendar.date(from: DateComponents(year: 2026, month: 10, day: 1))!
+        let offset = calendar.dateComponents([.month], from: current, to: seeded).month!
+        let direction = offset < 0 ? "Previous month" : "Next month"
+        for _ in 0..<abs(offset) { app.buttons[direction].tap() }
     }
     @MainActor
     func testIncomeEntry() throws {
         launchSeededWorkflow(); tap("addEntry"); enter("entryAmount", "12000")
         app.buttons["Income"].tap(); app.buttons["entryCategory"].tap(); tap("Salary")
         XCTAssertFalse(app.buttons["entryTaxRate"].exists); capture("income-entry")
-        tap("saveEntry"); tap("Info"); tap("Consumption tax")
+        tap("saveEntry"); tap("Info"); tap("Consumption tax"); selectSeededTaxMonth()
         XCTAssertTrue(app.staticTexts["¥218"].waitForExistence(timeout: 5), app.debugDescription)
     }
     @MainActor
@@ -279,13 +351,13 @@ final class Cycle2aUITests: XCTestCase {
         app.buttons["Child envelope"].tap(); app.buttons["entryCategory"].tap(); tap("Child support payment")
         XCTAssertTrue(app.buttons["entryTaxRate"].label.contains("Tax-exempt"), app.debugDescription)
         XCTAssertEqual(app.switches["Fixed cost"].firstMatch.value as? String, "1")
-        capture("child-support-defaults"); tap("saveEntry"); tap("Info"); app.buttons["Child envelope"].tap(); tap("Consumption tax")
+        capture("child-support-defaults"); tap("saveEntry"); tap("Info"); app.buttons["Child envelope"].tap(); tap("Consumption tax"); selectSeededTaxMonth()
         XCTAssertTrue(app.staticTexts["¥266"].waitForExistence(timeout: 5), app.debugDescription)
     }
     @MainActor
     func testNormalNewStoreLaunch() throws {
         app.launchArguments = ["--cycle2a-test", "--disk-test", UUID().uuidString]
-        app.launch()
+        launchApp()
         XCTAssertTrue(app.buttons["onboardingNext"].waitForExistence(timeout: 30), app.debugDescription)
         capture("normal-new-store-onboarding")
     }
@@ -294,7 +366,7 @@ final class Cycle2aUITests: XCTestCase {
 
     func testPagerNavigation() throws {
         app.launchArguments = ["--cycle2a-test", "--cycle2a-seed", "--reset-test-preferences", "--reduce-motion", "-v4.language", "en", "-v4.currency", "JPY"]
-        app.launch()
+        launchApp()
         let tabs = app.tabBars.buttons
         XCTAssertTrue(tabs["Voice"].waitForExistence(timeout: 20), app.debugDescription)
         XCTAssertTrue(tabs["Island"].isSelected, app.debugDescription)
@@ -450,7 +522,7 @@ final class Cycle2aUITests: XCTestCase {
                 app.launchArguments = ["--cycle2a-test", "--cycle2a-seed", "--child-info", "-v4.language", language, "-v4.currency", "JPY", "--screen", "info-child"]
                 if variant == "dark" { app.launchArguments.append("--dark") }
                 if variant == "ax3" { app.launchArguments.append("--ax3") }
-                app.launch(); XCTAssertTrue(app.staticTexts.firstMatch.waitForExistence(timeout: 15))
+                launchApp(); XCTAssertTrue(app.staticTexts.firstMatch.waitForExistence(timeout: 15))
                 capture("matrix-\(language)-\(variant)-info-child"); app.terminate()
             }
         }
@@ -471,7 +543,7 @@ final class Cycle2aUITests: XCTestCase {
         for screen in ["home", "info", "info-child", "child-detail", "result", "month-result"] {
             app.launchArguments = ["--cycle2a-test", "--cycle2a-seed", "--ax3", "-v4.language", "ko", "-v4.currency", "JPY", "--screen", screen]
             if screen == "info-child" { app.launchArguments.append("--child-info") }
-            app.launch(); XCTAssertTrue(app.staticTexts.firstMatch.waitForExistence(timeout: 15))
+            launchApp(); XCTAssertTrue(app.staticTexts.firstMatch.waitForExistence(timeout: 15))
             capture("matrix-ko-ax3-\(screen)"); app.terminate()
         }
     }
@@ -480,7 +552,7 @@ final class Cycle2aUITests: XCTestCase {
 
     func testExistingChildSetupRemainsEnabled() throws {
         app.launchArguments = ["--cycle2a-test", "--cycle2a-seed", "-v4.language", "en", "--screen", "child-setup"]
-        app.launch(); XCTAssertTrue(app.switches["Use child envelope"].firstMatch.waitForExistence(timeout: 15))
+        launchApp(); XCTAssertTrue(app.switches["Use child envelope"].firstMatch.waitForExistence(timeout: 15))
         XCTAssertEqual(app.switches["Use child envelope"].firstMatch.value as? String, "1")
         XCTAssertTrue(app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "Food")).firstMatch.waitForExistence(timeout: 5), app.debugDescription)
         capture("existing-child-setup")
@@ -492,7 +564,7 @@ final class Cycle2aUITests: XCTestCase {
                 app.launchArguments = ["--cycle2a-test", "--cycle2a-seed", "-v4.language", language, "-v4.currency", "JPY", "--screen", "child-setup"]
                 if variant == "dark" { app.launchArguments.append("--dark") }
                 if variant == "ax3" { app.launchArguments.append("--ax3") }
-                app.launch(); XCTAssertTrue(app.staticTexts.firstMatch.waitForExistence(timeout: 15))
+                launchApp(); XCTAssertTrue(app.staticTexts.firstMatch.waitForExistence(timeout: 15))
                 capture("matrix-\(language)-\(variant)-child-setup"); app.terminate()
             }
         }
@@ -503,23 +575,55 @@ final class Cycle2aUITests: XCTestCase {
 // Persisted onboarding uses a real disk ledger and isolated preferences, retained across process termination.
 extension Cycle2aUITests {
     @MainActor
+    func testOnboardingAmountVisibleWithKeyboard() throws {
+        for flags in [[], ["--ax3"]] {
+            app.launchArguments = ["--cycle2a-test", "-v4.language", "en", "-v4.currency", "JPY", "-v4.onboarded", "NO"] + flags
+            launchApp()
+            XCTAssertTrue(app.buttons["onboardingNext"].waitForExistence(timeout: 20))
+            app.buttons["onboardingNext"].tap()
+            app.buttons["onboardingNext"].tap()
+            enter("onboardingAmount", "40000")
+            let field = app.textFields["onboardingAmount"]
+            let next = app.buttons["onboardingNext"]
+            let back = app.buttons["Back"]
+            let keyboard = app.keyboards.firstMatch
+            XCTAssertTrue(keyboard.waitForExistence(timeout: 5))
+            XCTAssertTrue(back.exists)
+            XCTAssertTrue(field.isHittable, "Amount field is not hittable: \(field.frame)")
+            let barTop = next.frame.midY - max(44, back.frame.height, next.frame.height) / 2 - 16
+            XCTAssertLessThanOrEqual(field.frame.maxY, barTop, "Amount field overlaps the padded navigation bar: field \(field.frame), bar top \(barTop)")
+            XCTAssertLessThanOrEqual(field.frame.maxY, keyboard.frame.minY, "Amount field overlaps keyboard: field \(field.frame), keyboard \(keyboard.frame)")
+            XCTAssertTrue((field.value as? String ?? "").filter(\.isNumber).contains("40000"), "Amount value: \(String(describing: field.value))")
+            XCTAssertTrue(next.isHittable, "Next is not hittable: \(next.frame)")
+            app.terminate()
+        }
+    }
+    @MainActor
     func testPersistedOnboardingRelaunch() throws {
         let id = UUID().uuidString
         app.launchArguments = ["--cycle2a-test", "--disk-test", id]
-        app.launch()
+        launchApp()
         XCTAssertTrue(app.buttons["onboardingNext"].waitForExistence(timeout: 20))
         app.buttons["language"].tap(); tap("Español")
         tap("onboardingNext")
         app.buttons["currency"].tap(); tap("KRW")
-        tap("onboardingNext"); enter("onboardingAmount", "40000"); tap("onboardingNext"); tap("onboardingNext")
+        tap("onboardingNext"); enter("onboardingAmount", "40000")
+        for _ in 0..<5 {
+            let next = app.buttons["onboardingNext"]
+            let keyboard = app.keyboards.firstMatch
+            if next.isHittable && (!keyboard.exists || next.frame.midY < keyboard.frame.minY) { break }
+            app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.55)).press(
+                forDuration: 0.05, thenDragTo: app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.2)))
+        }
+        tap("onboardingNext"); tap("onboardingNext")
         XCTAssertTrue(app.buttons["addEntry"].waitForExistence(timeout: 10)); capture("persisted-onboarding-home-before")
-        app.terminate(); app.launch()
+        app.terminate(); launchApp()
         XCTAssertTrue(app.buttons["addEntry"].waitForExistence(timeout: 20))
         XCTAssertFalse(app.buttons["onboardingNext"].exists)
         XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "40.000")).firstMatch.exists, app.debugDescription)
         XCTAssertTrue(app.tabBars.buttons["Información"].exists, app.debugDescription)
         capture("persisted-onboarding-home-after")
-        tap("Ajustes"); XCTAssertTrue(app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "KRW")).firstMatch.exists, app.debugDescription)
+        app.tabBars.buttons["Información"].tap(); tap("Ajustes"); XCTAssertTrue(app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "KRW")).firstMatch.exists, app.debugDescription)
         capture("persisted-onboarding-settings")
     }
     @MainActor
@@ -529,7 +633,7 @@ extension Cycle2aUITests {
                 app.launchArguments = ["--cycle2a-test", "--cycle2a-seed", "--month-" + state, "-v4.language", "en", "-v4.currency", "JPY", "--screen", "month-result"]
                 if mode == "dark" { app.launchArguments.append("--dark") }
                 if mode == "ax3" { app.launchArguments.append("--ax3") }
-                app.launch(); XCTAssertTrue(app.staticTexts.firstMatch.waitForExistence(timeout: 15)); capture("month-result-\(state)-\(mode)"); app.terminate()
+                launchApp(); XCTAssertTrue(app.staticTexts.firstMatch.waitForExistence(timeout: 15)); capture("month-result-\(state)-\(mode)"); app.terminate()
             }
         }
     }
@@ -538,14 +642,14 @@ extension Cycle2aUITests {
         for mode in ["light", "dark"] {
             app.launchArguments = ["--cycle2a-test", "--cycle2a-seed", "--child-info", "-v4.language", "en", "-v4.currency", "JPY"]
             if mode == "dark" { app.launchArguments.append("--dark") }
-            app.launch(); XCTAssertTrue(app.buttons["addEntry"].waitForExistence(timeout: 20))
+            launchApp(); XCTAssertTrue(app.buttons["addEntry"].waitForExistence(timeout: 20))
             XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "307,100")).firstMatch.exists, app.debugDescription)
-            XCTAssertTrue(app.staticTexts["homeWeeklyRemaining"].exists, app.debugDescription)
+            XCTAssertTrue(app.descendants(matching: .any).matching(NSPredicate(format: "label BEGINSWITH %@", "Left this week,")).firstMatch.exists, app.debugDescription)
             XCTAssertTrue(app.tabBars.buttons["Info"].exists, app.debugDescription)
             capture("home-household-child-selected---\(mode)")
             app.tabBars.buttons["Info"].tap(); XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "76,400")).firstMatch.exists, app.debugDescription)
             capture("info-child-selected---\(mode)")
-            app.tabBars.buttons["Home"].tap(); XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "307,100")).firstMatch.exists, app.debugDescription)
+            app.tabBars.buttons["Island"].tap(); XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "307,100")).firstMatch.exists, app.debugDescription)
             app.terminate()
         }
     }
@@ -554,7 +658,7 @@ extension Cycle2aUITests {
         for mode in ["light", "dark"] {
             app.launchArguments = ["--cycle2a-test", "--cycle2a-seed", "-v4.language", "en", "--screen", "voice"]
             if mode == "dark" { app.launchArguments.append("--dark") }
-            app.launch()
+            launchApp()
             XCTAssertTrue(app.staticTexts["Voice input is coming soon. For now, add entries by typing."].waitForExistence(timeout: 15), app.debugDescription)
             XCTAssertFalse(app.staticTexts["Voice input is unavailable right now."].exists, app.debugDescription)
             capture("voice-single-placeholder---\(mode)")
@@ -565,11 +669,20 @@ extension Cycle2aUITests {
     func testHomeAX3LanguageMatrix() throws {
         for language in ["en", "ja", "es", "ko"] {
             app.launchArguments = ["--cycle2a-test", "--cycle2a-seed", "--ax3", "-v4.language", language, "-v4.currency", "JPY"]
-            app.launch()
-            XCTAssertTrue(app.buttons["addEntry"].waitForExistence(timeout: 30), app.debugDescription)
-            XCTAssertTrue(app.tabBars.buttons["Home"].isSelected, app.debugDescription)
+            launchApp()
+            let home = app.collectionViews["homePage"]
+            XCTAssertTrue(home.waitForExistence(timeout: 30), app.debugDescription)
+            XCTAssertTrue(app.tabBars.buttons.element(boundBy: 1).isSelected, app.debugDescription)
             try app.performAccessibilityAudit(for: [.textClipped]) { issue in
-                XCTFail("Home AX3 \(language): \(issue.compactDescription) / \(issue.detailedDescription)")
+                let element = issue.element
+                XCTFail("Home AX3 \(language): \(issue.compactDescription) / \(issue.detailedDescription) / label=\(element?.label ?? "<nil>") identifier=\(element?.identifier ?? "<nil>") frame=\(element.map { NSCoder.string(for: $0.frame) } ?? "<nil>")")
+                return true
+            }
+            for _ in 0..<8 { if app.buttons["addEntry"].exists { break }; home.swipeUp() }
+            XCTAssertTrue(app.buttons["addEntry"].waitForExistence(timeout: 10), app.debugDescription)
+            try app.performAccessibilityAudit(for: [.textClipped]) { issue in
+                let element = issue.element
+                XCTFail("Home AX3 \(language), scrolled: \(issue.compactDescription) / \(issue.detailedDescription) / label=\(element?.label ?? "<nil>") identifier=\(element?.identifier ?? "<nil>") frame=\(element.map { NSCoder.string(for: $0.frame) } ?? "<nil>")")
                 return true
             }
             capture("home-ax3-\(language)")
@@ -581,7 +694,7 @@ extension Cycle2aUITests {
         for (language, goal, entry) in [("en", "¥310,000", "¥2,400"), ("ja", "¥310,000", "¥2,400"), ("es", "310.000 ¥", "2.400 ¥"), ("ko", "JP¥310,000", "JP¥2,400")] {
             for (screen, identifier, expected) in [("goals", "overallTarget", goal), ("edit", "entryAmount", entry)] {
                 app.launchArguments = ["--cycle2a-test", "--cycle2a-seed", "-v4.language", language, "-v4.currency", "JPY", "--screen", screen]
-                app.launch(); XCTAssertTrue(app.textFields[identifier].waitForExistence(timeout: 20))
+                launchApp(); XCTAssertTrue(app.textFields[identifier].waitForExistence(timeout: 20))
                 XCTAssertEqual(app.textFields[identifier].value as? String, expected)
                 capture("grouped-\(language)-\(screen)"); app.terminate()
             }
@@ -612,7 +725,7 @@ extension Cycle2aUITests {
             for (name, screen, flags) in screens {
                 app.launchArguments = ["--cycle2a-test", "--cycle2a-seed", "-v4.language", "en", "-v4.currency", "JPY", "--screen", screen] + flags
                 if mode == "dark" { app.launchArguments.append("--dark") }
-                app.launch()
+                launchApp()
                 XCTAssertTrue(app.wait(for: .runningForeground, timeout: 15), app.debugDescription)
                 XCTAssertTrue(app.staticTexts.firstMatch.waitForExistence(timeout: 20), app.debugDescription)
                 capture("native-\(name)-\(mode)")
@@ -624,13 +737,13 @@ extension Cycle2aUITests {
     func testNativeHomeLanguageEvidence() throws {
         for language in ["en", "ja", "es", "ko"] {
             app.launchArguments = ["--cycle2a-test", "--cycle2a-seed", "-v4.language", language, "-v4.currency", "JPY"]
-            app.launch()
+            launchApp()
             XCTAssertTrue(app.buttons["addEntry"].waitForExistence(timeout: 30), app.debugDescription)
             capture("native-home-\(language)-light")
             app.terminate()
         }
         app.launchArguments = ["--cycle2a-test", "--cycle2a-seed", "--ax3", "-v4.language", "en", "-v4.currency", "JPY"]
-        app.launch()
+        launchApp()
         XCTAssertTrue(app.collectionViews["homePage"].waitForExistence(timeout: 30), app.debugDescription)
         capture("native-home-en-ax3")
         app.terminate()
@@ -663,7 +776,7 @@ extension Cycle2aUITests {
             ? [XCTApplicationLaunchMetric(waitUntilResponsive: true)] + ["FirstFrame", "HomeInteractive", "StoreOpen", "Snapshot", "QuerySnapshot", "HomeRender"].map { XCTOSSignpostMetric(subsystem: "com.harrison.Wealthy", category: "LedgerLaunch", name: $0) }
             : [XCTApplicationLaunchMetric(waitUntilResponsive: false)]
         measure(metrics: metrics, options: options) {
-            app.launch(); XCTAssertTrue(app.buttons["addEntry"].waitForExistence(timeout: 60))
+            launchApp(); XCTAssertTrue(app.buttons["addEntry"].waitForExistence(timeout: 60))
             if interactive { XCTAssertTrue(app.tabBars.buttons["Info"].isHittable); XCTAssertEqual(app.alerts.count, 0) }
             app.terminate()
         }
