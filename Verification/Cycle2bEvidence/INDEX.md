@@ -2,7 +2,7 @@
 
 Task ID: WEALTHY-C2B1-FIXED-CALENDAR
 
-Synthetic data only. Both simulators used iOS 27.0 and Xcode 27.2. Round 3 adds onboarding captures for the changed button layout; target captures show the keyboard. The other images are from earlier rounds. JPEG quality is 80, long edges are at most 2,000 pixels, and each image is under 1 MB.
+Synthetic data only. Both simulators used iOS 27.0 and Xcode 27.2. Round 5 refreshes the onboarding captures; target captures show the typed amount and keyboard. The other images are from earlier rounds. JPEG quality is 80, long edges are at most 2,000 pixels, and each image is under 1 MB.
 
 ## Round 3 audit results
 
@@ -17,7 +17,7 @@ The full WealthyUITests suite passed on both simulators: 60 tests, zero failures
 
 Simulator screenshots do not establish physical-device UI or VoiceOver behavior.
 
-## Round 3 onboarding screenshots
+## Round 5 onboarding screenshots
 
 Images come from `testNativeOnboardingEvidenceLightAndDark` in the full suite. The target screen has a synthetic amount and the software keyboard open.
 
@@ -52,4 +52,4 @@ Images come from `testNativeOnboardingEvidenceLightAndDark` in the full suite. T
 | Day detail | [Light](iphone17pro-day-detail-light.jpg) | [Dark](iphone17pro-day-detail-dark.jpg) | [AX3](iphone17pro-day-detail-ax3.jpg) |
 | Analysis | [Light](iphone17pro-analysis-light.jpg) | [Dark](iphone17pro-analysis-dark.jpg) | [AX3](iphone17pro-analysis-ax3.jpg) |
 
-The 42 earlier screenshots are retained; Round 3 adds 16 onboarding screenshots. The new full-suite result bundles are `/tmp/wealthy-c2b1-r3-authorized.qWAWO5/full15.xcresult` and `full17.xcresult`. See `.ai/LAST_REPORT.md` for commands and remaining limits.
+The 42 earlier screenshots are retained; Round 5 refreshes the 16 onboarding screenshots. The Round 5 full-suite result bundles are `/tmp/wealthy-c2b1-r5-full15.xcresult` and `/tmp/wealthy-c2b1-r5-full17.xcresult`. The 15 Pro suite has one result-screen contrast audit failure; the 17 Pro suite passed. See `.ai/LAST_REPORT.md` for commands and remaining limits.

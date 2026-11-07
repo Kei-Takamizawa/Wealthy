@@ -123,3 +123,14 @@ Same Task ID, branch and PR #10. Read `.ai/LAST_REPORT.md` first. One item only;
 4. Full `WealthyUITests` once per simulator, `-parallel-testing-enabled NO`; required checks (`verify_core.sh` 117, `verify_shell.py`, `verify_localization.sh`, `git diff --check`, Simulator Release and signed generic iOS builds). Keep logs under `/tmp/wealthy-c2b1-r4*`.
 
 Acceptance for Round 4: item-1 test passes on both simulators (and at AX3), full suites zero failures on both, required checks pass, screenshots updated. Then `Status: DONE`; otherwise `PARTIAL` with exact failures.
+
+## Round 5 (designer decision, 2026-11-07, after PR #10 head c27d734)
+Same Task ID, branch and PR #10. Read `.ai/LAST_REPORT.md` first. Keep `testOnboardingAmountVisibleWithKeyboard` exactly as committed (it is the acceptance test).
+
+**Why the scroll fixes failed (designer's reading, not verified):** on iPhone 15 Pro the target step is short; the amount field is the last row, so the form cannot scroll far enough to lift it above the bar and keyboard. Scrolling tricks cannot create space that the layout does not have. So the fix is to free vertical space while typing.
+
+1. **Fix (decided):** keep the Round 3 bottom bar (Back / Next in `safeAreaInset(edge: .bottom)`). On the target step, while the amount field has focus (`@FocusState`), hide the island illustration in the step header (the title and "3 / 4" stay); show it again when focus ends. Use a standard transition; no new components, wording or flow changes. If the test still fails at the default size or at AX3 after this, additionally add bottom scroll space with `.contentMargins(.bottom, <bar height>, for: .scrollContent)` and scroll the field into view on focus. Report the frames after each step.
+2. Re-capture the 16 onboarding screenshots (light/dark, both simulators); the target-step images must show the typed amount.
+3. Full `WealthyUITests` once per simulator, `-parallel-testing-enabled NO`; required checks (`verify_core.sh` 117, `verify_shell.py` with the PYTHONPATH that provides fontTools, `verify_localization.sh`, `git diff --check`, Simulator Release and signed generic iOS builds). Keep logs under `/tmp/wealthy-c2b1-r5*`.
+
+Acceptance for Round 5: `testOnboardingAmountVisibleWithKeyboard` passes on both simulators at default size and AX3; full suites zero failures on both; required checks pass; screenshots updated. Then `Status: DONE`; otherwise `PARTIAL` with the exact frames and failures.

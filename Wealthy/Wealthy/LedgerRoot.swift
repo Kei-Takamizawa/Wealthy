@@ -127,11 +127,15 @@ struct OnboardingView: View {
     @State private var step = 0
     @State private var amount = ""
     @State private var child = false
+    @FocusState private var amountFocused: Bool
     private let titles = ["onboardLanguage", "onboardCurrency", "onboardTarget", "onboardChild"]
     var body: some View {
         Form {
             Section {
-                IslandScene(growth: 0, festivals: 0, dusk: false).frame(height: 180).accessibilityHidden(true)
+                if step != 2 || !amountFocused {
+                    IslandScene(growth: 0, festivals: 0, dusk: false).frame(height: 180).accessibilityHidden(true)
+                        .transition(.opacity)
+                }
                 Text(session.t(titles[step])).font(.title2.weight(.semibold)).frame(maxWidth: .infinity, alignment: .leading)
                 Text("\(step + 1) / 4")
             }
@@ -140,13 +144,13 @@ struct OnboardingView: View {
                 if step == 1 { CurrencyPicker() }
                 if step == 2 {
                     Text(session.t("monthlyTarget"))
-                    MoneyInputField(text: $amount, label: session.t("amount"), identifier: "onboardingAmount", font: .system(.largeTitle, design: .rounded).monospacedDigit())
+                    MoneyInputField(text: $amount, label: session.t("amount"), identifier: "onboardingAmount", font: .system(.largeTitle, design: .rounded).monospacedDigit(), focus: $amountFocused)
                     Text(session.t("notBalance")).font(.footnote)
                     Text(session.t("fixedOff"))
                 }
                 if step == 3 { Toggle(session.t("useChild"), isOn: $child); Text(session.t("childExplanation")) }
             }
-        }.scrollDismissesKeyboard(.interactively).safeAreaInset(edge: .bottom) {
+        }.animation(.default, value: amountFocused).scrollDismissesKeyboard(.interactively).safeAreaInset(edge: .bottom) {
                 HStack {
                     if step > 0 { Button(session.t("back")) { step -= 1 }.frame(minHeight: 44) }
                     Spacer()
