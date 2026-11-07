@@ -18,7 +18,7 @@ The app opens on the island. Swipe right for the voice page or left for informat
 
 ## Before you start
 
-You need iOS 26 or later and a compatible iPhone with Apple Intelligence enabled and ready. The app checks availability before opening its ledger.
+You need an iPhone with iOS 26 or later; Apple Intelligence is not required.
 
 Choose a language and currency, enter a monthly target, and decide whether to use a child envelope. Then add your first record. Forgotten days can be added within three days after the week and month end; results are recalculated from your records.
 

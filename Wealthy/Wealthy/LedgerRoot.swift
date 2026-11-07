@@ -11,23 +11,37 @@ struct LedgerRoot: View {
     var body: some View {
         @Bindable var session = session
         Group {
-            if !session.available { NoAIView() }
-            else if session.core == nil { ProgressView(session.t("loading")).accessibilityIdentifier("ledgerLoading").accessibilityAddTraits(.updatesFrequently).task { if UIAccessibility.isVoiceOverRunning { UIAccessibility.post(notification: .announcement, argument: session.t("loading")) }; await session.openAfterPresentation() } }
+            if session.core == nil { ProgressView(session.t("loading")).accessibilityIdentifier("ledgerLoading").accessibilityAddTraits(.updatesFrequently).task { if UIAccessibility.isVoiceOverRunning { UIAccessibility.post(notification: .announcement, argument: session.t("loading")) }; await session.openAfterPresentation() } }
             else if !session.onboarded { OnboardingView() }
             else { mainContent }
         }
         .preferredColorScheme(LedgerSession.isUITest ? (ProcessInfo.processInfo.arguments.contains("--dark") ? .dark : .light) : nil)
         .tint(V4.primary(scheme))
-        .task(id: session.core != nil) { if session.core != nil { await session.catchUpAfterPresentation() } }
+        .task(id: session.core != nil) {
+            if session.core != nil {
+                #if DEBUG
+                await session.runIntentTestHook()
+                #endif
+                await session.catchUpAfterPresentation()
+                presentNext()
+            }
+        }
         .sheet(item: $presented, onDismiss: {
-            if presentingRecurring { session.dismissRecurringNotice() }
+            if presentingRecurring && !session.showQuickAdd { session.dismissRecurringNotice() }
             presentingRecurring = false
             presentNext()
         }) { presentation in
-            if let result = presentation.result {
+            if presentation.quickAdd { QuickAddSheet() }
+            else if let result = presentation.result {
                 ResultView(status: result).presentationDetents([.medium, .large]).presentationDragIndicator(.visible)
             } else { NavigationStack { RecurringNoticeView() }.tint(V4.primary(scheme)) }
         }
+        .onChange(of: session.showQuickAdd, initial: true) { _, requested in
+            guard requested else { return }
+            if presented != nil { presented = nil }
+            else { presentNext() }
+        }
+        .onChange(of: session.onboarded) { _, complete in if complete { presentNext() } }
         .onChange(of: session.showRecurringNotice) { _, showing in
             if showing { presentNext() }
             else if presentingRecurring { presented = nil }
@@ -43,8 +57,9 @@ struct LedgerRoot: View {
         } message: { Text(session.error ?? "") }
     }
     private func presentNext() {
-        guard presented == nil else { return }
-        if !resultQueue.isEmpty { presented = LedgerPresentation(result: resultQueue.removeFirst()) }
+        guard presented == nil, session.core != nil, session.onboarded else { return }
+        if session.showQuickAdd { session.showQuickAdd = false; presented = LedgerPresentation(result: nil, quickAdd: true) }
+        else if !resultQueue.isEmpty { presented = LedgerPresentation(result: resultQueue.removeFirst()) }
         else if session.showRecurringNotice { presentingRecurring = true; presented = LedgerPresentation(result: nil) }
     }
     @ViewBuilder private var mainContent: some View {
@@ -67,7 +82,7 @@ struct LedgerRoot: View {
                 case "settings": SettingsView()
                 case "result": if let status = session.summary?.week { ResultView(status: status) }
                 case "month-result": if let status = session.summary?.month { ResultView(status: status) }
-                case "no-ai": NoAIView(reasonOverride: "ineligible")
+                case "no-ai", "ai-information": AIInformationView(reasonOverride: "ineligible")
                 case "voice": VoiceView()
                 case "info", "info-child": InfoView(showResult: { _ in })
                 default: LedgerTabs(isPresenting: presented != nil, showResult: { presented = LedgerPresentation(result: $0) })
@@ -83,8 +98,9 @@ struct LedgerRoot: View {
 private struct LedgerPresentation: Identifiable {
     let id = UUID()
     let result: TargetStatus?
+    var quickAdd = false
 }
-struct NoAIView: View {
+struct AIInformationView: View {
     var reasonOverride: String? = nil
     @Environment(LedgerSession.self) private var session
     @Environment(\.openURL) private var openURL
@@ -92,17 +108,16 @@ struct NoAIView: View {
         Form {
             Section {
                 Image(systemName: "sparkles").font(.largeTitle).accessibilityHidden(true)
-                Text(session.t("noAI")).font(.headline)
                 Text(session.t(reasonOverride ?? session.readiness))
-                Text(session.t("noAIDetail"))
+                Text(session.t("aiInformationDetail"))
             }
-            Section(session.t("language")) { LanguagePicker() }
             Section {
-                Button(session.t("checkAgain")) { session.refreshAvailability(); session.open() }
+                Button(session.t("checkAgain")) { session.refreshAvailability() }
                 Button(session.t("openSettings")) { if let url = URL(string: UIApplication.openSettingsURLString) { openURL(url) } }
             }
         }
-        .navigationTitle(session.t("noAI"))
+        .navigationTitle(session.t("onDeviceAI"))
+        .navigationBarTitleDisplayMode(.inline)
     }
 }
 struct LanguagePicker: View {
@@ -169,18 +184,18 @@ struct LedgerTabs: View {
     @Environment(\.accessibilityReduceMotion) private var systemReduce
     private var reduce: Bool { systemReduce || (LedgerSession.isUITest && ProcessInfo.processInfo.arguments.contains("--reduce-motion")) }
     @Environment(\.colorScheme) private var scheme
-    @State private var page = 1
     let isPresenting: Bool
     let showResult: (TargetStatus) -> Void
     private func move(_ destination: Int) {
         guard (0...2).contains(destination) else { return }
-        withAnimation(reduce ? nil : .easeInOut(duration: 0.2)) { page = destination }
+        withAnimation(reduce ? nil : .easeInOut(duration: 0.2)) { session.selectedTab = destination }
     }
     private func rootSwipe(_ index: Int) -> RootTabSwipeModifier {
-        RootTabSwipeModifier(enabled: page == index && !isPresenting && session.error == nil) { direction in move(page + direction) }
+        RootTabSwipeModifier(enabled: session.selectedTab == index && !isPresenting && !session.showQuickAdd && session.error == nil) { direction in move(session.selectedTab + direction) }
     }
     var body: some View {
-        TabView(selection: $page) {
+        @Bindable var session = session
+        TabView(selection: $session.selectedTab) {
             NavigationStack { VoiceView().modifier(rootSwipe(0)) }
                 .tabItem { Label(session.t("voice"), systemImage: "mic") }.tag(0)
             NavigationStack { HomeView(showResult: showResult).modifier(rootSwipe(1)) }

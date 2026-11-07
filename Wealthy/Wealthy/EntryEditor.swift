@@ -6,6 +6,8 @@ struct EntryEditor: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.colorScheme) private var scheme
     let entry: EntryValue?
+    var initialAmount: String = ""
+    var initialDay: LedgerDay? = nil
     @State private var amount = ""
     @State private var date = Date()
     @State private var kind = EntryKind.expense
@@ -53,7 +55,11 @@ struct EntryEditor: View {
     func load() {
         guard !loaded else { return }; loaded = true
         envelope = entry?.envelopeID ?? EnvelopeValue.householdID
-        guard let entry else { return }
+        guard let entry else {
+            amount = initialAmount
+            if let initialDay { date = (try? initialDay.date(calendar: .current)) ?? Date() }
+            return
+        }
         amount = (try? CoreCurrency.inputText(entry.amount, currencyCode: entry.currencyCode, locale: session.locale)) ?? ""
         date = (try? entry.day.date(calendar: .current)) ?? Date(); kind = entry.kind
         category = entry.categoryID; service = entry.serviceMode ?? .none; tax = entry.taxRate?.rawValue ?? "unknown"

@@ -56,7 +56,12 @@ extension LedgerSession {
     func catchUpAfterPresentation() async {
         await Task.yield()
         await DisplayFrameWaiter.wait()
-        guard !Task.isCancelled, let core else { return }
+        guard !Task.isCancelled else { return }
+        catchUp()
+    }
+    /// Also used by background intents, where waiting for a display frame is inappropriate.
+    func catchUp() {
+        guard let core else { return }
         do {
             let result = try core.postRecurring(through: today, now: commandDate)
             if !result.posted.isEmpty { recurringEntries.append(contentsOf: result.posted) }
