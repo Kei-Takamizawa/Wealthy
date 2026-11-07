@@ -384,6 +384,18 @@ final class Cycle2aUITests: XCTestCase {
     private func assertRootVisible(_ identifier: String) {
         let root = app.descendants(matching: .any).matching(identifier: identifier).firstMatch
         XCTAssertTrue(root.waitForExistence(timeout: 5), app.debugDescription)
+        if root.exists && !root.isHittable {
+            let diagnostics = "Root: \(identifier), frame: \(NSCoder.string(for: root.frame))\n\(app.debugDescription)"
+            let attachment = XCTAttachment(string: diagnostics)
+            attachment.name = "Non-hittable root: \(identifier)"
+            attachment.lifetime = .keepAlways
+            add(attachment)
+            let screenshot = XCTAttachment(screenshot: app.screenshot())
+            screenshot.name = "Non-hittable root: \(identifier)"
+            screenshot.lifetime = .keepAlways
+            add(screenshot)
+            print(diagnostics)
+        }
         XCTAssertTrue(root.isHittable, "The visible content must match the selected tab: \(identifier)")
     }
 

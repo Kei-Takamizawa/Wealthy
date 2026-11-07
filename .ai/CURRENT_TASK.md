@@ -83,3 +83,18 @@ UI (`WealthyUITests`, synthetic data):
 
 ## Report (`.ai/LAST_REPORT.md`, format in `AGENTS.md`)
 Per requirement with evidence, exact commands, Japanese wording chosen, anything not run and why, and a short note on how the single-store rule for intents was implemented.
+
+## Round 2 (designer, 2026-11-08, after checkpoint bfff4bb on PR #13)
+Same Task ID, branch `codex/wealthy-c2b2-quick-entry` and draft PR #13. Read `.ai/LAST_REPORT.md` first (it is the 00:36 interim). Only the items below; do not change anything else that already passes.
+
+1. **`testHorizontalTabSwipeAndVerticalScroll` (both simulators, `WealthyUITests.swift:387` x3).** After the swipe to Home, `homePage` exists and the Home tab is selected, but `homePage.isHittable` is false. Diagnose before changing code:
+   - run the test alone on both simulators;
+   - run it once on `origin/main` (`fc74376`) in a temporary worktree `/tmp/wealthy-c2b2-baseline` to classify regression vs pre-existing (commit nothing from it; remove it afterwards);
+   - at the failure, attach `app.debugDescription` and the frames of `homePage` and of any element covering it.
+   Suspects (designer's guess, unverified): an element added this cycle covering Home (Quick add sheet remnants, the DEBUG intent-dialog element, the safe-line disclosure), or Home's container frame changed by this cycle's empty-state / safe-area fix. Fix the app cause with standard components. Do not weaken the assertion. If the evidence shows the assertion checks the wrong element, report that evidence and the proposed test change in the report before making it.
+2. **Evidence.** Write `Verification/Cycle2bEvidence/c2b2/INDEX.md` for the 14 screenshots, re-capture any that changed, open every image and state in the report that the amount field, typed digits and Save are visible where required.
+3. **Full `WealthyUITests`** once per simulator (iPhone 15 Pro, iPhone 17 Pro), `-parallel-testing-enabled NO`, after item 1 passes in targeted runs; required checks (`verify_core.sh`, `verify_shell.py` with fontTools PYTHONPATH, `verify_localization.sh`, `git diff --check`, Simulator Release and signed generic iOS builds).
+4. **Device.** Install and launch the signed Release build. If the iPhone is locked, report it as an owner action, not a failure.
+5. Rewrite `.ai/LAST_REPORT.md` completely (final, not interim), listing every changed file including the evidence folder.
+
+Acceptance for Round 2: the original acceptance list plus item 1 passing on both simulators. Then `Status: DONE`; otherwise `PARTIAL` with exact failures.

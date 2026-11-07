@@ -1,0 +1,164 @@
+Root: homePage, frame: {{0, 0}, {402, 708}}
+Attributes: Application, 0x105836800, pid: 63637, label: 'Wealthy'
+Element subtree:
+ →Application, 0x105836800, pid: 63637, label: 'Wealthy'
+    Window (Main), 0x1058343c0, {{0.0, 0.0}, {402.0, 874.0}}
+      Other, 0x105837c00, {{0.0, 0.0}, {402.0, 874.0}}
+      Other, 0x105837ac0, {{0.0, 0.0}, {402.0, 874.0}}
+        Other, 0x105837d40, {{0.0, 0.0}, {402.0, 874.0}}
+          Other, 0x105837980, {{0.0, 0.0}, {402.0, 874.0}}
+            Other, 0x1058375c0, {{0.0, 0.0}, {402.0, 874.0}}
+              Other, 0x105835a40, {{0.0, 0.0}, {402.0, 874.0}}, identifier: 'mainTabs'
+                Other, 0x105836d00, {{0.0, 0.0}, {402.0, 874.0}}
+                  Other, 0x105836940, {{0.0, 0.0}, {402.0, 874.0}}
+                    Other, 0x105836580, {{0.0, 0.0}, {402.0, 874.0}}
+                      Other, 0x105836080, {{0.0, 0.0}, {402.0, 874.0}}
+                        Other, 0x105836440, {{0.0, 0.0}, {402.0, 874.0}}
+                          Other, 0x105836300, {{0.0, 0.0}, {402.0, 874.0}}
+                            NavigationBar, 0x105834780, {{0.0, 62.0}, {402.0, 54.0}}, identifier: 'Island'
+                              StaticText, 0x106a50140, {{177.0, 73.7}, {47.7, 20.7}}, label: 'Island'
+                              Button, 0x106a51400, {{346.0, 66.0}, {36.0, 36.0}}, identifier: 'resultMenu', label: 'Your result'
+                            Other, 0x106a50f00, {{0.0, 0.0}, {402.0, 874.0}}
+                              Other, 0x106a512c0, {{0.0, 0.0}, {402.0, 874.0}}
+                                Other, 0x106a51040, {{0.0, 0.0}, {402.0, 874.0}}
+                                  Other, 0x106a52a80, {{0.0, 0.0}, {402.0, 874.0}}
+                                    CollectionView, 0x106a50640, {{0.0, 0.0}, {402.0, 708.0}}, identifier: 'homePage'
+                                      Other, 0x106a50780, {{-16.0, -1482.0}, {434.0, 1817.7}}
+                                      Cell, 0x106a503c0, {{16.0, -31.0}, {370.0, 102.0}}
+                                        Other, 0x106a50500, {{16.0, -31.0}, {370.0, 102.0}}
+                                          Other, 0x102a13340, {{16.0, -31.0}, {370.0, 102.0}}
+                                        Other, 0x102a13840, {{16.0, -31.0}, {370.0, 102.0}}
+                                          Other, 0x102a13ac0, {{16.0, -31.0}, {370.0, 102.0}}
+                                            Other, 0x102a13c00, {{16.0, -31.0}, {370.0, 102.0}}
+                                              Other, 0x102a13980, {{16.0, -31.0}, {370.0, 102.0}}, label: 'Island, 1 festivals, 6 of 7 days under allowance'
+                                      Other, 0x102a112c0, {{0.0, 0.0}, {402.0, 708.0}}
+                                        Other, 0x102a11400, {{0.0, 0.0}, {402.0, 156.0}}
+                                      Other, 0x102a13480, {{0.0, 0.0}, {402.0, 708.0}}
+                                        Other, 0x102a13700, {{0.0, 0.0}, {402.0, 156.0}}
+                                      Cell, 0x106a18000, {{16.0, 71.0}, {370.0, 172.3}}
+                                        Other, 0x106a18140, {{16.0, 71.0}, {370.0, 172.3}}
+                                          Other, 0x106a18280, {{16.0, 71.0}, {370.0, 172.3}}
+                                        Other, 0x106a183c0, {{16.0, 71.0}, {370.0, 172.3}}
+                                          Other, 0x106a18500, {{16.0, 71.0}, {370.0, 172.3}}
+                                            Other, 0x106a18640, {{16.0, 71.0}, {370.0, 172.3}}
+                                              Other, 0x106a18780, {{32.0, 86.0}, {338.0, 142.3}}, label: 'This week, '
+                                                ProgressIndicator, 0x106a188c0, {{16.0, 71.0}, {370.0, 172.3}}, label: 'Left this week, ¥67,100, Not a balance, Allowance ¥70,000, Spent ¥2,900', value: 4%, Selected
+                                                  StaticText, 0x106a18a00, {{48.0, 102.0}, {105.7, 20.3}}, label: 'Left this week'
+                                                  StaticText, 0x106a18b40, {{48.0, 102.0}, {306.0, 20.3}}, label: 'Left this week, ¥67,100'
+                                                  StaticText, 0x106a18c80, {{48.0, 130.3}, {83.7, 15.7}}, label: 'Not a balance'
+                                                  ProgressIndicator, 0x106a18dc0, {{48.0, 154.0}, {306.0, 4.0}}, value: 4%
+                                                    ProgressIndicator, 0x106a18f00, {{48.0, 144.0}, {306.0, 24.0}}, value: 4%
+                                                  StaticText, 0x106a19040, {{48.0, 166.0}, {69.7, 18.0}}, label: 'Allowance'
+                                                  StaticText, 0x106a19180, {{125.7, 166.0}, {59.7, 18.0}}, label: '¥70,000'
+                                                  StaticText, 0x106a192c0, {{255.3, 166.0}, {40.3, 18.0}}, label: 'Spent'
+                                                  StaticText, 0x106a19400, {{303.7, 166.0}, {50.3, 18.0}}, label: '¥2,900'
+                                                  Image, 0x106a19540, {{49.3, 193.7}, {17.0, 17.0}}, identifier: 'checkmark.circle.fill', label: 'Selected', Selected
+                                                  StaticText, 0x106a19680, {{75.7, 192.0}, {128.0, 20.3}}, label: 'Within allowance'
+                                                  StaticText, 0x106a197c0, {{268.3, 194.3}, {85.7, 15.7}}, label: '6 days logged'
+                                      Other, 0x106a19900, {{32.0, 70.0}, {338.0, 1.0}}
+                                      Cell, 0x106a19a40, {{16.0, 243.3}, {370.0, 74.7}}
+                                        Other, 0x106a19b80, {{16.0, 243.3}, {370.0, 74.7}}
+                                          Other, 0x106a19cc0, {{16.0, 243.3}, {370.0, 74.7}}
+                                        Other, 0x106a19e00, {{16.0, 243.3}, {370.0, 74.7}}
+                                          Other, 0x106a19f40, {{16.0, 243.3}, {370.0, 74.7}}
+                                            Other, 0x106a1a080, {{16.0, 243.3}, {370.0, 74.7}}
+                                              Image, 0x106a1a1c0, {{33.3, 259.7}, {17.0, 17.0}}, identifier: 'info.circle', label: 'Info'
+                                              StaticText, 0x106a1a300, {{59.7, 258.3}, {105.0, 20.3}}, label: 'Not a balance'
+                                              StaticText, 0x106a1a440, {{32.0, 282.7}, {45.0, 20.3}}, label: 'Spent'
+                                              StaticText, 0x106a1a580, {{95.8, 282.7}, {56.0, 20.3}}, label: '¥2,900'
+                                              StaticText, 0x106a1a6c0, {{170.7, 282.7}, {114.7, 20.3}}, label: 'Left this month'
+                                              StaticText, 0x106a1a800, {{293.3, 282.7}, {76.7, 20.3}}, label: '¥307,100'
+                                      Other, 0x106a1a940, {{48.0, 242.3}, {322.0, 1.0}}
+                                      Other, 0x106a1aa80, {{-16.0, 335.7}, {434.0, 173.0}}
+                                      Cell, 0x106a1abc0, {{16.0, 353.0}, {370.0, 52.0}}
+                                        Other, 0x106a1ad00, {{16.0, 353.0}, {370.0, 52.0}}
+                                          Other, 0x106a1ae40, {{16.0, 353.0}, {370.0, 52.0}}
+                                        Other, 0x106a1af80, {{16.0, 353.0}, {370.0, 52.0}}
+                                          Other, 0x106a1b0c0, {{16.0, 353.0}, {370.0, 52.0}}
+                                            Other, 0x106a1b200, {{16.0, 353.0}, {370.0, 52.0}}
+                                              StaticText, 0x106a1b340, {{16.0, 353.0}, {370.0, 52.0}}, label: 'This week'
+                                      Cell, 0x106a1b480, {{16.0, 405.0}, {370.0, 86.0}}
+                                        Other, 0x106a1b5c0, {{16.0, 405.0}, {370.0, 86.0}}
+                                          Other, 0x106a1b700, {{16.0, 405.0}, {370.0, 86.0}}
+                                        Other, 0x106a1b840, {{16.0, 405.0}, {370.0, 86.0}}
+                                          Other, 0x106a1b980, {{16.0, 405.0}, {370.0, 86.0}}
+                                            Other, 0x106a1bac0, {{16.0, 405.0}, {370.0, 86.0}}
+                                              Other, 0x106a1bc00, {{32.0, 420.0}, {45.0, 56.0}}, label: '2026-10-05, Under allowance'
+                                                Image, 0x106a1bd40, {{44.3, 426.0}, {20.0, 20.0}}, identifier: 'checkmark.circle.fill', label: 'Selected', Selected
+                                                StaticText, 0x106a1be80, {{47.8, 458.0}, {13.3, 18.0}}, label: 'M'
+                                              Other, 0x106a4c000, {{81.0, 420.0}, {44.7, 56.0}}, label: '2026-10-06, No-spend day'
+                                                Image, 0x106a4c140, {{94.0, 425.0}, {18.3, 22.3}}, identifier: 'sparkles', label: 'Sparkle'
+                                                StaticText, 0x106a4c280, {{98.5, 458.0}, {9.7, 18.0}}, label: 'T'
+                                              Other, 0x106a4c3c0, {{129.7, 420.0}, {45.0, 56.0}}, label: '2026-10-07, No-spend day'
+                                                Image, 0x106a4c500, {{143.0, 425.0}, {18.3, 22.3}}, identifier: 'sparkles', label: 'Sparkle'
+                                                StaticText, 0x106a4c640, {{144.6, 458.0}, {15.0, 18.0}}, label: 'W'
+                                              Other, 0x106a4c780, {{178.7, 420.0}, {44.7, 56.0}}, label: '2026-10-08, No-spend day'
+                                                Image, 0x106a4c8c0, {{192.0, 425.0}, {18.3, 22.3}}, identifier: 'sparkles', label: 'Sparkle'
+                                                StaticText, 0x106a4ca00, {{196.2, 458.0}, {9.7, 18.0}}, label: 'T'
+                                              Other, 0x106a4cb40, {{227.3, 420.0}, {45.0, 56.0}}, label: '2026-10-09, No-spend day'
+                                                Image, 0x106a4cc80, {{240.7, 425.0}, {18.3, 22.3}}, identifier: 'sparkles', label: 'Sparkle'
+                                                StaticText, 0x106a4cdc0, {{245.5, 458.0}, {8.7, 18.0}}, label: 'F'
+                                              Other, 0x106a4cf00, {{276.3, 420.0}, {44.7, 56.0}}, label: '2026-10-10, No-spend day'
+                                                Image, 0x106a4d040, {{289.7, 425.0}, {18.3, 22.3}}, identifier: 'sparkles', label: 'Sparkle'
+                                                StaticText, 0x106a4d180, {{293.7, 458.0}, {10.0, 18.0}}, label: 'S'
+                                              Other, 0x106a4d2c0, {{325.0, 420.0}, {45.0, 56.0}}, label: '2026-10-11, Today'
+                                                Image, 0x106a4d400, {{337.7, 426.0}, {20.0, 20.0}}, identifier: 'plus.circle', label: 'Add'
+                                                StaticText, 0x106a4d540, {{342.6, 458.0}, {10.0, 18.0}}, label: 'S'
+                                      Other, 0x106a4d680, {{32.0, 404.0}, {338.0, 1.0}}
+                                      Other, 0x106a4d7c0, {{-16.0, 508.7}, {434.0, 1541.7}}
+                                      Cell, 0x106a4d900, {{16.0, 526.0}, {370.0, 88.0}}
+                                        Other, 0x106a4da40, {{16.0, 526.0}, {370.0, 88.0}}
+                                          Other, 0x106a4db80, {{16.0, 526.0}, {370.0, 88.0}}
+                                        Other, 0x106a4dcc0, {{16.0, 526.0}, {370.0, 88.0}}
+                                          Other, 0x106a4de00, {{16.0, 526.0}, {370.0, 88.0}}
+                                            Other, 0x106a4df40, {{16.0, 526.0}, {370.0, 88.0}}
+                                              Button, 0x106a4e080, {{16.0, 526.0}, {370.0, 88.0}}, identifier: 'noSpend', label: 'I spent nothing today', Selected
+                                                Image, 0x106a4e1c0, {{108.3, 561.7}, {17.0, 17.0}}, identifier: 'checkmark.circle', label: 'Selected', Selected
+                                                StaticText, 0x106a4e300, {{134.5, 559.8}, {160.7, 20.3}}, label: 'I spent nothing today'
+                                      Other, 0x106a4e440, {{369.0, 116.0}, {30.0, 518.0}}, label: 'Vertical scroll bar, 2 pages', value: 100%
+                                        Other, 0x106a4e580, {{396.0, 223.7}, {3.0, 407.3}}
+                                      Other, 0x106a4e6c0, {{369.0, 116.0}, {30.0, 518.0}}, label: 'Vertical scroll bar, 2 pages', value: 100%
+                                        Other, 0x106a4e800, {{396.0, 223.7}, {3.0, 407.3}}
+                                    Button, 0x106a4e940, {{16.0, 642.0}, {370.0, 58.0}}, identifier: 'addEntry', label: 'Quick add'
+                                      StaticText, 0x106a4ea80, {{16.0, 642.0}, {370.0, 58.0}}, label: 'Quick add'
+                                      Image, 0x106a4ebc0, {{151.3, 664.3}, {14.0, 14.0}}, identifier: 'plus', label: 'Add'
+                            Toolbar, 0x106a4ed00, {{0.0, 0.0}, {402.0, 874.0}}, identifier: 'Toolbar', label: 'Toolbar'
+                              Other, 0x106a4ee40, {{0.0, 0.0}, {402.0, 874.0}}
+                Other, 0x106a4ef80, {{0.0, 0.0}, {402.0, 874.0}}
+                  Other, 0x106a4f0c0, {{0.0, 791.0}, {402.0, 83.0}}
+                    Other, 0x106a4f200, {{0.0, 0.0}, {402.0, 874.0}}
+                      TabBar, 0x106a4f340, {{0.0, 791.0}, {402.0, 83.0}}, label: 'Tab Bar'
+                        Other, 0x106a4f480, {{64.0, 791.0}, {274.0, 62.0}}
+                          Other, 0x106a4f5c0, {{64.0, 791.0}, {94.0, 54.0}}
+                          Other, 0x106a4f700, {{64.0, 791.0}, {274.0, 62.0}}
+                            Button, 0x106a4f840, {{68.0, 795.0}, {94.0, 54.0}}, identifier: 'mic', label: 'Voice'
+                              Image, 0x106a4f980, {{103.3, 800.0}, {23.7, 28.7}}, identifier: 'microphone.fill', label: 'Studio microphone, filled'
+                            Button, 0x106a4fac0, {{154.0, 795.0}, {94.0, 54.0}}, identifier: 'house', label: 'Island', Selected
+                              Image, 0x106a4fc00, {{184.3, 801.0}, {33.3, 28.0}}, identifier: 'house.fill', label: 'home'
+                            Button, 0x106a4fd40, {{240.0, 795.0}, {94.0, 54.0}}, identifier: 'info.circle', label: 'Info'
+                              Image, 0x106a4fe80, {{273.3, 801.3}, {27.3, 27.3}}, identifier: 'info.circle.fill', label: 'info'
+                          Other, 0x106500000, {{64.0, 791.0}, {274.0, 62.0}}
+                          Other, 0x106500140, {{154.0, 795.0}, {94.0, 54.0}}
+                            Other, 0x106500280, {{154.0, 795.0}, {94.0, 54.0}}
+                              Other, 0x1065003c0, {{154.0, 795.0}, {94.0, 54.0}}
+                              Other, 0x106500500, {{154.0, 795.0}, {94.0, 54.0}}
+                                Other, 0x106500640, {{154.0, 795.0}, {94.0, 54.0}}
+                                  Other, 0x106500780, {{154.0, 795.0}, {94.0, 54.0}}
+                                    Other, 0x1065008c0, {{154.0, 795.0}, {94.0, 54.0}}
+                                  Other, 0x106500a00, {{154.0, 795.0}, {94.0, 54.0}}
+                                Other, 0x106500b40, {{154.0, 795.0}, {94.0, 54.0}}
+                    Other, 0x106500c80, {{0.0, 791.0}, {402.0, 83.0}}
+                      Other, 0x106500dc0, {{0.0, 791.0}, {402.0, 83.0}}
+                        Other, 0x106500f00, {{0.0, 791.0}, {402.0, 83.0}}
+                          Other, 0x106501040, {{0.0, 791.0}, {402.0, 83.0}}
+                            Other, 0x106501180, {{0.0, 791.0}, {402.0, 83.0}}
+                              Other, 0x1065012c0, {{0.0, 791.0}, {402.0, 83.0}}
+                          Other, 0x106501400, {{0.0, 791.0}, {402.0, 83.0}}
+                            Other, 0x106501540, {{0.0, 791.0}, {402.0, 83.0}}
+Path to element:
+ →Application, 0x105836800, pid: 63637, label: 'Wealthy'
+Query chain:
+ →Find: Target Application 'com.harrison.Wealthy'
+  Output: {
+    Application, 0x106501680, pid: 63637, label: 'Wealthy'
+  }
