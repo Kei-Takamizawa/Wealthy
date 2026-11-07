@@ -34,14 +34,14 @@ Work folder on the Mac: `~/Documents/my-workspace/Hobby/Wealthy-main`. Stay insi
      --cd "$PWD" \
      --sandbox workspace-write \
      -m gpt-6.1-sol \
-     -c model_reasoning_effort='"xhigh"' \
+     -c model_reasoning_effort='"medium"' \
      -c approval_policy='"on-request"' \
      -c approvals_reviewer='"auto_review"' \
      "Read AGENTS.md, then .ai/CURRENT_TASK.md and .ai/LAST_REPORT.md. Do the task. Finish by rewriting .ai/LAST_REPORT.md as AGENTS.md requires." \
      > ".ai/runs/<TASK-ID>-$(date +%Y%m%d-%H%M).log" 2>&1 &
    ```
 
-   Poll the log and the process instead of holding Codex as a child of your shell (a child process dies when the operator session ends). Check that the log header shows model `gpt-6.1-sol` and reasoning effort `xhigh`. The owner set this model and effort on 2026-11-07; do not change them without the owner.
+   Poll the log and the process instead of holding Codex as a child of your shell (a child process dies when the operator session ends). Check that the log header shows model `gpt-6.1-sol` and reasoning effort `medium`. The owner set the model on 2026-11-07 and the effort (`medium`, was `xhigh`) on 2026-11-08; do not change them without the owner.
 
    Before the first run on a new Codex version, check `codex exec --help`, `codex debug models` and the official config docs; if a key, flag or model id above has been renamed, stop and ask the owner rather than guessing (for keys and flags with the same meaning, use the documented equivalent and note it in the cycle report). Never use `danger-full-access`, `--dangerously-bypass-approvals-and-sandbox`, `--yolo` or similar, and never edit `~/.codex/config.toml`.
 5. **Resume rules.** After a usage-limit stop or a "model is at capacity" error, resume (`codex exec resume <session-id>` with the same model, effort and approval flags; `resume` has no `--sandbox` flag, so pass `-c sandbox_mode="workspace-write"`) — as many times as needed until the cycle is complete (owner decision, 2026-11-07). If the reset time has not passed yet, wait for it instead of retrying. If Codex stops as BLOCKED only because of a fact you can check from outside (for example a branch's state, a file's presence, a device's lock state), check it, pass the checked fact in, and resume once. Anything else: stop and report.
