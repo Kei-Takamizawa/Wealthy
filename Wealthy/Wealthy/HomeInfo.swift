@@ -235,7 +235,7 @@ struct ResultView: View {
         return try? LedgerQueries.loggedDayRequirement(in: status.period)
     }
     var body: some View {
-        ScrollView { VStack(spacing: 24) {
+        ScrollView { VStack(spacing: 12) {
             Text(session.t(isMonth ? "monthResultTitle" : "weekResultTitle")).font(.headline)
             if isMonth {
                 Text(session.t(monthHeadlineKey)).font(.title2.weight(.semibold)).multilineTextAlignment(.center).foregroundStyle(.primary)
@@ -265,8 +265,11 @@ struct ResultView: View {
             }
             IslandScene(growth: resultGrowth, festivals: isMonth ? monthAreas : status.isRewardEligible ? 1 : 0, dusk: status.isOver).frame(height: 180).accessibilityHidden(true)
             AllowanceSummary(title: "remainingAllowance", status: status)
-            Button(session.t("done")) { dismiss() }.buttonStyle(.borderedProminent)
         }.padding(24) }.scrollEdgeEffectHidden(for: .bottom).accessibilityIdentifier("resultSheet")
+            .safeAreaInset(edge: .bottom) {
+                Button(session.t("done")) { dismiss() }.buttonStyle(.borderedProminent)
+                    .padding(.vertical, 12).frame(maxWidth: .infinity).background(.background)
+            }
     }
     private var monthHeadlineKey: String {
         switch outcome {

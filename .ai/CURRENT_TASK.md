@@ -134,3 +134,15 @@ Same Task ID, branch and PR #10. Read `.ai/LAST_REPORT.md` first. Keep `testOnbo
 3. Full `WealthyUITests` once per simulator, `-parallel-testing-enabled NO`; required checks (`verify_core.sh` 117, `verify_shell.py` with the PYTHONPATH that provides fontTools, `verify_localization.sh`, `git diff --check`, Simulator Release and signed generic iOS builds). Keep logs under `/tmp/wealthy-c2b1-r5*`.
 
 Acceptance for Round 5: `testOnboardingAmountVisibleWithKeyboard` passes on both simulators at default size and AX3; full suites zero failures on both; required checks pass; screenshots updated. Then `Status: DONE`; otherwise `PARTIAL` with the exact frames and failures.
+
+## Round 6 (designer, 2026-11-07, after PR #10 head 9ea1e8d)
+Same Task ID, branch and PR #10. Read `.ai/LAST_REPORT.md` first. One item only; do not change anything else that already passes.
+
+**Finding.** On iPhone 15 Pro, `testResultAccessibilityAudit` failed with "Contrast failed for SwiftUI.AccessibilityNode" on the Result screen "Done" button, frame (164.33, 824.67, 64.33, 34.33). The screen is 852 pt tall, so the button's bottom edge (859 pt) is outside the screen and under the home indicator. The designer reads this as a layout problem (the button is not kept inside the safe area), not only a flaky audit. Not verified.
+
+1. **Test first.** Add an assertion (in `testResultAccessibilityAudit` or a new Result-screen test) that the Done button is hittable and its whole frame lies inside the window and above the bottom safe-area inset (home indicator), at the default size and at AX3 (`-UIPreferredContentSizeCategoryName UICTContentSizeCategoryAccessibilityXL`). Run it 3 times on iPhone 15 Pro before the fix and report each result and frame.
+2. **Fix** with standard components only, no wording or flow change: keep the Done button inside the safe area (for example, put the Result content in a `ScrollView` and the Done button in `safeAreaInset(edge: .bottom)` or in the toolbar). Then run the new assertion and `testResultAccessibilityAudit` 3 times each on both simulators (default and AX3) and report. Do not add any audit exception.
+3. Re-capture Result-screen screenshots only if they exist in `Verification/Cycle2bEvidence/` or `Cycle2aEvidence/` and changed.
+4. Full `WealthyUITests` once per simulator, run one after the other (not at the same time), `-parallel-testing-enabled NO`; required checks (`verify_core.sh` 117, `verify_shell.py` with the fontTools PYTHONPATH, `verify_localization.sh`, `git diff --check`, Simulator Release and signed generic iOS builds). Keep logs under `/tmp/wealthy-c2b1-r6*`.
+
+Acceptance for Round 6: the new assertion and `testResultAccessibilityAudit` pass 3/3 on both simulators at default and AX3; full suites zero failures on both; required checks pass. Then `Status: DONE`; otherwise `PARTIAL` with exact frames and failures.

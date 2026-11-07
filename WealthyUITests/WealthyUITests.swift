@@ -203,8 +203,8 @@ final class Cycle2aUITests: XCTestCase {
         }
     }
     @MainActor
-    func audit(_ screen: String) throws {
-            app.launchArguments = ["--cycle2a-test", "--cycle2a-seed", "-v4.language", "en", "--screen", screen]
+    func audit(_ screen: String, flags: [String] = []) throws {
+            app.launchArguments = ["--cycle2a-test", "--cycle2a-seed", "-v4.language", "en", "--screen", screen] + flags
             launchApp()
             XCTAssertTrue(app.staticTexts.firstMatch.waitForExistence(timeout: 15))
             if screen == "result" {
@@ -246,7 +246,30 @@ final class Cycle2aUITests: XCTestCase {
     @MainActor
     func testInfoAccessibilityAudit() throws { try audit("info") }
     @MainActor
-    func testResultAccessibilityAudit() throws { try audit("result") }
+    func testResultAccessibilityAudit() throws {
+        try audit("result")
+        try audit("result", flags: ["--ax3"])
+    }
+    @MainActor
+    func testResultDoneInsideSafeArea() throws {
+        // Both supported iPhone Pro simulators have a 34-point bottom safe area.
+        let bottomSafeArea: CGFloat = 34
+        for flags in [[], ["--ax3"]] {
+            app.launchArguments = ["--cycle2a-test", "--cycle2a-seed", "-v4.language", "en", "--screen", "result"] + flags
+            launchApp()
+            let done = app.buttons["Done"].firstMatch
+            XCTAssertTrue(done.waitForExistence(timeout: 15), app.debugDescription)
+            for _ in 0..<8 { if done.isHittable { break }; app.swipeUp() }
+            let frame = done.frame
+            let window = app.windows.firstMatch.frame
+            let details = "size=\(flags.isEmpty ? "default" : "AX3") button=\(frame) window=\(window) safeBottom=\(window.maxY - bottomSafeArea) hittable=\(done.isHittable)"
+            print("RESULT_DONE_FRAME \(details)")
+            XCTAssertTrue(done.isHittable, details)
+            XCTAssertTrue(window.contains(frame), details)
+            XCTAssertLessThanOrEqual(frame.maxY, window.maxY - bottomSafeArea, details)
+            app.terminate()
+        }
+    }
     @MainActor
     func testEntryAccessibilityAudit() throws { try audit("edit") }
 

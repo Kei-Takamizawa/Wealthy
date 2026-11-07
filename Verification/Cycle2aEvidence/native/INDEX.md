@@ -2,6 +2,8 @@
 
 Captured from the iPhone 15 Pro Simulator (iOS 27.0) using `WealthyUITests` with synthetic seeded data. JPEG quality 80; long edge capped at 2000 px. Current set is 45 images / about 6 MB. Screens are captured directly from the running app, without design-board comparisons.
 
+The 12 week and month Result images were refreshed in Cycle 2b.1 Round 6 after the Done button moved into the bottom safe area. They were exported from `testNativeScreenEvidenceLightAndDark` in `/tmp/wealthy-c2b1-r6-full15.xcresult`.
+
 | Screen | Light | Dark |
 |---|---|---|
 | Voice | [native-voice-light.jpg](native-voice-light.jpg) | [native-voice-dark.jpg](native-voice-dark.jpg) |
