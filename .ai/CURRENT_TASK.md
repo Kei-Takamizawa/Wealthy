@@ -111,3 +111,15 @@ Same Task ID, branch and PR #10. Read `.ai/LAST_REPORT.md` first. Only the items
 5. **Full UI suite** once per simulator (iPhone 15 Pro, iPhone 17 Pro), `-parallel-testing-enabled NO`, only after 1-4 pass in targeted runs. Run the full suites before re-capturing any screenshots; re-capture only images that changed (onboarding if affected). Keep logs/xcresults under `/tmp/wealthy-c2b1-r3*`.
 
 Acceptance for Round 3: full suite zero failures on both simulators with only the item-1 filter; item-2 test passes; required checks (`verify_core.sh` 117, `verify_shell.py`, `verify_localization.sh`, `git diff --check`, Simulator Release and signed generic iOS builds) pass. Then `Status: DONE`. Otherwise `PARTIAL` with the exact test, element and message.
+
+## Round 4 (designer, 2026-11-07, after PR #10 head 61e22d6)
+Same Task ID, branch and PR #10. Read `.ai/LAST_REPORT.md` first. One item only; do not change anything else that already passes.
+
+**Review finding (blocker).** In `Verification/Cycle2bEvidence/iphone15pro-onboarding-target-light.jpg` and `-dark.jpg`, while the number pad is up, the monthly target amount field is hidden behind the new bottom bar (Back / Next), so the user cannot see the number they type. On iPhone 17 Pro the field is visible. This came from the Round 3 item 4 change (`safeAreaInset(edge: .bottom)` in `OnboardingView`, `LedgerRoot.swift`).
+
+1. **Test first.** Extend `testPersistedOnboardingRelaunch` (or add one onboarding test) so that, on the target step with the keyboard up and digits typed, it asserts: the amount field is hittable; its whole frame lies above the top of the Back/Next bar and above the keyboard; its value shows the typed digits; Next is hittable. It must fail on iPhone 15 Pro with the current code (report that failure), then pass after the fix.
+2. **Fix with standard components only**, keeping onboarding content, wording and flow. Prefer one of: (a) keep the bottom bar but make the form scroll the focused field above it (for example `ScrollViewReader` + `@FocusState`, scrolling to the field when it gains focus and when the keyboard appears); or (b) remove the bottom bar, put Back/Next back in the form, and add the Next action to a keyboard toolbar (`ToolbarItemGroup(placement: .keyboard)`). Pick the simpler one that passes item 1 on both simulators, also at AX3 (`-UIPreferredContentSizeCategoryName UICTContentSizeCategoryAccessibilityXL`), and say which you chose.
+3. Re-capture the 16 onboarding screenshots (light/dark, both simulators); the target-step images must show the typed amount.
+4. Full `WealthyUITests` once per simulator, `-parallel-testing-enabled NO`; required checks (`verify_core.sh` 117, `verify_shell.py`, `verify_localization.sh`, `git diff --check`, Simulator Release and signed generic iOS builds). Keep logs under `/tmp/wealthy-c2b1-r4*`.
+
+Acceptance for Round 4: item-1 test passes on both simulators (and at AX3), full suites zero failures on both, required checks pass, screenshots updated. Then `Status: DONE`; otherwise `PARTIAL` with exact failures.

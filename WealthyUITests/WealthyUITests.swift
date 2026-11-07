@@ -552,6 +552,30 @@ final class Cycle2aUITests: XCTestCase {
 // Persisted onboarding uses a real disk ledger and isolated preferences, retained across process termination.
 extension Cycle2aUITests {
     @MainActor
+    func testOnboardingAmountVisibleWithKeyboard() throws {
+        for flags in [[], ["--ax3"]] {
+            app.launchArguments = ["--cycle2a-test", "-v4.language", "en", "-v4.currency", "JPY", "-v4.onboarded", "NO"] + flags
+            launchApp()
+            XCTAssertTrue(app.buttons["onboardingNext"].waitForExistence(timeout: 20))
+            app.buttons["onboardingNext"].tap()
+            app.buttons["onboardingNext"].tap()
+            enter("onboardingAmount", "40000")
+            let field = app.textFields["onboardingAmount"]
+            let next = app.buttons["onboardingNext"]
+            let back = app.buttons["Back"]
+            let keyboard = app.keyboards.firstMatch
+            XCTAssertTrue(keyboard.waitForExistence(timeout: 5))
+            XCTAssertTrue(back.exists)
+            XCTAssertTrue(field.isHittable, "Amount field is not hittable: \(field.frame)")
+            let barTop = next.frame.midY - max(44, back.frame.height, next.frame.height) / 2 - 16
+            XCTAssertLessThanOrEqual(field.frame.maxY, barTop, "Amount field overlaps the padded navigation bar: field \(field.frame), bar top \(barTop)")
+            XCTAssertLessThanOrEqual(field.frame.maxY, keyboard.frame.minY, "Amount field overlaps keyboard: field \(field.frame), keyboard \(keyboard.frame)")
+            XCTAssertTrue((field.value as? String ?? "").filter(\.isNumber).contains("40000"), "Amount value: \(String(describing: field.value))")
+            XCTAssertTrue(next.isHittable, "Next is not hittable: \(next.frame)")
+            app.terminate()
+        }
+    }
+    @MainActor
     func testPersistedOnboardingRelaunch() throws {
         let id = UUID().uuidString
         app.launchArguments = ["--cycle2a-test", "--disk-test", id]

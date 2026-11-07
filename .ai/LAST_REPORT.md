@@ -1,78 +1,44 @@
-# Cycle 2b.1 Round 3 Report
+# Cycle 2b.1 Round 4 Report
 
 Task ID: WEALTHY-C2B1-FIXED-CALENDAR
-Status: DONE
+Status: PARTIAL
 
-Starting HEAD: `8e97a8dfa64de57da1390d7b3fddd50ff3f823de`; branch: `codex/wealthy-c2b1-fixed-calendar`. Host: macOS 27.2, Xcode 27.2 (27B52). Both simulators ran iOS 27.0 (24A434). Items 1–4 were already implemented and committed at the starting HEAD; this run did not change product or test code.
+Starting HEAD: `61e22d6c85847317e75c0816e611367f5ead1a45`; branch: `codex/wealthy-c2b1-fixed-calendar`. Host: macOS 27.2, Xcode 27.2 (27B52); iPhone 15 Pro and iPhone 17 Pro simulators use iOS 27.0. Pre-existing changes to `.ai/CURRENT_TASK.md`, three `.DS_Store` files, and an untracked design PDF were preserved.
 
 ## Changed files
 
-- .ai/LAST_REPORT.md
-- Verification/Cycle2bEvidence/INDEX.md
-- Verification/Cycle2bEvidence/iphone15pro-onboarding-child-dark.jpg
-- Verification/Cycle2bEvidence/iphone15pro-onboarding-child-light.jpg
-- Verification/Cycle2bEvidence/iphone15pro-onboarding-currency-dark.jpg
-- Verification/Cycle2bEvidence/iphone15pro-onboarding-currency-light.jpg
-- Verification/Cycle2bEvidence/iphone15pro-onboarding-language-dark.jpg
-- Verification/Cycle2bEvidence/iphone15pro-onboarding-language-light.jpg
-- Verification/Cycle2bEvidence/iphone15pro-onboarding-target-dark.jpg
-- Verification/Cycle2bEvidence/iphone15pro-onboarding-target-light.jpg
-- Verification/Cycle2bEvidence/iphone17pro-onboarding-child-dark.jpg
-- Verification/Cycle2bEvidence/iphone17pro-onboarding-child-light.jpg
-- Verification/Cycle2bEvidence/iphone17pro-onboarding-currency-dark.jpg
-- Verification/Cycle2bEvidence/iphone17pro-onboarding-currency-light.jpg
-- Verification/Cycle2bEvidence/iphone17pro-onboarding-language-dark.jpg
-- Verification/Cycle2bEvidence/iphone17pro-onboarding-language-light.jpg
-- Verification/Cycle2bEvidence/iphone17pro-onboarding-target-dark.jpg
-- Verification/Cycle2bEvidence/iphone17pro-onboarding-target-light.jpg
+- `WealthyUITests/WealthyUITests.swift` — adds `testOnboardingAmountVisibleWithKeyboard`, running at the default size and AX3, checking the input value, hittability, keyboard, navigation-bar boundary, and Next button. The bar boundary calculation reflects the current padded HStack layout and must be adjusted if that layout changes.
+- `.ai/LAST_REPORT.md`
 
-Unrelated pre-existing changes to three `.DS_Store` files and an untracked design PDF were preserved. Historical device comparison screenshots remain historical device evidence.
+No product-code change is retained. Experimental changes were removed after they failed the new test.
 
 ## Requirements
 
-1. **Narrow audit exception — PASS.** Full-suite audits used the existing owner-approved filter only for `.dynamicType` issues whose detailed description contains `SwiftUI.AccessibilityNode` and whose element exists. All other issues fail. Ignored labels, identifiers and frames are logged and attached. Counts from the completed full-suite logs:
-
-   | Screen / condition | iPhone 15 Pro | iPhone 17 Pro |
-   | --- | ---: | ---: |
-   | Fixed costs, each of light / dark / AX3 | 0 / 0 / 0 | 0 / 0 / 0 |
-   | Rule form, light / dark / AX3 | 2 / 2 / 2 | 1 / 1 / 1 |
-   | Calendar, each of light / dark / AX3 | 0 / 0 / 0 | 0 / 0 / 0 |
-   | Analysis, each of light / dark / AX3 | 0 / 0 / 0 | 0 / 0 / 0 |
-   | Home | 15 | 15 |
-   | **Total** | **21** | **18** |
-
-   The 15 Pro rule-form findings are Category and Day of month in each condition; 17 Pro reports Day of month in each condition. `testC2bAccessibilityAndEvidence` and `testHomeAccessibilityAudit` passed on both. The Home audit also runs the existing four-type audit, which rejects every finding.
-2. **Compensating Dynamic Type growth — PASS.** `testC2bDynamicTypeGrowth` passed in each full suite. Prior targeted evidence at the same committed product and test code: Category and Day of month 20.33 to 48 pt; Home representative body, monospaced amounts and button text 20.33 to 48 pt (no-spend wraps to 96 pt); headline 52 to 78 pt; weekday subheadline 18 to 43 pt. Tested frames were inside the window. See `/tmp/wealthy-c2b1-r3-growth15.log` and `growth17.log` for the earlier frame details.
-3. **Custom fonts — PASS.** `verify_shell.py` checked custom font calls for `relativeTo:`; the previous targeted report found no `.custom(` calls in `Wealthy/` and recorded six positive/negative checker fixtures. The required shell check passed again in this run.
-4. **Onboarding keyboard — PASS.** `testPersistedOnboardingRelaunch` passed on both simulators in the full suites. It entered the target with the keyboard visible, tapped Next and verified persistence on relaunch. The target screenshots show Next above the software keyboard. In the 15 Pro light target capture the target amount itself is below the visible portion of the form behind the bottom bar; this image alone does not establish whether the field can be scrolled into view. No product changes were made in this run.
-5. **Full UI suites — PASS.** iPhone 15 Pro: 60 passed, 0 failed, 0 skipped, 0 expected failures (4170.699 test seconds). iPhone 17 Pro: 60 passed, 0 failed, 0 skipped, 0 expected failures (4275.965 test seconds). Both result bundles report Passed. Runs were sequential, with `-parallel-testing-enabled NO`; no tests or audits were disabled. The launch and interactive metric tests were included; simulator timings are not evaluated against the device target.
-6. **Screenshots — PASS for this round's refresh.** Added 16 synthetic-data onboarding screenshots from the two completed `testNativeOnboardingEvidenceLightAndDark` runs: four steps in light and dark for each device. Indexed in `Verification/Cycle2bEvidence/INDEX.md`. JPEG quality 80, each long edge at most 2,000 px and each below 1 MB (largest 143,255 bytes). Other Cycle 2b captures were retained.
-7. **Required verification — PASS.** Core 117 tests in 13 suites; shell/font and localization checks; `git diff --check`; Simulator Release and signed generic iOS Release builds; `codesign --verify --deep --strict` all passed. The builds each warn that App Intents metadata extraction was skipped because no AppIntents.framework dependency was found.
-
-The prior board/Core differences remain: Core controls recurrence and month-end clamping; catch-up has no undo; posted entries remain after rule deletion; no-spend marks can coexist with entries; analysis compares full months in a text list; native Info navigation replaces the board's separate tabs and custom surfaces.
+1. **Test first — PASS for reproduction; acceptance FAIL.** On the unchanged product code, the first 15 Pro run failed at default size: field `(32.0, 519.33, 329.0, 42.33)` has bottom `561.67`; the original test's conservative bar boundary was `479.0` (`/tmp/wealthy-c2b1-r4-red.log`). The final test computes the bar boundary from both button sizes and HStack padding: 15 Pro default fails with field bottom `561.67` and bar top `474.0`; AX3 produced no additional assertion failure. 17 Pro passed both default and AX3. Both final test runs include keyboard present, typed `40000`, field and Next hittability, and field geometry assertions. The 15 Pro failure remains red.
+2. **Fix — NOT DONE.** The existing `safeAreaInset(edge: .bottom)` in `OnboardingView` and keyboard overlap the field on 15 Pro at default size. An initial `ScrollViewReader` using a bottom anchor after the keyboard appeared did not move it sufficiently; dispatching the scroll and repeating it on amount changes also failed, including at AX3. Moving Back/Next into the form and adding a keyboard toolbar still left the field overlapping the toolbar at both sizes. Combining the toolbar with a top-anchored scroll still failed at default size (field bottom `531.0`, Next top `508.0` in `/tmp/wealthy-c2b1-r4-target15d.log`). These were test experiments and were reverted. `testPersistedOnboardingRelaunch` passed on 15 Pro in the first scroll and toolbar experiments, but that does not establish a working fix. The reason SwiftUI did not position the field sufficiently is not established. Designer/Claude judgment is needed on the next standard-component approach before another implementation attempt.
+3. **Screenshots — NOT DONE.** The 16 Round 3 onboarding images remain unchanged: no corrected 15 Pro target capture exists. Synthetic-data target image acceptance remains unmet.
+4. **Full UI suites — NOT COMPLETED.** Both full runs were started with `-parallel-testing-enabled NO` and interrupted after the unresolved blocker was established. 15 Pro had started `testAdditionalSetupMatrix`; 17 Pro was interrupted during build/setup. No complete suite counts or pass claim are available. Both logs report interruption. No audits or tests were deliberately excluded.
+5. **Required checks — PARTIAL.** Core 117/117, shell with the existing Python dependency path, localization, `git diff --check`, Simulator Release build, signed generic iOS Release build, and signature verification passed. The bare `python3 Verification/verify_shell.py` failed because the default Python environment does not contain `fontTools`; using the installed site-packages path passed. Both builds warned that App Intents metadata extraction was skipped because the framework is not linked.
 
 ## Verification commands
 
-- `xcodebuild -project Wealthy/Wealthy.xcodeproj -scheme WealthyUITests -destination 'platform=iOS Simulator,id=870430A8-E557-4CED-8A8E-079801D804B9' -derivedDataPath /tmp/wealthy-c2b1-r3-authorized.qWAWO5/derived15 -resultBundlePath /tmp/wealthy-c2b1-r3-authorized.qWAWO5/full15.xcresult -parallel-testing-enabled NO test` — PASS, 60/60; log `full15.log` in the same directory.
-- After that command completed: `xcodebuild -project Wealthy/Wealthy.xcodeproj -scheme WealthyUITests -destination 'platform=iOS Simulator,id=DEA8D0DF-8BA2-4F70-B19C-BACAC400EAE0' -derivedDataPath /tmp/wealthy-c2b1-r3-authorized.qWAWO5/derived17 -resultBundlePath /tmp/wealthy-c2b1-r3-authorized.qWAWO5/full17.xcresult -parallel-testing-enabled NO test` — PASS, 60/60; log `full17.log`.
-- `xcrun xcresulttool get test-results summary --path <result-bundle> --format json` for both bundles — PASS; counts and runtime warnings verified. `xcrun xcresulttool export attachments --path <result-bundle> --test-id 'Cycle2aUITests/testNativeOnboardingEvidenceLightAndDark()' --output-path <export-directory>` — PASS for both.
-- `sh Verification/verify_core.sh` — PASS, 117 tests in 13 suites; `/tmp/wealthy-c2b1-r3-authorized.qWAWO5/core-final-verified.log`. An earlier wrapper printed a zsh read-only `status` variable error after the tests completed; the corrected invocation returned exit 0.
-- `PYTHONPATH=/Users/harrison/Library/Python/3.14/lib/python/site-packages python3 Verification/verify_shell.py` — PASS, 199 keys × four languages, custom font and other checks.
+- `xcodebuild -project Wealthy/Wealthy.xcodeproj -scheme WealthyUITests -destination 'platform=iOS Simulator,id=870430A8-E557-4CED-8A8E-079801D804B9' -derivedDataPath /tmp/wealthy-c2b1-r4-derived15 -resultBundlePath /tmp/wealthy-c2b1-r4-red.xcresult -parallel-testing-enabled NO -only-testing:WealthyUITests/Cycle2aUITests/testOnboardingAmountVisibleWithKeyboard test` — FAIL as expected before product changes; log `/tmp/wealthy-c2b1-r4-red.log`.
+- Same command on final product and test state with `-resultBundlePath /tmp/wealthy-c2b1-r4-final15.xcresult` — FAIL, 1 assertion at default; `/tmp/wealthy-c2b1-r4-final15.log`.
+- Same command with destination `platform=iOS Simulator,id=DEA8D0DF-8BA2-4F70-B19C-BACAC400EAE0`, derived data `/tmp/wealthy-c2b1-r4-derived17`, result `/tmp/wealthy-c2b1-r4-final17.xcresult` — PASS, default and AX3; `/tmp/wealthy-c2b1-r4-final17.log`.
+- Targeted experimental runs are recorded in `/tmp/wealthy-c2b1-r4-target15.log`, `target15b.log`, `target15c.log`, and `target15d.log`; each had at least one failure of the new test. The product changes tested there were reverted.
+- `xcodebuild -project Wealthy/Wealthy.xcodeproj -scheme WealthyUITests -destination 'platform=iOS Simulator,id=870430A8-E557-4CED-8A8E-079801D804B9' -derivedDataPath /tmp/wealthy-c2b1-r4-derived15 -resultBundlePath /tmp/wealthy-c2b1-r4-full15.xcresult -parallel-testing-enabled NO test` — INTERRUPTED; `/tmp/wealthy-c2b1-r4-full15.log`.
+- Same full-suite command with destination `platform=iOS Simulator,id=DEA8D0DF-8BA2-4F70-B19C-BACAC400EAE0`, derived data `/tmp/wealthy-c2b1-r4-derived17`, result `/tmp/wealthy-c2b1-r4-full17.xcresult` — INTERRUPTED; `/tmp/wealthy-c2b1-r4-full17.log`.
+- `sh Verification/verify_core.sh` — PASS, 117 tests in 13 suites; `/tmp/wealthy-c2b1-r4-core.log`.
+- `python3 Verification/verify_shell.py` — FAIL, `ModuleNotFoundError: No module named 'fontTools'`.
+- `PYTHONPATH=/Users/harrison/Library/Python/3.14/lib/python/site-packages python3 Verification/verify_shell.py` — PASS, 199 keys × four languages, custom-font and other checks.
 - `sh Verification/verify_localization.sh` — PASS, 199 shipping keys × four languages and 2,420 archived checks.
-- `git diff --check` — PASS after report and evidence updates.
-- `xcodebuild -project Wealthy/Wealthy.xcodeproj -scheme WealthyUITests -configuration Release -destination 'generic/platform=iOS Simulator' -derivedDataPath /tmp/wealthy-c2b1-r3-authorized.qWAWO5/release-sim build` — PASS; `release-sim.log`.
-- `xcodebuild -project Wealthy/Wealthy.xcodeproj -scheme WealthyUITests -configuration Release -destination 'generic/platform=iOS' -derivedDataPath /tmp/wealthy-c2b1-r3-authorized.qWAWO5/release-device -allowProvisioningUpdates build` — PASS; `release-device.log`.
-- `codesign --verify --deep --strict /tmp/wealthy-c2b1-r3-authorized.qWAWO5/release-device/Build/Products/Release-iphoneos/Wealthy.app` — PASS.
-- `sips` conversion and dimension/size checks on 16 onboarding JPEGs — PASS.
-
-## Errors and warnings
-
-- The first sandboxed full-suite attempts exited 74 before tests began: CoreSimulatorService connection refused and SwiftPM could not write its manifest diagnostics cache (`Operation not permitted`). The authorized sequential full suites then completed successfully. Logs: `/tmp/wealthy-c2b1-r3-run.Yi4deg/full15.log` and `full17.log`.
-- iPhone 15 Pro result bundle runtime warning: `Detected a metric that was not measured in the first iteration: com.apple.dt.XCTMetric_ApplicationLaunch-ApplicationFirstFramePresentationResponsive.duration`.
-- iPhone 17 Pro result bundle runtime warnings: `Received unexpected number of metrics: 6 in iteration with index 2. Got 7 in iteration with index 0` and the same message for index 4. These warnings limit interpretation of simulator performance measurements; all six metric tests on each device were executed and passed.
-- First sandboxed attachment export could not write Xcode's TestReport, and the first authorized export used an incorrect test identifier. Export succeeded with the identifier shown above.
+- `git diff --check` — PASS.
+- `xcodebuild -project Wealthy/Wealthy.xcodeproj -scheme WealthyUITests -configuration Release -destination 'generic/platform=iOS Simulator' -derivedDataPath /tmp/wealthy-c2b1-r4-release-sim build` — PASS; `/tmp/wealthy-c2b1-r4-release-sim-final.log`.
+- `xcodebuild -project Wealthy/Wealthy.xcodeproj -scheme WealthyUITests -configuration Release -destination 'generic/platform=iOS' -derivedDataPath /tmp/wealthy-c2b1-r4-release-device -allowProvisioningUpdates build` — PASS; `/tmp/wealthy-c2b1-r4-release-device.log`.
+- `codesign --verify --deep --strict /tmp/wealthy-c2b1-r4-release-device/Build/Products/Release-iphoneos/Wealthy.app` — PASS.
 
 ## Not done / unverified
 
-- No fresh physical-device installation, launch, manual VoiceOver navigation, or device performance measurement in this round. Simulator results are not equivalent to physical-device evidence.
-- No product or test code modifications, staging, commit, push, merge, branch switch, deployment, or unrelated cleanup; the operator owns Git. New evidence files are present in the working tree for the operator to record.
+- The 15 Pro default-size overlap is unresolved. Reproduce by launching onboarding, advancing to monthly target, tapping the amount field, and typing `40000`; compare the field bottom with the navigation bar above the open keyboard. See the final 15 Pro result bundle and failure above.
+- A corrected product implementation, two full zero-failure suites, and 16 refreshed onboarding screenshots are not available. No physical-device check was performed. The interrupted suites cannot support any pass or failure count for the whole suite.
+- No staging, commit, push, merge, branch switch, or unrelated cleanup was performed; the operator owns Git.
