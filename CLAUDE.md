@@ -33,10 +33,11 @@ The designer names the model and effort in each task doc with one line, `Codex: 
 
 | Tier | Use for | Model / effort |
 |---|---|---|
-| Light | Docs edits; simple SwiftUI display tweaks; clear compile errors; small localization fixes; sorting and summarizing test results; narrowly scoped code fixes | `gpt-6-luna` / `low`–`medium`, only after the owner has approved the Luna trial (until then: Sol / `medium`) |
+| Light | Docs edits; simple SwiftUI display tweaks; clear compile errors; small localization fixes; sorting and summarizing test results; narrowly scoped code fixes | `gpt-6-luna` / `low`–`medium` (trial, see below) |
 | Standard | Ordinary features; changes across several files; state and navigation bugs; bugs with an unclear cause; App Intents and Apple Intelligence work; work with design decisions | `gpt-6.1-sol` / `medium` |
 | Heavy | Complex persistence or data migration; serious bugs with unknown cause; money calculation, data loss or security problems; problems that Medium could not root-cause | `gpt-6.1-sol` / `high` or above, only with the owner's approval for that task (state why) |
 
+- Luna trial: approved by the owner on 2026-11-08 for Light tasks only. Start at `medium`; try `low` only after `medium` has worked on that kind of task. If a Luna round fails where the task was clear, run the next round of that task on Sol / `medium` instead of retrying on Luna, and log it.
 - Never move everything to Luna. Move a kind of task to Luna only when measured results on comparable real tasks show it is good enough. Judge models by measurements, not by assumptions.
 - Measure in `codex/MODEL_LOG.md`, one row per round: Task ID and round, tier, model / effort, first-pass result (DONE or not), regressions found after the fix, fix attempts and resumes, quota used (only if Codex shows it; otherwise "unknown"), test wall time.
 - Before using a model id, effort value or CLI flag for the first time, check it in the installed Codex (`codex debug models`, `codex exec --help`) and the official docs. `gpt-6-luna` has not been checked yet.
@@ -142,7 +143,7 @@ Owner instruction: Claude also merges PRs that are not cycle PRs (for example ru
 ## Owner only
 
 - Merges outside the merge rules; release tags; App Store or TestFlight actions.
-- Changing the default Codex model or effort; starting the Luna trial; any run at `high` effort or above.
+- Changing the default Codex model or effort; using Luna outside the Light tier; any run at `high` effort or above.
 - Rule changes in `CLAUDE.md` or `AGENTS.md` that the owner has not asked for or approved.
 - Changes to WealthyCore persistence or the data model that the owner has not asked for.
 - Deleting or migrating user data, or uninstalling apps from the owner's devices.
