@@ -48,7 +48,7 @@ extension Cycle2aUITests {
     func testQuickEntryThreeInteractionsAndUncategorized() throws {
         launchQuickEntry()
         var interactions = 0
-        app.buttons["addEntry"].tap(); interactions += 1
+        app.buttons["quickAddToolbar"].tap(); interactions += 1
         XCTAssertTrue(app.keyboards.firstMatch.waitForExistence(timeout: 5))
         app.textFields["quickAmount"].typeText("650"); interactions += 1
         app.buttons["quickSave"].tap(); interactions += 1
@@ -66,7 +66,9 @@ extension Cycle2aUITests {
     @MainActor
     func testQuickEntryCategoryDetailsAndInvalidAmount() throws {
         launchQuickEntry()
-        tap("addEntry"); tap("quickSave")
+        tap("addEntry")
+        XCTAssertTrue(app.textFields["quickAmount"].waitForExistence(timeout: 5), "The Home row also opens Quick add.")
+        tap("quickSave")
         XCTAssertTrue(app.staticTexts["quickError"].exists)
         XCTAssertTrue(app.textFields["quickAmount"].exists)
         app.textFields["quickAmount"].typeText("650")
@@ -142,12 +144,12 @@ extension Cycle2aUITests {
     func testQuickEntryKeyboardLayoutAndEvidence() throws {
         for flags in [[], ["--dark"], ["--ax3"]] {
             launchQuickEntry(flags)
-            let quick = app.buttons["addEntry"]
+            let quick = app.buttons["quickAddToolbar"]
             XCTAssertTrue(quick.waitForExistence(timeout: 5))
             XCTAssertTrue(quick.isHittable)
             XCTAssertTrue(app.frame.contains(quick.frame))
             print("HOME_QUICK_FRAME flags=\(flags) frame=\(NSCoder.string(for: quick.frame))")
-            tap("addEntry")
+            tap("quickAddToolbar")
             XCTAssertTrue(app.keyboards.firstMatch.waitForExistence(timeout: 5))
             let amount = app.textFields["quickAmount"]
             amount.typeText("650")
@@ -210,7 +212,7 @@ extension Cycle2aUITests {
             capture("c2b2-safe-expanded-" + (flags.first ?? "light"))
             XCTAssertTrue(app.staticTexts["safeAmount"].isHittable)
             XCTAssertTrue(app.staticTexts["Synthetic Thursday"].isHittable)
-            XCTAssertLessThan(app.staticTexts["safeAmount"].frame.maxY, app.buttons["addEntry"].frame.minY)
+            XCTAssertLessThan(app.staticTexts["safeAmount"].frame.maxY, app.tabBars.firstMatch.frame.minY)
             print("SAFE_AUDIT_FRAME " + NSCoder.string(for: app.staticTexts["safeAmount"].frame))
             capture("c2b2-safe-audit-" + (flags.first ?? "light"))
             try auditWithSwiftUIException("home-safe-line")

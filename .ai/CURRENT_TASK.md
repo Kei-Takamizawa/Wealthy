@@ -98,3 +98,21 @@ Same Task ID, branch `codex/wealthy-c2b2-quick-entry` and draft PR #13. Read `.a
 5. Rewrite `.ai/LAST_REPORT.md` completely (final, not interim), listing every changed file including the evidence folder.
 
 Acceptance for Round 2: the original acceptance list plus item 1 passing on both simulators. Then `Status: DONE`; otherwise `PARTIAL` with exact failures.
+
+## Round 3 (designer decision, 2026-11-08, after PR #13 head f86ae68)
+Same Task ID, branch and draft PR #13. Read `.ai/LAST_REPORT.md` first. Only the items below; do not change anything else that already passes.
+
+**Designer reading of Round 2 (from your evidence):** the regression comes from the new Home container (GeometryReader + manual frame + `.clipped()` + `safeAreaInset` footer around the `Form`), not from the Form's content. `fc74376` passes with the plain `Form`. Your three trials kept a footer in some form; none restored the original container. So the decision is to restore it and move Quick add out of the footer.
+
+1. **Home container (decided).** In `HomeView`, restore the container from `fc74376` exactly: `Form { ... }` directly in the body, `.accessibilityIdentifier("homePage")` attached where it was on `fc74376`, same modifiers order; no `GeometryReader`, no manual `.frame`, no `.clipped()`, no `safeAreaInset` footer. Keep this cycle's in-Form content changes (empty-state text, safe line, week-card accessibility).
+2. **Quick add entry points (decided), standard components only:**
+   - (a) the row in the third section where "Add entry" was on `fc74376` becomes a `Button` that opens the Quick add sheet (`.borderedProminent`, identifier `addEntry`, label "Quick add" with the plus icon);
+   - (b) a toolbar button `ToolbarItem(placement: .topBarLeading)` with `Label("Quick add", systemImage: "plus")`, identifier `quickAddToolbar`, that opens the same sheet. The existing trailing result menu stays.
+   - The 3-interaction test uses the toolbar button (tap, type, tap). Add one assertion that the row button also opens the sheet.
+3. **DEBUG intent dialog.** When `intentTestDialog` is nil, nothing may wrap or resize Home: attach the test-only element as an `.overlay(alignment: .top)` that renders only when non-nil (or another way that leaves Home's frames identical to `fc74376` when absent). Report `homePage`'s frame on both simulators and compare it with the `fc74376` frame you measured in Round 2.
+4. **Order of runs:** `testHorizontalTabSwipeAndVerticalScroll` on both simulators -> Home audits (light, dark) on both -> Quick add keyboard/3-interaction tests on both -> full `WealthyUITests` once per simulator (`-parallel-testing-enabled NO`). If the Home audit flags text behind the tab bar, run the same audit on `fc74376` in a temporary worktree (remove it afterwards) and report both results with frames; do not add exclusions.
+5. **Evidence.** Re-capture the Home and Quick add screenshots that changed (the toolbar button is now visible on Home), update `INDEX.md`, open every image and confirm Amount, typed digits and Save are visible.
+6. **Device.** The owner has connected and unlocked the iPhone. Install the signed Release build and launch it once (launch only; do not tap or enter anything in the owner's ledger). Report the result.
+7. Required checks (`verify_core.sh`, `verify_shell.py` with fontTools PYTHONPATH, `verify_localization.sh`, `git diff --check`, Simulator Release and signed generic iOS builds). Rewrite `.ai/LAST_REPORT.md` completely as the final report for the whole cycle, listing every changed file.
+
+Acceptance for Round 3: the original acceptance list, including the swipe test and all audits passing on both simulators with no new exclusions. Then `Status: DONE`; otherwise `PARTIAL` with exact failures and frames.

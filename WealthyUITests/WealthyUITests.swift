@@ -444,6 +444,7 @@ final class Cycle2aUITests: XCTestCase {
         let home = app.tabBars.buttons["Island"]
         let info = app.tabBars.buttons["Info"]
         XCTAssertTrue(home.isSelected, app.debugDescription)
+        print("HOME_ROOT_FRAME " + NSCoder.string(for: app.collectionViews["homePage"].frame))
         assertRootVisible("homePage")
         app.swipeUp()
         XCTAssertTrue(home.isSelected, "A vertical Home scroll must not select another tab.")
@@ -461,6 +462,7 @@ final class Cycle2aUITests: XCTestCase {
         XCTAssertTrue(voice.isSelected, "Voice must not wrap to Info.")
         swipeRoot(left: true)
         XCTAssertTrue(home.isSelected, "A left swipe from Voice selects Home.")
+        print("HOME_ROOT_FRAME " + NSCoder.string(for: app.collectionViews["homePage"].frame))
         assertRootVisible("homePage")
         info.tap()
         XCTAssertTrue(info.isSelected, app.debugDescription)
@@ -468,6 +470,7 @@ final class Cycle2aUITests: XCTestCase {
         XCTAssertTrue(info.isSelected, "A vertical Info scroll must not select another tab.")
         swipeRoot(left: false)
         XCTAssertTrue(home.isSelected, "A right swipe from Info selects Home.")
+        print("HOME_ROOT_FRAME " + NSCoder.string(for: app.collectionViews["homePage"].frame))
         assertRootVisible("homePage")
     }
 

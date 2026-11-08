@@ -34,57 +34,50 @@ struct HomeView: View {
     @Environment(LedgerSession.self) private var session
     let showResult: (TargetStatus) -> Void
     var body: some View {
-        GeometryReader { geometry in
-            Form {
-                Section {
-                    if let summary = session.householdSummary {
-                        IslandScene(growth: summary.days.filter(\.hasGrowth).count, festivals: summary.festivals, dusk: summary.week.isOver)
-                            .frame(height: 72)
-                            .accessibilityElement(children: .ignore)
-                            .accessibilityLabel(String(format: session.t("islandLabel"), summary.festivals, summary.days.filter(\.hasGrowth).count))
-                        weeklyCard(summary.week)
-                        monthCard(summary.month)
-                    }
-                }
-                Section {
-                    Text(session.t("thisWeek")).font(.headline).foregroundStyle(Color.primary)
-                    if let summary = session.householdSummary { HStack(spacing: 4) { dayStates(summary) } }
-                }
-                Section {
-                    if session.core?.state.entries.isEmpty == true {
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text(session.t("emptyDay"))
-                            Text(session.t("emptyDetail"))
-                        }.font(.body).foregroundStyle(Color.primary).accessibilityElement(children: .combine)
-                    }
-                    Button { session.perform { try session.run(.markNoSpend(session.today, envelopeID: EnvelopeValue.householdID)) } } label: {
-                        HStack {
-                            Image(systemName: "checkmark.circle")
-                            Text(session.t("noSpend")).fixedSize(horizontal: false, vertical: true)
-                        }.frame(maxWidth: .infinity, minHeight: 44)
-                    }.buttonStyle(.bordered).accessibilityIdentifier("noSpend")
+        Form {
+            Section {
+                if let summary = session.householdSummary {
+                    IslandScene(growth: summary.days.filter(\.hasGrowth).count, festivals: summary.festivals, dusk: summary.week.isOver)
+                        .frame(height: 72)
+                        .accessibilityElement(children: .ignore)
+                        .accessibilityLabel(String(format: session.t("islandLabel"), summary.festivals, summary.days.filter(\.hasGrowth).count))
+                    weeklyCard(summary.week)
+                    monthCard(summary.month)
                 }
             }
-            .accessibilityIdentifier("homePage")
-            .safeAreaInset(edge: .bottom, spacing: 0) {
+            Section {
+                Text(session.t("thisWeek")).font(.headline).foregroundStyle(Color.primary)
+                if let summary = session.householdSummary { HStack(spacing: 4) { dayStates(summary) } }
+            }
+            Section {
+                if session.core?.state.entries.isEmpty == true {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text(session.t("emptyDay"))
+                        Text(session.t("emptyDetail"))
+                    }.font(.body).foregroundStyle(Color.primary).accessibilityElement(children: .combine)
+                }
                 Button { session.showQuickAdd = true } label: {
                     Label(session.t("quickAdd"), systemImage: "plus")
                         .fixedSize(horizontal: false, vertical: true)
-                        .frame(maxWidth: .infinity, minHeight: 44)
-                }
-                .buttonStyle(.borderedProminent)
-                .tint(V4.primary(scheme))
-                .foregroundStyle(scheme == .dark ? Color.black : Color.white)
-                .accessibilityIdentifier("addEntry")
-                .padding(.horizontal, 16).padding(.vertical, 8)
+                }.buttonStyle(.borderedProminent).accessibilityIdentifier("addEntry")
+                Button { session.perform { try session.run(.markNoSpend(session.today, envelopeID: EnvelopeValue.householdID)) } } label: {
+                    HStack {
+                        Image(systemName: "checkmark.circle")
+                        Text(session.t("noSpend")).fixedSize(horizontal: false, vertical: true)
+                    }.frame(maxWidth: .infinity, minHeight: 44)
+                }.buttonStyle(.bordered).accessibilityIdentifier("noSpend")
             }
-            .frame(width: geometry.size.width, height: max(0, geometry.size.height - geometry.safeAreaInsets.bottom))
-            .clipped()
         }
         .lineLimit(nil)
         .navigationTitle(session.t("home"))
         .navigationBarTitleDisplayMode(.inline)
+        .accessibilityIdentifier("homePage")
         .toolbar {
+            ToolbarItem(placement: .topBarLeading) {
+                Button { session.showQuickAdd = true } label: {
+                    Label(session.t("quickAdd"), systemImage: "plus")
+                }.accessibilityIdentifier("quickAddToolbar")
+            }
             if let summary = session.householdSummary {
                 ToolbarItem(placement: .topBarTrailing) {
                     Menu {
@@ -99,7 +92,7 @@ struct HomeView: View {
         }
         .task { await session.homePresented() }
         #if DEBUG
-        .safeAreaInset(edge: .top) {
+        .overlay(alignment: .top) {
             if let dialog = session.intentTestDialog { Text(dialog).accessibilityIdentifier("intentDialog").padding(8).background(.bar) }
         }
         #endif

@@ -2,7 +2,7 @@
 
 All images use synthetic UI-test data, English, JPY, and iOS 27.0 simulators (Xcode 27.2). JPEG quality approximately 80; long edge at most 2,000 pixels; each file below 1 MB.
 
-Every image was opened for visual inspection during Round 2. In all six Quick add images, Amount, the typed digits `650`, and Save are visible above the number pad. AX3 is Accessibility Extra Large. Other category buttons and More details can scroll at AX3.
+Every image was opened for visual inspection during Round 3. In all six Quick add images, Amount, the typed digits `650`, and Save are visible above the number pad. AX3 is Accessibility Extra Large. Other category buttons and More details can scroll at AX3.
 
 | Screenshot | Device | Appearance / content |
 | --- | --- | --- |
@@ -21,8 +21,14 @@ Every image was opened for visual inspection during Round 2. In all six Quick ad
 | [iphone17pro-ai-row-light.jpg](iphone17pro-ai-row-light.jpg) | iPhone 17 Pro | Settings AI row, forced unavailable, light |
 | [iphone17pro-ai-detail-light.jpg](iphone17pro-ai-detail-light.jpg) | iPhone 17 Pro | AI information, forced unavailable, light |
 
-## Capture and diagnosis provenance
+## Round 3 capture and audit provenance
 
-Quick add: `Cycle2aUITests.testQuickEntryKeyboardLayoutAndEvidence`; Home and AI: `Cycle2aUITests.testSafeLineAndAIInformationEvidence`. Images present at the Round 2 checkpoint were inspected before any recapture. The images were already present at the start of Round 2, exported in the preceding run (the corresponding export manifests remain under `/tmp/wealthy-c2b2-evidence-iphone{15,17}pro-testQuickEntryKeyboardLayoutAndEvidence/` and `...-testSafeLineAndAIInformationEvidence/`). They were not recaptured: all experimental app changes were reverted, so the final app source matches the captured checkpoint. These images are visual evidence, not proof that the unresolved swipe test passed.
+All 14 JPEGs were recaptured from final-source targeted tests in Round 3 and opened individually. Home now shows the leading plus toolbar button and no footer. The six Quick add images show Amount, typed `650`, and Save above the keyboard; AX3 lower category rows and More details may need scrolling.
 
-The six `iphone*pro-swipe-failure-*.txt` files preserve the complete failure-time accessibility trees and root frames from the unfixed checkpoint on both simulators, ordered by the three Home assertions. Screenshots are also retained as XCTest attachments in `/tmp/wealthy-c2b2-round2-diagnose15.xcresult` and `/tmp/wealthy-c2b2-round2-diagnose17.xcresult`.
+Quick add: `Cycle2aUITests.testQuickEntryKeyboardLayoutAndEvidence`, result bundles `/tmp/wealthy-c2b2-r3-quick15.xcresult` and `...-quick17.xcresult` (PASS). Home and AI: `testSafeLineAndAIInformationEvidence`, `/tmp/wealthy-c2b2-r3-home15b.xcresult` and `...-home17b.xcresult`. **The Home safe-line audits fail**: weekday text is behind the floating tab bar in both light and dark. These screenshots document that remaining defect; they do not establish acceptance. The AI-information audit passed within that test (no AI-screen audit failures).
+
+Exported with `xcrun xcresulttool export attachments --path <bundle> --output-path <directory>`; converted with `sips -Z 2000 -s format jpeg -s formatOptions 80 <attachment.png> --out <image.jpg>`.
+
+[round3-home-audit.txt](round3-home-audit.txt) records current and baseline Home frames and contrast failures. The restored-source swipe test passes on both simulators. Baseline `fc74376` Home passes the same full audit in light and dark; it has no safe-line feature, so it cannot reproduce the expanded-safe-line fixture. Temporary baseline worktree was removed.
+
+The six `iphone*pro-swipe-failure-*.txt` files are historical Round 2 failure evidence from the old bounded container. They are retained, not results of the restored Form.

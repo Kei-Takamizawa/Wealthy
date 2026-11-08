@@ -1,0 +1,63 @@
+# Round 3 Home geometry and audit evidence
+
+Synthetic data only; iOS 27.0, Xcode 27.2. Frames are points.
+
+## iPhone 15 Pro
+
+### Restored source: swipe test
+HOME_ROOT_FRAME {{0, 0}, {393, 852}}
+HOME_ROOT_FRAME {{0, 0}, {393, 852}}
+HOME_ROOT_FRAME {{0, 0}, {393, 852}}
+Test Case '-[WealthyUITests.Cycle2aUITests testHorizontalTabSwipeAndVerticalScroll]' passed (38.868 seconds).
+
+### fc74376: original Home; full audit, light and dark
+BASELINE_HOME_FRAME {{0, 0}, {393, 852}} TAB {{0, 769}, {393, 83}}
+BASELINE_HOME_FRAME {{0, 0}, {393, 852}} TAB {{0, 769}, {393, 83}}
+Test Case '-[WealthyUITests.Cycle2aUITests testHomeAccessibilityAudit]' passed (39.123 seconds).
+
+### Restored source: expanded safe line, light and dark
+Test Case '-[WealthyUITests.Cycle2aUITests testHomeAccessibilityAudit]' passed (20.491 seconds).
+SAFE_AUDIT_FRAME {{48, 423.66666666666669}, {66.333333333333329, 20.333333333333314}}
+AUDIT_ISSUE screen=home-safe-line type=XCUIAccessibilityAuditType(rawValue: 1) compact=Contrast failed detailed=Contrast failed for SwiftUI.AccessibilityNode element=Attributes: StaticText, 0x109dea1c0, {{96.5, 803.0}, {9.7, 18.0}}, label: 'T'
+AUDIT_ISSUE screen=home-safe-line type=XCUIAccessibilityAuditType(rawValue: 1) compact=Contrast failed detailed=Contrast failed for SwiftUI.AccessibilityNode element=Attributes: StaticText, 0x109dea6c0, {{141.4, 803.0}, {15.0, 18.0}}, label: 'W'
+AUDIT_ISSUE screen=home-safe-line type=XCUIAccessibilityAuditType(rawValue: 1) compact=Contrast failed detailed=Contrast failed for SwiftUI.AccessibilityNode element=Attributes: StaticText, 0x109deaa80, {{191.7, 803.0}, {9.7, 18.0}}, label: 'T'
+AUDIT_ISSUE screen=home-safe-line type=XCUIAccessibilityAuditType(rawValue: 1) compact=Contrast failed detailed=Contrast failed for SwiftUI.AccessibilityNode element=Attributes: StaticText, 0x109deae40, {{239.7, 803.0}, {8.7, 18.0}}, label: 'F'
+AUDIT_ISSUE screen=home-safe-line type=XCUIAccessibilityAuditType(rawValue: 1) compact=Contrast failed detailed=Contrast failed for SwiftUI.AccessibilityNode element=Attributes: StaticText, 0x109deb200, {{286.6, 803.0}, {10.0, 18.0}}, label: 'S'
+SAFE_AUDIT_FRAME {{48, 423.66666666666669}, {66.333333333333329, 20.333333333333314}}
+AUDIT_ISSUE screen=home-safe-line type=XCUIAccessibilityAuditType(rawValue: 1) compact=Contrast failed detailed=Contrast failed for SwiftUI.AccessibilityNode element=Attributes: StaticText, 0x109dea440, {{96.5, 803.0}, {9.7, 18.0}}, label: 'T'
+AUDIT_ISSUE screen=home-safe-line type=XCUIAccessibilityAuditType(rawValue: 1) compact=Contrast failed detailed=Contrast failed for SwiftUI.AccessibilityNode element=Attributes: StaticText, 0x109dea800, {{141.4, 803.0}, {15.0, 18.0}}, label: 'W'
+AUDIT_ISSUE screen=home-safe-line type=XCUIAccessibilityAuditType(rawValue: 1) compact=Contrast failed detailed=Contrast failed for SwiftUI.AccessibilityNode element=Attributes: StaticText, 0x109deabc0, {{191.7, 803.0}, {9.7, 18.0}}, label: 'T'
+AUDIT_ISSUE screen=home-safe-line type=XCUIAccessibilityAuditType(rawValue: 1) compact=Contrast failed detailed=Contrast failed for SwiftUI.AccessibilityNode element=Attributes: StaticText, 0x109deaf80, {{239.7, 803.0}, {8.7, 18.0}}, label: 'F'
+AUDIT_ISSUE screen=home-safe-line type=XCUIAccessibilityAuditType(rawValue: 1) compact=Contrast failed detailed=Contrast failed for SwiftUI.AccessibilityNode element=Attributes: StaticText, 0x109deb340, {{286.6, 803.0}, {10.0, 18.0}}, label: 'S'
+Test Case '-[WealthyUITests.Cycle2aUITests testSafeLineAndAIInformationEvidence]' failed (59.782 seconds).
+
+## iPhone 17 Pro
+
+### Restored source: swipe test
+HOME_ROOT_FRAME {{0, 0}, {402, 874}}
+HOME_ROOT_FRAME {{0, 0}, {402, 874}}
+HOME_ROOT_FRAME {{0, 0}, {402, 874}}
+Test Case '-[WealthyUITests.Cycle2aUITests testHorizontalTabSwipeAndVerticalScroll]' passed (38.875 seconds).
+
+### fc74376: original Home; full audit, light and dark
+BASELINE_HOME_FRAME {{0, 0}, {402, 874}} TAB {{0, 791}, {402, 83}}
+BASELINE_HOME_FRAME {{0, 0}, {402, 874}} TAB {{0, 791}, {402, 83}}
+Test Case '-[WealthyUITests.Cycle2aUITests testHomeAccessibilityAudit]' passed (29.924 seconds).
+
+### Restored source: expanded safe line, light and dark
+Test Case '-[WealthyUITests.Cycle2aUITests testHomeAccessibilityAudit]' passed (20.384 seconds).
+SAFE_AUDIT_FRAME {{48, 426.66666666666669}, {66.333333333333329, 20.333333333333314}}
+AUDIT_ISSUE screen=home-safe-line type=XCUIAccessibilityAuditType(rawValue: 1) compact=Contrast failed detailed=Contrast failed for SwiftUI.AccessibilityNode element=Attributes: StaticText, 0x10664e300, {{98.5, 806.0}, {9.7, 18.0}}, label: 'T'
+AUDIT_ISSUE screen=home-safe-line type=XCUIAccessibilityAuditType(rawValue: 1) compact=Contrast failed detailed=Contrast failed for SwiftUI.AccessibilityNode element=Attributes: StaticText, 0x10664e800, {{144.6, 806.0}, {15.0, 18.0}}, label: 'W'
+AUDIT_ISSUE screen=home-safe-line type=XCUIAccessibilityAuditType(rawValue: 1) compact=Contrast failed detailed=Contrast failed for SwiftUI.AccessibilityNode element=Attributes: StaticText, 0x10664ebc0, {{196.2, 806.0}, {9.7, 18.0}}, label: 'T'
+AUDIT_ISSUE screen=home-safe-line type=XCUIAccessibilityAuditType(rawValue: 1) compact=Contrast failed detailed=Contrast failed for SwiftUI.AccessibilityNode element=Attributes: StaticText, 0x10664ef80, {{245.5, 806.0}, {8.7, 18.0}}, label: 'F'
+AUDIT_ISSUE screen=home-safe-line type=XCUIAccessibilityAuditType(rawValue: 1) compact=Contrast failed detailed=Contrast failed for SwiftUI.AccessibilityNode element=Attributes: StaticText, 0x10664f340, {{293.7, 806.0}, {10.0, 18.0}}, label: 'S'
+SAFE_AUDIT_FRAME {{48, 426.66666666666669}, {66.333333333333329, 20.333333333333314}}
+AUDIT_ISSUE screen=home-safe-line type=XCUIAccessibilityAuditType(rawValue: 1) compact=Contrast failed detailed=Contrast failed for SwiftUI.AccessibilityNode element=Attributes: StaticText, 0x10664e580, {{98.5, 806.0}, {9.7, 18.0}}, label: 'T'
+AUDIT_ISSUE screen=home-safe-line type=XCUIAccessibilityAuditType(rawValue: 1) compact=Contrast failed detailed=Contrast failed for SwiftUI.AccessibilityNode element=Attributes: StaticText, 0x10664e940, {{144.6, 806.0}, {15.0, 18.0}}, label: 'W'
+AUDIT_ISSUE screen=home-safe-line type=XCUIAccessibilityAuditType(rawValue: 1) compact=Contrast failed detailed=Contrast failed for SwiftUI.AccessibilityNode element=Attributes: StaticText, 0x10664ed00, {{196.2, 806.0}, {9.7, 18.0}}, label: 'T'
+AUDIT_ISSUE screen=home-safe-line type=XCUIAccessibilityAuditType(rawValue: 1) compact=Contrast failed detailed=Contrast failed for SwiftUI.AccessibilityNode element=Attributes: StaticText, 0x10664f0c0, {{245.5, 806.0}, {8.7, 18.0}}, label: 'F'
+Test Case '-[WealthyUITests.Cycle2aUITests testSafeLineAndAIInformationEvidence]' failed (59.302 seconds).
+
+The baseline has no safe-line feature; its original seeded Home was audited using the same full audit and unchanged narrow Dynamic Type exception. It is not an identical expanded-safe-line fixture.
+No audit exclusions were added. The plain Form is retained as directed.
