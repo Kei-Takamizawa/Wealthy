@@ -59,11 +59,17 @@ struct HomeView: View {
                 Button { session.showQuickAdd = true } label: {
                     Label(session.t("quickAdd"), systemImage: "plus")
                         .fixedSize(horizontal: false, vertical: true)
-                }.buttonStyle(.borderedProminent).accessibilityIdentifier("addEntry")
+                }
+                .foregroundStyle(scheme == .dark ? Color.black : Color.white)
+                .tint(V4.primary(scheme))
+                .buttonStyle(.borderedProminent).accessibilityIdentifier("addEntry")
                 Button { session.perform { try session.run(.markNoSpend(session.today, envelopeID: EnvelopeValue.householdID)) } } label: {
                     HStack {
                         Image(systemName: "checkmark.circle")
-                        Text(session.t("noSpend")).fixedSize(horizontal: false, vertical: true)
+                        Text(session.t("noSpend"))
+                            .font(.body.leading(.loose))
+                            .lineLimit(nil)
+                            .fixedSize(horizontal: false, vertical: true)
                     }.frame(maxWidth: .infinity, minHeight: 44)
                 }.buttonStyle(.bordered).accessibilityIdentifier("noSpend")
             }

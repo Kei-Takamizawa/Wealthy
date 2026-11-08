@@ -1,0 +1,200 @@
+{
+  "method": "WCAG sRGB relative luminance; ratio=(Llighter+0.05)/(Ldarker+0.05). Lossless audit PNG dominant solid text/background colors, excluding antialiased edge pixels and bar-obscured crops. Source PNGs carry the sRGB marker. JPEG evidence is a presentation copy; numeric measurements precede JPEG encoding.",
+  "measurements": [
+    {
+      "label": "Home Quick add before, dark",
+      "foreground": [
+        255,
+        255,
+        255
+      ],
+      "background": [
+        169,
+        192,
+        238
+      ],
+      "ratio": 1.832226,
+      "source": "diagnostic17b position3 Quick add crop"
+    },
+    {
+      "label": "Home Quick add after, dark",
+      "foreground": [
+        0,
+        0,
+        0
+      ],
+      "background": [
+        169,
+        192,
+        238
+      ],
+      "ratio": 11.461467,
+      "source": "safe17b position3 Quick add crop"
+    },
+    {
+      "label": "Home Quick add / Quick save, light palette",
+      "foreground": [
+        255,
+        255,
+        255
+      ],
+      "background": [
+        46,
+        74,
+        125
+      ],
+      "ratio": 8.779947,
+      "source": "V4.primary light and explicit white label; confirmed in targeted15 Quick add PNG crop at (166,495,61,34.33) points"
+    },
+    {
+      "label": "Quick save, dark palette",
+      "foreground": [
+        0,
+        0,
+        0
+      ],
+      "background": [
+        169,
+        192,
+        238
+      ],
+      "ratio": 11.461467,
+      "source": "V4.primary dark and explicit black label; confirmed in targeted15 Quick add PNG crop at (166,495,61,34.33) points"
+    },
+    {
+      "label": "Empty detail, dark",
+      "foreground": [
+        255,
+        255,
+        255
+      ],
+      "background": [
+        28,
+        28,
+        30
+      ],
+      "ratio": 17.014735,
+      "source": "diagnostic17b position3 empty detail crop"
+    },
+    {
+      "label": "Not a balance, dark, fully visible",
+      "foreground": [
+        255,
+        255,
+        255
+      ],
+      "background": [
+        28,
+        28,
+        30
+      ],
+      "ratio": 17.014735,
+      "source": "diagnostic17b position3 lower Not a balance crop"
+    },
+    {
+      "label": "No-spend text, dark",
+      "foreground": [
+        169,
+        192,
+        238
+      ],
+      "background": [
+        63,
+        69,
+        82
+      ],
+      "ratio": 5.246867,
+      "source": "diagnostic17b position3 I spent nothing today crop"
+    },
+    {
+      "label": "This week, dark",
+      "foreground": [
+        255,
+        255,
+        255
+      ],
+      "background": [
+        28,
+        28,
+        30
+      ],
+      "ratio": 17.014735,
+      "source": "safe17b position3 This week crop; solid white and background verified"
+    }
+  ],
+  "quickSavePixelVerification": [
+    {
+      "attachment": "c2b2-quick---dark_0_6603228C-00F5-4F70-9643-0D4F8EB3C6D6.png",
+      "source": "7323EFD4-BB96-47BB-A095-776AC0D7E958.png",
+      "framePoints": [
+        166,
+        495,
+        61,
+        34.333333
+      ],
+      "colors": [
+        [
+          [
+            169,
+            192,
+            238
+          ],
+          14480
+        ],
+        [
+          [
+            40,
+            41,
+            40
+          ],
+          975
+        ],
+        [
+          [
+            0,
+            0,
+            0
+          ],
+          881
+        ]
+      ]
+    },
+    {
+      "attachment": "c2b2-quick-light_0_DB9AEA7D-2E06-4D95-AD4D-ECEEABE7198D.png",
+      "source": "C28B52F3-640D-410A-BB11-3328AF093B7E.png",
+      "framePoints": [
+        166,
+        495,
+        61,
+        34.333333
+      ],
+      "colors": [
+        [
+          [
+            46,
+            74,
+            125
+          ],
+          14480
+        ],
+        [
+          [
+            247,
+            248,
+            247
+          ],
+          975
+        ],
+        [
+          [
+            255,
+            255,
+            255
+          ],
+          881
+        ]
+      ]
+    }
+  ],
+  "provenanceNote": "Before/after palette measurements from earlier Round 6 PNGs; final ordered follow-up issue-specific measurements, counts and crops are in round6-final-audit.json and round6-final-audit.md."
+}

@@ -1,0 +1,548 @@
+[
+  {
+    "run": "safe15",
+    "screen": "home-safe-line---dark",
+    "position": 3,
+    "type": "131072",
+    "label": "I spent nothing today",
+    "frame": "{{130, 730.83333333333337}, {160.66666666666663, 20.333333333333258}}",
+    "crop": "iphone15pro-post-safe-035-round6-home-safe-line---dark-position3-XCUIAccessibilityAuditType-rawValue-131072--I-spent-nothing-t.jpg",
+    "full": "iphone15pro-post-safe-036-round6-home-safe-line---dark-position3-XCUIAccessibilityAuditType-rawValue-131072--I-spent-nothing-t.jpg",
+    "ratio": 5.247,
+    "foreground": [
+      169,
+      192,
+      238
+    ],
+    "background": [
+      63,
+      69,
+      82
+    ],
+    "solidPixelCounts": [
+      3644,
+      23578
+    ],
+    "sourcePNG": "388EB676-A3CA-4F47-8397-4F431ABB6444.png",
+    "note": "Solid sRGB pixels from original PNG, antialiasing excluded; audit remains FAIL."
+  },
+  {
+    "run": "safe15",
+    "screen": "home-safe-line---dark",
+    "position": 3,
+    "type": "1",
+    "label": "This week",
+    "frame": "{{16, 359}, {361, 52}}",
+    "crop": "iphone15pro-post-safe-033-round6-home-safe-line---dark-position3-XCUIAccessibilityAuditType-rawValue-1--This-week-crop.jpg",
+    "full": "iphone15pro-post-safe-034-round6-home-safe-line---dark-position3-XCUIAccessibilityAuditType-rawValue-1--This-week-full.jpg",
+    "ratio": 17.015,
+    "foreground": [
+      255,
+      255,
+      255
+    ],
+    "background": [
+      28,
+      28,
+      30
+    ],
+    "solidPixelCounts": [
+      2461,
+      159260
+    ],
+    "sourcePNG": "4D15A3F3-C0D2-48D6-8A04-232420BD0D66.png",
+    "note": "Solid sRGB pixels from original PNG, antialiasing excluded; audit remains FAIL."
+  },
+  {
+    "run": "safe15",
+    "screen": "home-safe-line---dark",
+    "position": 3,
+    "type": "1",
+    "label": "after 1 scheduled (¥2,000)",
+    "frame": "{{48, 198}, {202, 20.333333333333343}}",
+    "crop": "iphone15pro-post-safe-031-round6-home-safe-line---dark-position3-XCUIAccessibilityAuditType-rawValue-1--after-1-scheduled-2-00.jpg",
+    "full": "iphone15pro-post-safe-032-round6-home-safe-line---dark-position3-XCUIAccessibilityAuditType-rawValue-1--after-1-scheduled-2-00.jpg",
+    "ratio": 9.286,
+    "foreground": [
+      169,
+      192,
+      238
+    ],
+    "background": [
+      28,
+      28,
+      30
+    ],
+    "solidPixelCounts": [
+      4672,
+      29478
+    ],
+    "sourcePNG": "2F8FD55C-4E5E-4904-91B1-70A3EA96DDB6.png",
+    "note": "Solid sRGB pixels from original PNG, antialiasing excluded; audit remains FAIL."
+  },
+  {
+    "run": "safe15",
+    "screen": "home-safe-line---dark",
+    "position": 3,
+    "type": "1",
+    "label": "Add your first entry, or mark a day with no spending.",
+    "frame": "{{32, 575.33333333333326}, {297.66666666666663, 42.333333333333371}}",
+    "crop": "iphone15pro-post-safe-029-round6-home-safe-line---dark-position3-XCUIAccessibilityAuditType-rawValue-1--Add-your-first-entry-o.jpg",
+    "full": "iphone15pro-post-safe-030-round6-home-safe-line---dark-position3-XCUIAccessibilityAuditType-rawValue-1--Add-your-first-entry-o.jpg",
+    "ratio": 17.015,
+    "foreground": [
+      255,
+      255,
+      255
+    ],
+    "background": [
+      28,
+      28,
+      30
+    ],
+    "solidPixelCounts": [
+      8212,
+      99905
+    ],
+    "sourcePNG": "86F6D5E3-621B-4243-9E46-1945FAEAA920.png",
+    "note": "Solid sRGB pixels from original PNG, antialiasing excluded; audit remains FAIL."
+  },
+  {
+    "run": "safe15",
+    "screen": "home-safe-line---dark",
+    "position": 3,
+    "type": "1",
+    "label": "Quick add",
+    "frame": "{{32, 647.66666666666663}, {141.33333333333334, 34.333333333333371}}",
+    "crop": "iphone15pro-post-safe-027-round6-home-safe-line---dark-position3-XCUIAccessibilityAuditType-rawValue-1--Quick-add-crop.jpg",
+    "full": "iphone15pro-post-safe-028-round6-home-safe-line---dark-position3-XCUIAccessibilityAuditType-rawValue-1--Quick-add-full.jpg",
+    "ratio": 11.461,
+    "foreground": [
+      0,
+      0,
+      0
+    ],
+    "background": [
+      169,
+      192,
+      238
+    ],
+    "solidPixelCounts": [
+      2275,
+      36885
+    ],
+    "sourcePNG": "398F8DA7-E754-4373-9304-D8C307137CC1.png",
+    "note": "Solid sRGB pixels from original PNG, antialiasing excluded; audit remains FAIL."
+  },
+  {
+    "run": "safe15",
+    "screen": "home-safe-line---dark",
+    "position": 3,
+    "type": "1",
+    "label": "Left this week",
+    "frame": "{{48, 27}, {105.66666666666666, 20.333333333333336}}",
+    "crop": "iphone15pro-post-safe-025-round6-home-safe-line---dark-position3-XCUIAccessibilityAuditType-rawValue-1--Left-this-week-crop.jpg",
+    "full": "iphone15pro-post-safe-026-round6-home-safe-line---dark-position3-XCUIAccessibilityAuditType-rawValue-1--Left-this-week-full.jpg",
+    "ratio": null,
+    "note": "Reported frame is outside the fully visible content between navigation/tab bars; the crop is occluded and does not reliably expose the reported glyphs. Underlying text contrast cannot be measured here."
+  },
+  {
+    "run": "safe15",
+    "screen": "home-safe-line---dark",
+    "position": 3,
+    "type": "2",
+    "label": "<nil>",
+    "frame": "<nil>",
+    "crop": null,
+    "full": "iphone15pro-post-safe-014-round6-home-safe-line---dark-position3-XCUIAccessibilityAuditType-rawValue-2--no-element-full.jpg",
+    "ratio": null,
+    "note": "Audit supplies no element/frame; no defensible glyph or background can be assigned. Full screenshot supplied; crop unavailable."
+  },
+  {
+    "run": "safe15",
+    "screen": "home-safe-line---dark",
+    "position": 5,
+    "type": "131072",
+    "label": "I spent nothing today",
+    "frame": "{{130, 730.83333333333337}, {160.66666666666663, 20.333333333333258}}",
+    "crop": "iphone15pro-post-safe-010-round6-home-safe-line---dark-position5-XCUIAccessibilityAuditType-rawValue-131072--I-spent-nothing-t.jpg",
+    "full": "iphone15pro-post-safe-011-round6-home-safe-line---dark-position5-XCUIAccessibilityAuditType-rawValue-131072--I-spent-nothing-t.jpg",
+    "ratio": 5.247,
+    "foreground": [
+      169,
+      192,
+      238
+    ],
+    "background": [
+      63,
+      69,
+      82
+    ],
+    "solidPixelCounts": [
+      3644,
+      23578
+    ],
+    "sourcePNG": "7ADB8F17-1B5D-40F0-9383-89F4C1DBFA37.png",
+    "note": "Solid sRGB pixels from original PNG, antialiasing excluded; audit remains FAIL."
+  },
+  {
+    "run": "safe17",
+    "screen": "home-safe-line---dark",
+    "position": 3,
+    "type": "131072",
+    "label": "I spent nothing today",
+    "frame": "{{134.5, 752.83333333333337}, {160.66666666666663, 20.333333333333258}}",
+    "crop": "iphone17pro-post-safe-009-round6-home-safe-line---dark-position3-XCUIAccessibilityAuditType-rawValue-131072--I-spent-nothing-t.jpg",
+    "full": "iphone17pro-post-safe-010-round6-home-safe-line---dark-position3-XCUIAccessibilityAuditType-rawValue-131072--I-spent-nothing-t.jpg",
+    "ratio": 5.247,
+    "foreground": [
+      169,
+      192,
+      238
+    ],
+    "background": [
+      63,
+      69,
+      82
+    ],
+    "solidPixelCounts": [
+      3644,
+      23578
+    ],
+    "sourcePNG": "C5A326F9-8472-4D77-BFFB-DAE639F94E89.png",
+    "note": "Solid sRGB pixels from original PNG, antialiasing excluded; audit remains FAIL."
+  },
+  {
+    "run": "safe17",
+    "screen": "home-safe-line---dark",
+    "position": 3,
+    "type": "1",
+    "label": "Add your first entry, or mark a day with no spending.",
+    "frame": "{{32, 597.33333333333326}, {297.66666666666663, 42.333333333333371}}",
+    "crop": "iphone17pro-post-safe-007-round6-home-safe-line---dark-position3-XCUIAccessibilityAuditType-rawValue-1--Add-your-first-entry-o.jpg",
+    "full": "iphone17pro-post-safe-008-round6-home-safe-line---dark-position3-XCUIAccessibilityAuditType-rawValue-1--Add-your-first-entry-o.jpg",
+    "ratio": 17.015,
+    "foreground": [
+      255,
+      255,
+      255
+    ],
+    "background": [
+      28,
+      28,
+      30
+    ],
+    "solidPixelCounts": [
+      8212,
+      99777
+    ],
+    "sourcePNG": "8B700B17-A33A-4AC4-A992-526746C4264E.png",
+    "note": "Solid sRGB pixels from original PNG, antialiasing excluded; audit remains FAIL."
+  },
+  {
+    "run": "safe17",
+    "screen": "home-safe-line---dark",
+    "position": 3,
+    "type": "1",
+    "label": "Quick add",
+    "frame": "{{32, 669.66666666666663}, {141.33333333333334, 34.333333333333371}}",
+    "crop": "iphone17pro-post-safe-005-round6-home-safe-line---dark-position3-XCUIAccessibilityAuditType-rawValue-1--Quick-add-crop.jpg",
+    "full": "iphone17pro-post-safe-006-round6-home-safe-line---dark-position3-XCUIAccessibilityAuditType-rawValue-1--Quick-add-full.jpg",
+    "ratio": 11.461,
+    "foreground": [
+      0,
+      0,
+      0
+    ],
+    "background": [
+      169,
+      192,
+      238
+    ],
+    "solidPixelCounts": [
+      2275,
+      37153
+    ],
+    "sourcePNG": "A66CDDBF-4B0F-402B-A105-C2E9281289B2.png",
+    "note": "Solid sRGB pixels from original PNG, antialiasing excluded; audit remains FAIL."
+  },
+  {
+    "run": "safe17",
+    "screen": "home-safe-line---dark",
+    "position": 3,
+    "type": "2",
+    "label": "<nil>",
+    "frame": "<nil>",
+    "crop": null,
+    "full": "iphone17pro-post-safe-000-round6-home-safe-line---dark-position3-XCUIAccessibilityAuditType-rawValue-2--no-element-full.jpg",
+    "ratio": null,
+    "note": "Audit supplies no element/frame; no defensible glyph or background can be assigned. Full screenshot supplied; crop unavailable."
+  },
+  {
+    "run": "full15",
+    "screen": "home-safe-line---dark",
+    "position": 3,
+    "type": "131072",
+    "label": "I spent nothing today",
+    "frame": "{{130, 730.83333333333337}, {160.66666666666663, 20.333333333333258}}",
+    "crop": "iphone15pro-post-full-031-round6-home-safe-line---dark-position3-XCUIAccessibilityAuditType-rawValue-131072--I-spent-nothing-t.jpg",
+    "full": "iphone15pro-post-full-032-round6-home-safe-line---dark-position3-XCUIAccessibilityAuditType-rawValue-131072--I-spent-nothing-t.jpg",
+    "ratio": 5.247,
+    "foreground": [
+      169,
+      192,
+      238
+    ],
+    "background": [
+      63,
+      69,
+      82
+    ],
+    "solidPixelCounts": [
+      3644,
+      23578
+    ],
+    "sourcePNG": "EDB498B5-13A7-4F7A-9551-EF136A0BDF9C.png",
+    "note": "Solid sRGB pixels from original PNG, antialiasing excluded; audit remains FAIL."
+  },
+  {
+    "run": "full15",
+    "screen": "home-safe-line---dark",
+    "position": 3,
+    "type": "1",
+    "label": "This week",
+    "frame": "{{16, 359}, {361, 52}}",
+    "crop": "iphone15pro-post-full-029-round6-home-safe-line---dark-position3-XCUIAccessibilityAuditType-rawValue-1--This-week-crop.jpg",
+    "full": "iphone15pro-post-full-030-round6-home-safe-line---dark-position3-XCUIAccessibilityAuditType-rawValue-1--This-week-full.jpg",
+    "ratio": 17.015,
+    "foreground": [
+      255,
+      255,
+      255
+    ],
+    "background": [
+      28,
+      28,
+      30
+    ],
+    "solidPixelCounts": [
+      2461,
+      159260
+    ],
+    "sourcePNG": "CCADF42B-4821-4B81-B9E3-6AC163469DCE.png",
+    "note": "Solid sRGB pixels from original PNG, antialiasing excluded; audit remains FAIL."
+  },
+  {
+    "run": "full15",
+    "screen": "home-safe-line---dark",
+    "position": 3,
+    "type": "1",
+    "label": "Add your first entry, or mark a day with no spending.",
+    "frame": "{{32, 575.33333333333326}, {297.66666666666663, 42.333333333333371}}",
+    "crop": "iphone15pro-post-full-027-round6-home-safe-line---dark-position3-XCUIAccessibilityAuditType-rawValue-1--Add-your-first-entry-o.jpg",
+    "full": "iphone15pro-post-full-028-round6-home-safe-line---dark-position3-XCUIAccessibilityAuditType-rawValue-1--Add-your-first-entry-o.jpg",
+    "ratio": 17.015,
+    "foreground": [
+      255,
+      255,
+      255
+    ],
+    "background": [
+      28,
+      28,
+      30
+    ],
+    "solidPixelCounts": [
+      8212,
+      99905
+    ],
+    "sourcePNG": "7D1E5CC9-1E75-4B16-9BF9-4855D4BB2598.png",
+    "note": "Solid sRGB pixels from original PNG, antialiasing excluded; audit remains FAIL."
+  },
+  {
+    "run": "full15",
+    "screen": "home-safe-line---dark",
+    "position": 3,
+    "type": "1",
+    "label": "Quick add",
+    "frame": "{{32, 647.66666666666663}, {141.33333333333334, 34.333333333333371}}",
+    "crop": "iphone15pro-post-full-025-round6-home-safe-line---dark-position3-XCUIAccessibilityAuditType-rawValue-1--Quick-add-crop.jpg",
+    "full": "iphone15pro-post-full-026-round6-home-safe-line---dark-position3-XCUIAccessibilityAuditType-rawValue-1--Quick-add-full.jpg",
+    "ratio": 11.461,
+    "foreground": [
+      0,
+      0,
+      0
+    ],
+    "background": [
+      169,
+      192,
+      238
+    ],
+    "solidPixelCounts": [
+      2275,
+      36885
+    ],
+    "sourcePNG": "40E3C72B-E2FD-42F1-AF44-EE27783A59EE.png",
+    "note": "Solid sRGB pixels from original PNG, antialiasing excluded; audit remains FAIL."
+  },
+  {
+    "run": "full15",
+    "screen": "home-safe-line---dark",
+    "position": 3,
+    "type": "2",
+    "label": "<nil>",
+    "frame": "<nil>",
+    "crop": null,
+    "full": "iphone15pro-post-full-014-round6-home-safe-line---dark-position3-XCUIAccessibilityAuditType-rawValue-2--no-element-full.jpg",
+    "ratio": null,
+    "note": "Audit supplies no element/frame; no defensible glyph or background can be assigned. Full screenshot supplied; crop unavailable."
+  },
+  {
+    "run": "full15",
+    "screen": "home-safe-line---dark",
+    "position": 5,
+    "type": "131072",
+    "label": "I spent nothing today",
+    "frame": "{{130, 730.83333333333337}, {160.66666666666663, 20.333333333333258}}",
+    "crop": "iphone15pro-post-full-010-round6-home-safe-line---dark-position5-XCUIAccessibilityAuditType-rawValue-131072--I-spent-nothing-t.jpg",
+    "full": "iphone15pro-post-full-011-round6-home-safe-line---dark-position5-XCUIAccessibilityAuditType-rawValue-131072--I-spent-nothing-t.jpg",
+    "ratio": 5.247,
+    "foreground": [
+      169,
+      192,
+      238
+    ],
+    "background": [
+      63,
+      69,
+      82
+    ],
+    "solidPixelCounts": [
+      3644,
+      23578
+    ],
+    "sourcePNG": "ACEA3354-2271-4618-A458-65B8C87B30FC.png",
+    "note": "Solid sRGB pixels from original PNG, antialiasing excluded; audit remains FAIL."
+  },
+  {
+    "run": "full17",
+    "screen": "home-safe-line---dark",
+    "position": 3,
+    "type": "131072",
+    "label": "I spent nothing today",
+    "frame": "{{134.5, 752.83333333333337}, {160.66666666666663, 20.333333333333258}}",
+    "crop": "iphone17pro-post-full-011-round6-home-safe-line---dark-position3-XCUIAccessibilityAuditType-rawValue-131072--I-spent-nothing-t.jpg",
+    "full": "iphone17pro-post-full-012-round6-home-safe-line---dark-position3-XCUIAccessibilityAuditType-rawValue-131072--I-spent-nothing-t.jpg",
+    "ratio": 5.247,
+    "foreground": [
+      169,
+      192,
+      238
+    ],
+    "background": [
+      63,
+      69,
+      82
+    ],
+    "solidPixelCounts": [
+      3644,
+      23578
+    ],
+    "sourcePNG": "E48C0F5E-911A-49F8-976E-CE1355128B22.png",
+    "note": "Solid sRGB pixels from original PNG, antialiasing excluded; audit remains FAIL."
+  },
+  {
+    "run": "full17",
+    "screen": "home-safe-line---dark",
+    "position": 3,
+    "type": "1",
+    "label": "Not a balance",
+    "frame": "{{59.666666666666664, 286.33333333333331}, {105, 20.333333333333314}}",
+    "crop": "iphone17pro-post-full-009-round6-home-safe-line---dark-position3-XCUIAccessibilityAuditType-rawValue-1--Not-a-balance-crop.jpg",
+    "full": "iphone17pro-post-full-010-round6-home-safe-line---dark-position3-XCUIAccessibilityAuditType-rawValue-1--Not-a-balance-full.jpg",
+    "ratio": 17.015,
+    "foreground": [
+      255,
+      255,
+      255
+    ],
+    "background": [
+      28,
+      28,
+      30
+    ],
+    "solidPixelCounts": [
+      2429,
+      15010
+    ],
+    "sourcePNG": "E81C363F-93EE-408F-9F1D-21BCE4218DCB.png",
+    "note": "Solid sRGB pixels from original PNG, antialiasing excluded; audit remains FAIL."
+  },
+  {
+    "run": "full17",
+    "screen": "home-safe-line---dark",
+    "position": 3,
+    "type": "1",
+    "label": "Add your first entry, or mark a day with no spending.",
+    "frame": "{{32, 597.33333333333326}, {297.66666666666663, 42.333333333333371}}",
+    "crop": "iphone17pro-post-full-007-round6-home-safe-line---dark-position3-XCUIAccessibilityAuditType-rawValue-1--Add-your-first-entry-o.jpg",
+    "full": "iphone17pro-post-full-008-round6-home-safe-line---dark-position3-XCUIAccessibilityAuditType-rawValue-1--Add-your-first-entry-o.jpg",
+    "ratio": 17.015,
+    "foreground": [
+      255,
+      255,
+      255
+    ],
+    "background": [
+      28,
+      28,
+      30
+    ],
+    "solidPixelCounts": [
+      8212,
+      99777
+    ],
+    "sourcePNG": "F1A42732-08B6-4177-85D8-014C56BEA194.png",
+    "note": "Solid sRGB pixels from original PNG, antialiasing excluded; audit remains FAIL."
+  },
+  {
+    "run": "full17",
+    "screen": "home-safe-line---dark",
+    "position": 3,
+    "type": "1",
+    "label": "Quick add",
+    "frame": "{{32, 669.66666666666663}, {141.33333333333334, 34.333333333333371}}",
+    "crop": "iphone17pro-post-full-005-round6-home-safe-line---dark-position3-XCUIAccessibilityAuditType-rawValue-1--Quick-add-crop.jpg",
+    "full": "iphone17pro-post-full-006-round6-home-safe-line---dark-position3-XCUIAccessibilityAuditType-rawValue-1--Quick-add-full.jpg",
+    "ratio": 11.461,
+    "foreground": [
+      0,
+      0,
+      0
+    ],
+    "background": [
+      169,
+      192,
+      238
+    ],
+    "solidPixelCounts": [
+      2275,
+      37153
+    ],
+    "sourcePNG": "4F33500E-D571-44C4-A5AF-2F25F4DB08F5.png",
+    "note": "Solid sRGB pixels from original PNG, antialiasing excluded; audit remains FAIL."
+  },
+  {
+    "run": "full17",
+    "screen": "home-safe-line---dark",
+    "position": 3,
+    "type": "2",
+    "label": "<nil>",
+    "frame": "<nil>",
+    "crop": null,
+    "full": "iphone17pro-post-full-000-round6-home-safe-line---dark-position3-XCUIAccessibilityAuditType-rawValue-2--no-element-full.jpg",
+    "ratio": null,
+    "note": "Audit supplies no element/frame; no defensible glyph or background can be assigned. Full screenshot supplied; crop unavailable."
+  }
+]

@@ -224,15 +224,49 @@ extension Cycle2aUITests {
         }
         // Each position uses the full audit; only bar intersections may wait for a visible recheck.
         for position in 0..<8 {
+            let settleStart = Date()
+            func frames() -> [CGRect] {
+                app.collectionViews["homePage"].cells.allElementsBoundByIndex.prefix(2).map(\.frame)
+            }
+            var previous = frames()
+            var settled = false
+            repeat {
+                Thread.sleep(forTimeInterval: 0.5)
+                let current = frames()
+                settled = current == previous
+                previous = current
+            } while !settled && Date().timeIntervalSince(settleStart) < 10
+            record("SETTLE screen=\(screen) position=\(position) seconds=\(Date().timeIntervalSince(settleStart)) settled=\(settled) frames=\(previous.count)")
+            XCTAssertTrue(settled && !previous.isEmpty, "Home scrolling must stop before its audit")
             var visibleIssues: Set<String> = []
             try app.performAccessibilityAudit { issue in
                 print("AUDIT_ISSUE screen=\(screen) type=\(issue.auditType) compact=\(issue.compactDescription) detailed=\(issue.detailedDescription) element=\(issue.element?.debugDescription ?? "<nil>")")
-                guard let element = issue.element, element.exists else { return false }
                 if issue.auditType == .dynamicType,
-                   issue.detailedDescription.contains("SwiftUI.AccessibilityNode") {
+                   issue.detailedDescription.contains("SwiftUI.AccessibilityNode"),
+                   let element = issue.element, element.exists {
                     record("IGNORED_SWIFTUI_DYNAMIC_TYPE screen=\(screen) label=\(element.label) identifier=\(element.identifier) frame=\(NSCoder.string(for: element.frame))")
                     return true
                 }
+                let screenshot = self.app.screenshot()
+                let name = "round6-\(screen)-position\(position)-\(issue.auditType)-\(issue.element?.label ?? "no-element")"
+                let full = XCTAttachment(screenshot: screenshot)
+                full.name = name + "-full"
+                full.lifetime = .keepAlways
+                self.add(full)
+                if let element = issue.element, element.exists, let cgImage = screenshot.image.cgImage {
+                    let scale = CGFloat(cgImage.width) / self.app.frame.width
+                    let frame = element.frame.intersection(self.app.frame)
+                    let pixels = CGRect(x: frame.minX * scale, y: frame.minY * scale,
+                                        width: frame.width * scale, height: frame.height * scale)
+                    if let crop = cgImage.cropping(to: pixels) {
+                        let attachment = XCTAttachment(image: UIImage(cgImage: crop))
+                        attachment.name = name + "-crop"
+                        attachment.lifetime = .keepAlways
+                        self.add(attachment)
+                    }
+                }
+                record("ISSUE screen=\(screen) position=\(position) type=\(issue.auditType) label=\(issue.element?.label ?? "<nil>") frame=\(issue.element.map { NSCoder.string(for: $0.frame) } ?? "<nil>")")
+                guard let element = issue.element, element.exists else { return false }
                 let frame = element.frame
                 let navigation = self.app.navigationBars.firstMatch.frame
                 let tab = self.app.tabBars.firstMatch.frame
@@ -286,6 +320,34 @@ extension Cycle2aUITests {
             let current = item.resolve().map { NSCoder.string(for: $0.frame) } ?? "<not present>"
             record("UNRESOLVED screen=\(screen) label=\(item.label) identifier=\(item.identifier) type=\(item.issue) underBar=\(NSCoder.string(for: item.original)) current=\(current)")
             XCTFail("Deferred element not fully audited within 8 positions: \(item.label); identifier=\(item.identifier); original=\(item.original); current=\(current)")
+        }
+    }
+
+    @MainActor
+    func testHomeDarkAccessibilityAudit() throws {
+        try audit("home", flags: ["--dark"])
+    }
+
+    @MainActor
+    func testHomeActionLabelsAtDefaultAndAX3() throws {
+        for flags in [[], ["--dark"], ["--ax3"], ["--dark", "--ax3"]] {
+            launchQuickEntry(flags + ["--quick-safe-rule"])
+            let noSpend = app.buttons["noSpend"]
+            for _ in 0..<8 {
+                if noSpend.exists, noSpend.frame.minY >= app.navigationBars.firstMatch.frame.maxY,
+                   noSpend.frame.maxY <= app.tabBars.firstMatch.frame.minY { break }
+                app.swipeUp()
+            }
+            XCTAssertTrue(noSpend.isHittable)
+            XCTAssertGreaterThanOrEqual(noSpend.frame.height, 44)
+            XCTAssertGreaterThanOrEqual(noSpend.frame.minY, app.navigationBars.firstMatch.frame.maxY)
+            XCTAssertLessThanOrEqual(noSpend.frame.maxY, app.tabBars.firstMatch.frame.minY)
+            let text = noSpend.staticTexts["I spent nothing today"]
+            XCTAssertTrue(text.exists)
+            XCTAssertTrue(noSpend.frame.contains(text.frame))
+            print("HOME_ACTION_LAYOUT flags=\(flags) button=\(NSCoder.string(for: noSpend.frame)) text=\(NSCoder.string(for: text.frame))")
+            capture("c2b2-home-actions-" + (flags.isEmpty ? "light" : flags.joined(separator: "-")))
+            app.terminate()
         }
     }
 

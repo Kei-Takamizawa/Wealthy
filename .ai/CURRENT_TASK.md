@@ -150,3 +150,24 @@ Acceptance for Round 5: the original acceptance list, every audit passing on bot
 ## Owner follow-up (2026-11-08)
 
 Continue Round 5. First get testSafeLineAndAIInformationEvidence passing on both simulators; report the failing elements by label and frame, not AX ids. Start the full suites only after it passes on both, or after you decide to finish PARTIAL. Then finish the run order and rewrite .ai/LAST_REPORT.md as the final report.
+
+## Round 6 (designer decision, 2026-11-08, after Round 5)
+Same Task ID, branch and draft PR #13. Read `.ai/LAST_REPORT.md` first. Keep the Round 5 scrolled audit helper and everything that already passes.
+
+**Designer reading of Round 5:** the helper works: once Home is scrolled, it audits content that no earlier audit reached, because it was below the fold. The new failures are on elements that also exist on `fc74376` (the prominent add button, "I spent nothing today", the empty-state text) and were simply never audited. They are real until shown otherwise, so this round fixes them in the product, not in the test.
+
+1. **Settle before each audit (test).** After every scroll in the helper, wait until the scroll has stopped (the frames of two reads 0.5 s apart are identical) before auditing. Record the settle time. Then re-run `testSafeLineAndAIInformationEvidence` on both simulators and list every remaining issue by type, label, frame, mode and position, with the audit crop image for each (attach and copy into `Verification/Cycle2bEvidence/c2b2/round6-crops/`). For an issue with no element, attach the full screenshot and say which element it is from the image.
+2. **Fix what remains, in product code, standard components only:**
+   - Prominent buttons on Home (`addEntry`): make them use the same tint and label colors as `quickSave` in the Quick add sheet, which passes the audit in both modes. If `quickSave` passes only by luck, give both buttons explicit label colors that reach at least 4.5:1 against their fill in light and dark, and report the measured ratios.
+   - Clipped text (`noSpend` "I spent nothing today", or any other): let the label wrap (no fixed height that cuts text; keep the 44 pt minimum). Check at the default size and at AX3.
+   - Contrast on ordinary text (e.g. the empty-state text): if it still fails after settling, measure the text and background colors from the crop, report them, and fix only if the measured ratio is below 4.5:1 (normal text) or 3:1 (large text).
+   - No new audit exclusions. The owner-approved SwiftUI dynamic-type rule stays exactly as it is.
+3. **Order of runs:** `testSafeLineAndAIInformationEvidence` on both simulators -> the standard Home audits, Quick add tests and `testHorizontalTabSwipeAndVerticalScroll` on both -> full `WealthyUITests` once per simulator, one simulator at a time. Do not start the full suites until the first step passes on both, unless you decide to finish PARTIAL.
+4. **Evidence.** Re-capture only screenshots whose UI changed; update `INDEX.md`; open every changed image and check the buttons and texts are readable in both modes.
+5. Required checks (`verify_core.sh`, `verify_shell.py` with fontTools PYTHONPATH, `verify_localization.sh`, `git diff --check`, Simulator Release and signed generic iOS builds). Rewrite `.ai/LAST_REPORT.md` completely as the final report for the whole cycle, listing every changed file and every contrast ratio you measured.
+
+Acceptance for Round 6: the original acceptance list, every audit passing on both simulators with no new exclusions, and full `WealthyUITests` passing on both. Then `Status: DONE`; otherwise `PARTIAL` with exact failures, frames and crops.
+
+## Owner follow-up (2026-11-09)
+
+Continue Round 6. The 15 Pro full suite shows 4 new failures that passed on c937c63: testNoSpendDayFromEmptyLedger, testPersistedOnboardingRelaunch, testOnboardingEntryTaxNoSpendTarget, testQuickEntryWithoutAIFromOnboarding (WealthyUITests.swift:43-44); the 17 Pro partial run failed testAdditionalSetupMatrix and testChildEnvelopeAndLicenseFlow. First find the cause by comparing with c937c63 (run each failing test on c937c63 and on your tree, one at a time). If the noSpend label change (font, lineLimit) causes them, revert that part and fix the clipping another way or report it; keep the addEntry contrast fix. Do not change other screens. Then run the safe-line test, the Home audits and swipe test on both simulators, then full WealthyUITests one simulator at a time, and rewrite .ai/LAST_REPORT.md as the final whole-cycle report, listing every remaining audit issue with its measured contrast ratio and crop.

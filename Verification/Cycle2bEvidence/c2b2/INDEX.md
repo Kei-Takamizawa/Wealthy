@@ -1,8 +1,8 @@
 # Cycle 2b.2 screenshot evidence
 
-All images use synthetic UI-test data, English, JPY, and iOS 27.0 simulators (Xcode 27.2). JPEG quality approximately 80; long edge at most 2,000 pixels; each file below 1 MB.
+All images use synthetic UI-test data and iOS 27.0 simulators (Xcode 27.2). Main evidence screens use English and JPY; baseline-comparison images also include the existing localized onboarding fixtures. JPEG quality approximately 80; long edge at most 2,000 pixels; each file below 1 MB.
 
-All 18 current images were opened individually in Round 4. The six unchanged Quick add images and four unchanged AI images retain their Round 3 capture provenance. Eight Home and scheduled-screen images were captured in Round 4. In all six Quick add images, Amount, the typed digits `650`, and Save are visible above the number pad. AX3 is Accessibility Extra Large. Other category buttons and More details can scroll at AX3.
+All 26 main screenshots were opened individually in Round 6. Four Home screenshots were recaptured from Round 6 final-source audits, and eight Home action screenshots were added from Round 6 default/AX3 layout tests. The six unchanged Quick add images and four AI images retain Round 3 provenance; four scheduled-screen images retain Round 4 provenance. In all six Quick add images, Amount, typed `650`, and Save are visible above the number pad. AX3 is Accessibility Extra Large. Lower options can scroll at AX3. Visual review does not waive the audit failures below.
 
 | Screenshot | Device | Appearance / content |
 | --- | --- | --- |
@@ -24,6 +24,31 @@ All 18 current images were opened individually in Round 4. The six unchanged Qui
 | [iphone17pro-safe-scheduled-dark.jpg](iphone17pro-safe-scheduled-dark.jpg) | iPhone 17 Pro | Scheduled this week, dark, October 8 / Synthetic Thursday / ¥2,000 |
 | [iphone17pro-ai-row-light.jpg](iphone17pro-ai-row-light.jpg) | iPhone 17 Pro | Settings AI row, forced unavailable, light |
 | [iphone17pro-ai-detail-light.jpg](iphone17pro-ai-detail-light.jpg) | iPhone 17 Pro | AI information, forced unavailable, light |
+
+## Round 6 settled audit and product corrections
+
+[Additional runtime failures](round6-runtime-failures.txt) records the keyboard-query timeout and November 9 fresh-onboarding failures with a previous-week result sheet covering Home. No onboarding or weekly-result behavior was changed.
+
+[round6-home-audit.txt](round6-home-audit.txt) records issue type, label, frame, appearance, position, bar frames, deferred rechecks and settle times. [round6-contrast.json](round6-contrast.json) records lossless sRGB pixel measurements and the WCAG calculation. [Audit crops and full screenshots](round6-crops/INDEX.md) include attachment manifests and every non-excluded initial/final audit issue. The `iphone17pro-candidate` and `iphone15pro-final` prefixes are earlier Round 6 evidence. The `post-safe` and `post-full` prefixes are the November 9 ordered follow-up; product source is the same, with an additional ordinary dark Home test wrapper.
+
+Home Quick add now matches Quick save: white on `#2E4A7D` in light mode (8.780:1), black on `#A9C0EE` in dark mode (11.461:1). The old white-on-light-blue combination measured 1.832:1. No-spend labels retain wrapping and a 44-point minimum, with loose body-font leading. Both default and AX3 frame tests pass on both simulators. All eight action screenshots show readable buttons above the tab bar; AX3 text wraps inside its button.
+
+The helper waits for two identical cell-frame readings separated by 0.5 seconds before every audit, including after each drag. No audit types or exclusions changed. **Acceptance remains PARTIAL.** [The final follow-up audit table](round6-final-audit.md) lists every remaining issue with measured ratio and crop/full image, including unmeasurable nil-node or occluded-frame issues. Ordinary Home light/dark audits and swipe pass on both simulators; the safe-line fixture still reports failures. Numeric color measurements do not waive audit failures.
+
+[The six-case baseline comparison](round6-comparison/INDEX.md) ran each case individually on c937c63 then current, all twelve FAIL with the same previous-week result sheet covering Home. These failures reproduce without the new no-spend modifiers. The completed full-suite results are recorded in `.ai/LAST_REPORT.md`; earlier targeted or historical screenshots do not establish a fresh pass.
+
+| Screenshot | Device | Content |
+| --- | --- | --- |
+| [iphone15pro-home-actions-light.jpg](iphone15pro-home-actions-light.jpg) | iPhone 15 Pro | Home actions, light; fully above tab bar |
+| [iphone15pro-home-actions-dark.jpg](iphone15pro-home-actions-dark.jpg) | iPhone 15 Pro | Home actions, dark; fully above tab bar |
+| [iphone15pro-home-actions-ax3.jpg](iphone15pro-home-actions-ax3.jpg) | iPhone 15 Pro | Home actions, ax3; fully above tab bar |
+| [iphone15pro-home-actions-dark-ax3.jpg](iphone15pro-home-actions-dark-ax3.jpg) | iPhone 15 Pro | Home actions, dark-ax3; fully above tab bar |
+| [iphone17pro-home-actions-light.jpg](iphone17pro-home-actions-light.jpg) | iPhone 17 Pro | Home actions, light; fully above tab bar |
+| [iphone17pro-home-actions-dark.jpg](iphone17pro-home-actions-dark.jpg) | iPhone 17 Pro | Home actions, dark; fully above tab bar |
+| [iphone17pro-home-actions-ax3.jpg](iphone17pro-home-actions-ax3.jpg) | iPhone 17 Pro | Home actions, ax3; fully above tab bar |
+| [iphone17pro-home-actions-dark-ax3.jpg](iphone17pro-home-actions-dark-ax3.jpg) | iPhone 17 Pro | Home actions, dark-ax3; fully above tab bar |
+
+Round 6 capture bundles: `/tmp/wealthy-c2b2-r6-safe15b.xcresult`, `safe17b.xcresult` (Home); `/tmp/wealthy-c2b2-r6-targeted15.xcresult`, `targeted17.xcresult` (actions). Attachments are `c2b2-home-safe-light`, `c2b2-home-safe---dark`, and `c2b2-home-actions-*`. Exported with `xcrun xcresulttool export attachments --path <bundle> --output-path <directory>`; original PNGs converted to RGB JPEG quality 80, thumbnail bounded by 2,000 x 2,000, using the existing system Pillow installation. Only changed Home UI was recaptured.
 
 ## Round 5 scrolled audit decision and evidence
 
