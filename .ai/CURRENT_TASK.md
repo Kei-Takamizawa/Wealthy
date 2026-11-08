@@ -116,3 +116,16 @@ Same Task ID, branch and draft PR #13. Read `.ai/LAST_REPORT.md` first. Only the
 7. Required checks (`verify_core.sh`, `verify_shell.py` with fontTools PYTHONPATH, `verify_localization.sh`, `git diff --check`, Simulator Release and signed generic iOS builds). Rewrite `.ai/LAST_REPORT.md` completely as the final report for the whole cycle, listing every changed file.
 
 Acceptance for Round 3: the original acceptance list, including the swipe test and all audits passing on both simulators with no new exclusions. Then `Status: DONE`; otherwise `PARTIAL` with exact failures and frames.
+
+## Round 4 (designer decision, 2026-11-08, after PR #13 head 2440c0a)
+Same Task ID, branch and draft PR #13. Read `.ai/LAST_REPORT.md` first. Only the items below; keep everything that passes in Round 3 (Home container, Quick add buttons, swipe test) unchanged.
+
+**Designer reading of Round 3:** the only failure is `testSafeLineAndAIInformationEvidence` (contrast). Expanding the in-place `DisclosureGroup` makes Home taller than the screen, so the next section's weekday letters start inside the floating tab bar. The collapsed Home passes. The fix is to stop expanding the breakdown inside Home, not to change the audit.
+
+1. **Safe line breakdown (decided).** In `weeklyCard`, replace the `DisclosureGroup` with a standard `NavigationLink` row: label = the same `afterScheduled` text, identifier `safeScheduled`. Its destination is a new small read-only screen (in `HomeInfo.swift` or a new file) titled with a new localized string "Scheduled this week" (en/ja/es/ko), a `List` with one row per `safe.scheduled` item showing day, title and amount (same Core values and formatting as now), screen identifier `safeScheduledPage`. No other change to the week card, the safe amount, or `SafeLine.swift`.
+2. **Test.** Update `testSafeLineAndAIInformationEvidence`: on Home (light and dark) check the safe amount and run the Home audit with the safe line visible and collapsed; tap `safeScheduled`, check "Synthetic Thursday" and its amount on `safeScheduledPage`, capture, and run the same audit on that screen. Keep the AI information part and the existing `auditWithSwiftUIException` helper unchanged. No new exclusions.
+3. **Order of runs:** that test on both simulators -> `testHorizontalTabSwipeAndVerticalScroll` and the Home audits on both -> full `WealthyUITests` once per simulator, one simulator at a time (`-parallel-testing-enabled NO`).
+4. **Evidence.** Replace the `home-safe-*` screenshots with the collapsed Home and add `safe-scheduled-*` (light, dark) for both simulators; update `INDEX.md`; open every new image and confirm the safe amount, the row and the scheduled item are fully visible and not behind the tab bar.
+5. Required checks (`verify_core.sh`, `verify_shell.py` with fontTools PYTHONPATH, `verify_localization.sh`, `git diff --check`, Simulator Release and signed generic iOS builds). No device run needed this round. Rewrite `.ai/LAST_REPORT.md` completely as the final report for the whole cycle, listing every changed file.
+
+Acceptance for Round 4: the original acceptance list with the safe-line breakdown on its own screen, all audits passing on both simulators with no new exclusions, and full `WealthyUITests` passing on both. Then `Status: DONE`; otherwise `PARTIAL` with exact failures and frames.

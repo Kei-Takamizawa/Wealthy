@@ -207,15 +207,28 @@ extension Cycle2aUITests {
         for flags in [[], ["--dark"]] {
             launchQuickEntry(flags + ["--quick-safe-rule"])
             XCTAssertTrue(app.staticTexts["safeAmount"].label.contains("¥68,000"), app.debugDescription)
-            tap("safeScheduled")
-            XCTAssertTrue(app.staticTexts["Synthetic Thursday"].exists)
-            capture("c2b2-safe-expanded-" + (flags.first ?? "light"))
-            XCTAssertTrue(app.staticTexts["safeAmount"].isHittable)
-            XCTAssertTrue(app.staticTexts["Synthetic Thursday"].isHittable)
-            XCTAssertLessThan(app.staticTexts["safeAmount"].frame.maxY, app.tabBars.firstMatch.frame.minY)
-            print("SAFE_AUDIT_FRAME " + NSCoder.string(for: app.staticTexts["safeAmount"].frame))
-            capture("c2b2-safe-audit-" + (flags.first ?? "light"))
+            let safeAmount = app.staticTexts["safeAmount"]
+            let scheduled = app.buttons["safeScheduled"]
+            for element in [safeAmount, scheduled] {
+                XCTAssertTrue(element.isHittable)
+                XCTAssertLessThan(element.frame.maxY, app.tabBars.firstMatch.frame.minY)
+                print("SAFE_HOME_FRAME flags=\(flags) id=\(element.identifier) frame=\(NSCoder.string(for: element.frame))")
+            }
+            capture("c2b2-home-safe-" + (flags.first ?? "light"))
             try auditWithSwiftUIException("home-safe-line")
+            tap("safeScheduled")
+            XCTAssertTrue(app.collectionViews["safeScheduledPage"].waitForExistence(timeout: 5))
+            let title = app.staticTexts["Synthetic Thursday"]
+            let amount = app.staticTexts["¥2,000"]
+            for element in [title, amount] {
+                XCTAssertTrue(element.exists)
+                XCTAssertTrue(element.isHittable)
+                XCTAssertTrue(app.frame.contains(element.frame))
+                XCTAssertLessThan(element.frame.maxY, app.tabBars.firstMatch.frame.minY)
+                print("SAFE_SCHEDULED_FRAME flags=\(flags) label=\(element.label) frame=\(NSCoder.string(for: element.frame))")
+            }
+            capture("c2b2-safe-scheduled-" + (flags.first ?? "light"))
+            try auditWithSwiftUIException("safe-scheduled")
             app.terminate()
         }
         launchQuickEntry()

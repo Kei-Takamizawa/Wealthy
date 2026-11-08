@@ -135,14 +135,8 @@ struct HomeView: View {
                             .monospacedDigit().foregroundStyle(amount < 0 ? V4.over(scheme) : Color.primary)
                             .accessibilityIdentifier("safeAmount")
                     }
-                    DisclosureGroup {
-                        ForEach(safe.scheduled, id: \.ruleID) { item in
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text(session.dayText(item.day))
-                                Text(item.title)
-                                Text(session.money(item.amount, code: item.currencyCode)).monospacedDigit()
-                            }.padding(.vertical, 4)
-                        }
+                    NavigationLink {
+                        SafeScheduledView(scheduled: safe.scheduled)
                     } label: {
                         Text(String(format: session.t("afterScheduled"), safe.scheduled.count, session.money(safe.scheduledTotal)))
                             .fixedSize(horizontal: false, vertical: true)
@@ -191,6 +185,26 @@ struct HomeView: View {
         }
     }
 }
+struct SafeScheduledView: View {
+    @Environment(LedgerSession.self) private var session
+    let scheduled: [UpcomingOccurrence]
+
+    var body: some View {
+        List {
+            ForEach(scheduled, id: \.ruleID) { item in
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(session.dayText(item.day))
+                    Text(item.title)
+                    Text(session.money(item.amount, code: item.currencyCode)).monospacedDigit()
+                }.padding(.vertical, 4)
+            }
+        }
+        .navigationTitle(session.t("scheduledThisWeek"))
+        .navigationBarTitleDisplayMode(.inline)
+        .accessibilityIdentifier("safeScheduledPage")
+    }
+}
+
 struct InfoView: View {
     @Environment(\.dynamicTypeSize) private var typeSize
     @Environment(\.colorScheme) private var scheme

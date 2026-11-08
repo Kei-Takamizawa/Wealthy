@@ -1,15 +1,15 @@
-# Cycle 2b.2 Final Round 3 Report
+# Cycle 2b.2 Final Round 4 Report
 
 Task ID: WEALTHY-C2B2-QUICK-ENTRY
 Status: PARTIAL
 
-The Home swipe regression is fixed on both simulators. Expanded safe-line Home still fails the unchanged contrast audit because weekday text lies behind the floating tab bar. Do not merge on this report.
+The decided navigation to a separate scheduled-expense screen is implemented. Both simulators complete all 74 UI tests: 73 passed and one failed, with three contrast assertions in testSafeLineAndAIInformationEvidence. The remaining failures concern Home's empty-state text behind the floating tab bar. The safe amount, navigation row, and separate scheduled items are fully visible. The scheduled screen and AI information screen have no audit failures. Acceptance is not met; do not merge on this report.
 
-Branch: `codex/wealthy-c2b2-quick-entry`; starting HEAD `f86ae6837688ab292cf97055da69dd16cbf711b1`. `fc74376` is an ancestor (verified, exit 0). macOS execution host, Xcode 27.2 (27B52); both simulators run iOS 27.0. No Windows implementation was started. No staging, commit, push, branch switch or merge was performed.
+Execution: macOS, Xcode 27.2 (27B52), iOS 27.0 simulators. Branch codex/wealthy-c2b2-quick-entry, starting and final HEAD 2440c0a71a37f3e62d3bb5383001f677271a4ef8. fc74376 is an ancestor (exit 0). Round 4 is the latest designer instruction in CURRENT_TASK.md; the supplied task was preserved without truncation. No Windows implementation, staging, commit, push, branch switch, merge, or remote update was performed.
 
 ## Changed files
 
-Whole-cycle files relative to `fc74376` (including earlier checkpoint implementation and retained Round 2 evidence):
+Whole-cycle files relative to fc74376, including checkpoint implementation and retained historical evidence:
 
 - `.ai/CURRENT_TASK.md`
 - `.ai/LAST_REPORT.md`
@@ -22,6 +22,8 @@ Whole-cycle files relative to `fc74376` (including earlier checkpoint implementa
 - `Verification/Cycle2bEvidence/c2b2/iphone15pro-quick-ax3.jpg`
 - `Verification/Cycle2bEvidence/c2b2/iphone15pro-quick-dark.jpg`
 - `Verification/Cycle2bEvidence/c2b2/iphone15pro-quick-light.jpg`
+- `Verification/Cycle2bEvidence/c2b2/iphone15pro-safe-scheduled-dark.jpg`
+- `Verification/Cycle2bEvidence/c2b2/iphone15pro-safe-scheduled-light.jpg`
 - `Verification/Cycle2bEvidence/c2b2/iphone15pro-swipe-failure-1.txt`
 - `Verification/Cycle2bEvidence/c2b2/iphone15pro-swipe-failure-2.txt`
 - `Verification/Cycle2bEvidence/c2b2/iphone15pro-swipe-failure-3.txt`
@@ -32,10 +34,13 @@ Whole-cycle files relative to `fc74376` (including earlier checkpoint implementa
 - `Verification/Cycle2bEvidence/c2b2/iphone17pro-quick-ax3.jpg`
 - `Verification/Cycle2bEvidence/c2b2/iphone17pro-quick-dark.jpg`
 - `Verification/Cycle2bEvidence/c2b2/iphone17pro-quick-light.jpg`
+- `Verification/Cycle2bEvidence/c2b2/iphone17pro-safe-scheduled-dark.jpg`
+- `Verification/Cycle2bEvidence/c2b2/iphone17pro-safe-scheduled-light.jpg`
 - `Verification/Cycle2bEvidence/c2b2/iphone17pro-swipe-failure-1.txt`
 - `Verification/Cycle2bEvidence/c2b2/iphone17pro-swipe-failure-2.txt`
 - `Verification/Cycle2bEvidence/c2b2/iphone17pro-swipe-failure-3.txt`
 - `Verification/Cycle2bEvidence/c2b2/round3-home-audit.txt`
+- `Verification/Cycle2bEvidence/c2b2/round4-home-audit.txt`
 - `Wealthy/Wealthy/AppShortcuts.xcstrings`
 - `Wealthy/Wealthy/CalendarAnalysis.swift`
 - `Wealthy/Wealthy/EntryEditor.swift`
@@ -54,94 +59,88 @@ Whole-cycle files relative to `fc74376` (including earlier checkpoint implementa
 - `WealthyUITests/QuickEntryUITests.swift`
 - `WealthyUITests/WealthyUITests.swift`
 
-Round 3 implementation/test edits: HomeInfo.swift, QuickEntryUITests.swift, WealthyUITests.swift. All 14 JPEGs were recaptured; INDEX.md was updated; round3-home-audit.txt was added. CURRENT_TASK.md is the designer-supplied task, preserved without editing in this run. Historical Round 2 failure trees are retained. The three pre-existing .DS_Store changes and untracked design PDF were left alone. ReceiptExample was not read.
+Round 4 changed HomeInfo.swift, Localizable.xcstrings, QuickEntryUITests.swift, this report, INDEX.md, and the four home-safe JPEGs; added four safe-scheduled JPEGs and round4-home-audit.txt. CURRENT_TASK.md is the designer-supplied uncommitted instruction. The three pre-existing dirty .DS_Store files and untracked design PDF were preserved and are not task files. The six Quick add and four AI JPEGs retain Round 3 capture provenance.
 
 ## Requirements
 
-### Round 3 decided Home layout and entry points — PASS
+### Round 4 implementation and remaining failure
 
-HomeView now has the original direct Form container and original modifier order from fc74376: lineLimit, navigationTitle, navigationBarTitleDisplayMode, accessibilityIdentifier, toolbar, task. GeometryReader, manual container frame, clipping and the bottom safeAreaInset footer were removed. This cycle's in-Form content remains. The third-section borderedProminent `addEntry` row and leading `quickAddToolbar` both open the same Quick add sheet; the trailing result menu remains. DEBUG intentDialog uses a conditional top overlay, with no content when nil.
+- PASS: Replaced only the in-place DisclosureGroup with a standard NavigationLink, retaining the afterScheduled label and safeScheduled identifier. SafeScheduledView uses a read-only List of the existing Core occurrences, the existing date/currency formatters, and safeScheduledPage. SafeLine.swift, the safe amount, week-card accessibility, Home container, Quick add entry points, and DEBUG overlay are unchanged this round.
+- PASS: New scheduledThisWeek title in en/ja/es/ko. Japanese: 今週の予定支出. Existing wording retained: クイック記録, 未分類, 今週あと安心して使える額. Translation catalog completeness passes; native-speaker review and visual testing of the new title in non-English languages were not performed.
+- PASS: Updated testSafeLineAndAIInformationEvidence audits Home before navigation with the safe line visible, opens the scheduled page, asserts Synthetic Thursday and ¥2,000, captures it, and audits that page in light/dark. The AI part and auditWithSwiftUIException helper are unchanged. No exclusions, skipped tests, or weakened audits were added.
+- PARTIAL: Each targeted safe-line test and each full suite has three Home contrast assertions. Light: A fresh island and Add your first entry, or mark a day with no spending. Dark: A fresh island on 15 Pro; the longer explanation on 17 Pro. No contrast failures concern the safe amount, link, scheduled page, or AI detail.
 
-| Simulator | Restored Home frame, all three swipe assertions | fc74376 frame, fresh comparison | Tab bar |
-| --- | --- | --- | --- |
-| 15 Pro | x0 y0 w393 h852 | x0 y0 w393 h852 | x0 y769 w393 h83 |
-| 17 Pro | x0 y0 w402 h874 | x0 y0 w402 h874 | x0 y791 w402 h83 |
+Expected: zero audit failures. Actual: moving scheduled items out of Home removes the weekday overlap, but the empty-state section remains under the floating tab bar. This is visible in the replaced Home images. The approved container was retained; no independent layout correction was attempted. Exact synthetic element diagnostics are in Verification/Cycle2bEvidence/c2b2/round4-home-audit.txt.
 
-The Round 2 failure frames were 393x686 / 402x708; those describe the old bounded container, not the baseline. The prior report did not retain baseline geometry, so fc74376 was remeasured this round. Current frames match the fresh baseline. Both initial and return-swipe hittability assertions pass without weakening or identifier relocation.
-
-### Targeted execution order and audits — PARTIAL
-
-| Run | iPhone 15 Pro | iPhone 17 Pro |
+| Element | 15 Pro frame (x, y, width, height) | 17 Pro frame (x, y, width, height) |
 | --- | --- | --- |
-| testHorizontalTabSwipeAndVerticalScroll (Swipe) | PASSED, 38.868s | PASSED, 38.875s |
-| testHomeAccessibilityAudit (Initial Home run (obsolete footer comparison)) | PASSED, 21.043s | PASSED, 21.033s |
-| testSafeLineAndAIInformationEvidence (Initial Home run (obsolete footer comparison)) | FAILED, 12.025s | FAILED, 12.039s |
-| testHomeAccessibilityAudit (Home after geometry-reference update) | PASSED, 20.491s | PASSED, 20.384s |
-| testSafeLineAndAIInformationEvidence (Home after geometry-reference update) | FAILED, 59.782s | FAILED, 59.302s |
-| testHomeAccessibilityAudit (fc74376, light and dark) | PASSED, 39.123s | PASSED, 29.924s |
-| testQuickEntryCategoryDetailsAndInvalidAmount (Quick add) | PASSED, 37.079s | PASSED, 35.853s |
-| testQuickEntryKeyboardLayoutAndEvidence (Quick add) | PASSED, 53.478s | PASSED, 48.634s |
-| testQuickEntryThreeInteractionsAndUncategorized (Quick add) | PASSED, 24.343s | PASSED, 23.153s |
+| safeAmount, both appearances | 48, 423.67, 66.33, 20.33 | 48, 426.67, 66.33, 20.33 |
+| safeScheduled, both appearances | 48, 452, 202, 20.33 | 48, 455, 202, 20.33 |
+| Scheduled title | 32, 191.33, 147.67, 20.33 | 32, 194.33, 147.67, 20.33 |
+| Scheduled amount | 32, 215.67, 56, 20.33 | 32, 218.67, 56, 20.33 |
+| A fresh island (Home failure) | 32, 801, 103.33, 20.33 | 32, 804, 103.33, 20.33 |
+| Empty-state explanation (Home failure) | 32, 829.33, 297.67, 42.33 | 32, 832.33, 297.67, 42.33 |
 
-Run order: swipe on both -> Home audits on both -> fc74376 comparison -> keyboard/3-interaction/row-button tests on both -> full suites. No audit exclusions were added. Only the existing narrow SwiftUI Dynamic Type filter is used.
+Round 4 Home root frames after all three swipe assertions remain 0,0,393,852 / 0,0,402,874. They match the fc74376 measurements preserved in Round 3; the baseline was not rerun this round. Round 3 measured tab-bar frames at 0,769,393,83 / 0,791,402,83; these are prior measurements, not newly printed Round 4 tab-bar frames. Round 4 tests directly assert safe amount/link/item maxY < current tabBar.minY and hittability. Screenshots independently show the lower empty-state overlap.
 
-Test adjustment, recorded in this report before editing: the old safeAmount-vs-addEntry-frame assertion failed with "No matches found" because the former footer is now an offscreen Form row. It now checks safeAmount.maxY < tabBars.firstMatch.frame.minY. Both safeAmount and scheduled-title hittability assertions and the full audit remain. The first Home runs stopped at that outdated reference; they are not audit passes.
+Claude decision needed: specify the next scoped treatment of the empty-state section under the floating tab bar while preserving the decided Form and working swipe behavior. Possible decision areas are the Form's scrolling/content margins or empty-state placement. Neither was changed here. Reproduction: run testSafeLineAndAIInformationEvidence; its isolated seed has a target and --quick-safe-rule with no entries. Observe Home before tapping safeScheduled, light and dark.
 
-Expected: readable Home content and zero audit issues. Actual: expanded-safe-line audit: 15 Pro has 10 contrast assertions, 17 Pro has 9 across light/dark. Weekday letters T/W/T/F/S are at y803 height18 on 15 Pro and y806 height18 on 17 Pro, intersecting the tab bars above. The screenshots visibly confirm the overlap. Safe amount itself remains above the bar (see round3-home-audit.txt). AI-information audit has no failures in these runs. Standard seeded Home audit passes. Fresh fc74376 full Home audit passes in light and dark on both simulators; it has no safe-line feature and cannot provide the identical expanded fixture. Comparison worktree `/tmp/wealthy-c2b2-baseline` was removed after testing; nothing was committed.
+### Whole-cycle behavior
 
-### Full WealthyUITests — final-source results
+- E3 / no AI gate — PASS for simulator test evidence: the ledger opens independently of availability; detection and informational settings/detail remain. DEBUG overrides accept WEALTHY_TEST_AI_AVAILABLE=0/1 and the old available=1 key. testQuickEntryWithoutAIFromOnboarding, testAvailableAIInformation, and the AI-information portion of the safe-line test pass their assertions. README states iOS 26 or later, Apple Intelligence not required. Voice remains unchanged.
+- Quick add — PASS for simulator test evidence: immediate number-pad entry, category ranking/presets, uncategorized save, invalid input, carried amount in More details, row and toolbar entry points, and day-detail Uncategorized are covered by the named tests below. Both interaction counters print 3. Normal undoable Core commands are used; no UI money arithmetic was added. VoiceOver announcement dispatch is implemented; physical VoiceOver listening was not performed.
+- App Intents — PASS for test/build metadata evidence: RecordExpenseIntent and OpenQuickAddIntent run through the existing main app target. LedgerSession.shared has a private initializer, owns the process's Core/store, and open() returns when core already exists. Both the UI and intents use this owner. Quick add and RecordExpenseIntent share recordExpense, including late-entry validation, recurring catch-up and the undoable add command. Foreground/relaunch tests observe the new amount and no duplicate entry. Real Shortcuts UI execution remains an optional owner check.
+- Safe line Core — PASS: fresh verify_core.sh reports 123 tests in 14 suites (117 previous plus six new test functions, including parameterized cases). The retained SafeLineTests cover no target/rules, today/later/next-week boundaries, paused/ended/income, fixed-cost inclusion both ways, other envelope/currency, Sunday/Monday boundary, negative result and checked overflow. The query reuses upcoming and existing target/checked arithmetic. Persistence, data model, tax and target rules are unchanged. Home accessibility acceptance remains PARTIAL as above.
+- Languages — PASS: 213 shipping keys x four languages, zero missing keys, placeholder/font checks; archived localization verification also passes 2,420 checks. No new dependency, target, extension, entitlement, capability, App Group, font, tab-structure or deployment-target change.
 
-Failed-case counts below are test cases; XCTest suite summaries count the individual failing contrast assertions.
+### Execution order and targeted results
 
-- iPhone 15 Pro: 74 test cases completed; 1 failed. Failures: testSafeLineAndAIInformationEvidence.
-  Executed 74 tests, with 10 failures (0 unexpected) in 5335.666 (5335.739) seconds
-- iPhone 17 Pro: 74 test cases completed; 1 failed. Failures: testSafeLineAndAIInformationEvidence.
-  Executed 74 tests, with 9 failures (0 unexpected) in 5698.563 (5698.632) seconds
+Safe-line test on 15 Pro then 17 Pro -> existing Home audit and horizontal swipe on 15 Pro then 17 Pro -> full suite on 15 Pro -> full suite on 17 Pro. Test parallelization disabled; the two full suites did not overlap. Required read-only checks/builds were run independently while UI tests were underway.
 
-| Acceptance evidence test | 15 Pro | 17 Pro |
+| Targeted test | 15 Pro | 17 Pro |
 | --- | --- | --- |
-| testQuickEntryWithoutAIFromOnboarding | PASSED, 35.873s | PASSED, 34.544s |
-| testAvailableAIInformation | PASSED, 4.923s | PASSED, 5.149s |
-| testQuickEntryThreeInteractionsAndUncategorized | PASSED, 26.727s | PASSED, 26.807s |
-| testQuickEntryCategoryDetailsAndInvalidAmount | PASSED, 39.744s | PASSED, 42.243s |
-| testQuickCategoryRankingAndPresets | PASSED, 22.737s | PASSED, 29.478s |
-| testRecordExpenseIntentAndRelaunch | PASSED, 50.583s | PASSED, 55.236s |
-| testIntentWithoutTargetAndInvalidAmount | PASSED, 16.512s | PASSED, 17.665s |
-| testIntentIncludesTodaysRecurringExpense | PASSED, 11.550s | PASSED, 12.501s |
-| testOpenQuickAddIntentAndPendingNotice | PASSED, 21.706s | PASSED, 24.780s |
-| testLocalizedQuickEntryAndSafeLine | PASSED, 70.021s | PASSED, 65.791s |
-| testQuickEntryKeyboardLayoutAndEvidence | PASSED, 56.852s | PASSED, 60.961s |
-| testSafeLineAndAIInformationEvidence | FAILED, 73.262s | FAILED, 73.118s |
-| testHorizontalTabSwipeAndVerticalScroll | PASSED, 31.850s | PASSED, 30.631s |
+| testSafeLineAndAIInformationEvidence | FAIL, 97.187 s, 3 Home contrast assertions | FAIL, 97.060 s, 3 Home contrast assertions |
+| testHomeAccessibilityAudit | PASS, 28.772 s | PASS, 23.010 s |
+| testHorizontalTabSwipeAndVerticalScroll | PASS, 31.164 s | PASS, 30.490 s |
 
-Full-suite contrast assertion counts: 10 on 15 Pro and 9 on 17 Pro, all on `home-safe-line`. Failure frames match the targeted runs: weekday text y803/h18 on 15 Pro and y806/h18 on 17 Pro, inside the tab bars at y769–852 and y791–874 respectively. See [round3-home-audit.txt](../Verification/Cycle2bEvidence/c2b2/round3-home-audit.txt) for the per-element frames; full logs remain in /tmp.
+### Full WealthyUITests results
 
-Both full runs used `-parallel-testing-enabled NO` with no only-testing, skip-testing or exclusions. Targeted successes do not override the full-suite failures.
+- iPhone 15 Pro: 74 cases completed, 73 PASS / 1 FAIL, three failing assertions, 5199.429 seconds. Sole failing case: testSafeLineAndAIInformationEvidence. xcodebuild exit 65.
+- iPhone 17 Pro: 74 cases completed, 73 PASS / 1 FAIL, three failing assertions, 8262.352 seconds. Sole failing case: testSafeLineAndAIInformationEvidence. xcodebuild exit 65.
 
-### Original requirements 1–5
+| Full-suite acceptance evidence | 15 Pro | 17 Pro |
+| --- | --- | --- |
+| testQuickEntryWithoutAIFromOnboarding | PASS, 31.472 s | PASS, 37.993 s |
+| testAvailableAIInformation | PASS, 4.936 s | PASS, 4.822 s |
+| testQuickEntryThreeInteractionsAndUncategorized | PASS, 28.555 s | PASS, 29.669 s |
+| testQuickEntryCategoryDetailsAndInvalidAmount | PASS, 44.472 s | PASS, 37.145 s |
+| testQuickEntryKeyboardLayoutAndEvidence | PASS, 68.700 s | PASS, 61.994 s |
+| testQuickCategoryRankingAndPresets | PASS, 26.930 s | PASS, 20.509 s |
+| testRecordExpenseIntentAndRelaunch | PASS, 48.978 s | PASS, 62.881 s |
+| testIntentWithoutTargetAndInvalidAmount | PASS, 16.376 s | PASS, 13.766 s |
+| testIntentIncludesTodaysRecurringExpense | PASS, 11.643 s | PASS, 10.784 s |
+| testOpenQuickAddIntentAndPendingNotice | PASS, 23.218 s | PASS, 21.424 s |
+| testLocalizedQuickEntryAndSafeLine | PASS, 56.970 s | PASS, 57.557 s |
+| testSafeLineAndAIInformationEvidence | FAIL, 76.108 s | FAIL, 112.162 s |
+| testHomeAccessibilityAudit | PASS, 21.260 s | PASS, 17.903 s |
+| testHorizontalTabSwipeAndVerticalScroll | PASS, 32.466 s | PASS, 29.692 s |
 
-- E3/AI: existing implementation opens the ledger regardless of availability, keeps availability information in Settings/detail, accepts both DEBUG switches, and updates README. See full-suite `testQuickEntryWithoutAIFromOnboarding` and `testAvailableAIInformation` results. No AI-gate coverage was removed.
-- Quick add: the toolbar completes tap/type/save in exactly 3 interactions on both simulators; uncategorized day detail and analysis, category save, invalid amount, ranking/presets and More details are covered by the named tests. Row opening now has an explicit sheet-existence assertion. All amount arithmetic remains in Core/session.
-- App Intents: unchanged checkpoint implementation. `LedgerSession.shared` has a private initializer and retains the process's single Core/store. UI, entity queries and intents use it; Quick add and RecordExpenseIntent share `recordExpense`, including recurring catch-up. Scene activation reload remains. Intent hooks exercise actual perform(), category/nil, relaunch without duplication and no-target/error cases in isolated synthetic stores. No extension, capability, entitlement, App Group or dependency was added.
-- Safe line: unchanged read-only Core query reuses upcoming schedule logic and checked arithmetic. Fresh Core verification passes 123 tests in 14 suites (117 previous plus six new functions with parameterized cases), covering all specified boundary/filter/negative/overflow cases. Persistence/model/target/tax behavior was not changed. Safe-line content is present, but its Home accessibility acceptance fails as described above.
-- Languages: 212 shipping keys x en/ja/es/ko, zero missing keys, placeholder/font checks pass; archived verification adds 2,420 checks. Japanese wording retained: クイック記録, 未分類, 今週あと安心して使える額. No new wording was added in Round 3.
-
-### Keyboard frames and screenshots — PASS for required Quick add controls
+### Keyboard geometry and visual evidence
 
 | Simulator/type | Amount y / height | Save y / height | Keyboard top |
 | --- | --- | --- | --- |
-| 15 Pro default (light/dark) | 186 / 42.67 | 495 / 34.33 | 550 |
+| 15 Pro default/light/dark | 186 / 42.67 | 495 / 34.33 | 550 |
 | 15 Pro AX3 | 209 / 64 | 472 / 62 | 550 |
-| 17 Pro default (light/dark) | 189 / 42.67 | 517 / 34.33 | 572 |
+| 17 Pro default/light/dark | 189 / 42.67 | 517 / 34.33 | 572 |
 | 17 Pro AX3 | 212 / 64 | 494 / 62 | 572 |
 
-Expected/Actual: recording the synthetic 650-yen expense changes this week remaining from 70,000 to 69,350 yen on both simulators. Expanded Home shows 70,000 yen remaining, 2,000 yen scheduled and 68,000 yen safe, with Synthetic Thursday on October 8. The tests and screenshots observe these values. All Amount/Save frames are fully above the keyboard and hittable. Both interaction counters print 3. All 14 images in [INDEX.md](../Verification/Cycle2bEvidence/c2b2/INDEX.md) were recaptured and individually opened in this round. All six Quick add images visibly show Amount, typed digits 650 and Save above the number pad. AX3 lower options may need scrolling. Home images show the new leading plus, expanded scheduled date/title/amount, and the unresolved tab-bar overlap. AI images show unavailable state and the no-AI-required explanation. JPEG quality 80, long edge 2000; 15 Pro 921x2000, 17 Pro 920x2000; sizes 103,637–180,335 bytes, all below 1 MB.
+These are fresh Round 4 full-suite measurements. All amount/Save controls are hittable and fully above the keyboard, and the fields contain 650. The three interactions are toolbar tap, type, Save tap; the row-button assertion also remains covered. Synthetic saving changes week remaining from ¥70,000 to ¥69,350. The safe-line fixture shows ¥70,000 remaining, ¥2,000 scheduled, ¥68,000 safe, with October 8 / Synthetic Thursday / ¥2,000 on the new page.
 
-### Release, metadata and physical device — PASS
+Evidence: Verification/Cycle2bEvidence/c2b2/INDEX.md now indexes 18 JPEGs. Four Home images were replaced with non-expanded Home; four scheduled-page images were added. All eight new/replaced images were opened individually. Safe amount, link, scheduled day/title/amount are fully visible above the tab bar. Empty-state text is not, so the Home screenshots do not establish a full audit pass. All ten retained Quick add/AI images were also opened in this round. Amount, typed digits 650, and Save are visible in every Quick add image; AX3 lower options may require scrolling. JPEG quality 80, long edge 2,000, all below 1 MB (71,147–174,170 bytes). Quick add/AI captures retain Round 3 provenance; only visual reinspection is fresh. Export/conversion commands and capture names are in INDEX.md.
 
-Simulator Release build: PASS. Signed generic iOS Release build: PASS; codesign strict/deep verification PASS. Both use existing task build directories in /tmp. Product source did not change after these builds.
+### Release builds, metadata and device
 
-The final signed app contains Metadata.appintents/extract.actionsdata. Observed actions: OpenQuickAddIntent (openAppWhenRun=true, no parameters), RecordExpenseIntent (openAppWhenRun=false, required amount, optional category). Auto-shortcut keys and compiled en/ja/es/ko AppShortcuts.strings were inspected:
+Simulator Release build PASS, signed generic iOS Release build PASS, codesign strict/deep verification PASS, all on the Round 4 product source. Built Metadata.appintents/extract.actionsdata lists OpenQuickAddIntent (openAppWhenRun=true, no parameters) and RecordExpenseIntent (openAppWhenRun=false, required amount, optional category). Both auto-shortcut templates and compiled language resources were inspected:
 
 | Language | Quick add | Record expense |
 | --- | --- | --- |
@@ -150,119 +149,41 @@ The final signed app contains Metadata.appintents/extract.actionsdata. Observed 
 | es | Registro rápido en ${applicationName} | Registrar un gasto en ${applicationName} |
 | ko | ${applicationName}에서 빠른 기록 | ${applicationName}에서 지출 기록 |
 
-Paired iPhone 16 Pro Max, iOS 27.3 (24C5037i): Release install exit 0; one normal launch exit 0. No taps or entries were made in the owner's ledger. No uninstall/deletion was performed. Optional owner check: run Record expense once from the Shortcuts app only for an expense the owner actually intends to record.
+Device NOT_RUN this round, explicitly exempted by Round 4. Retained whole-cycle evidence from the Round 3 report at HEAD 2440c0a: signed Release install and normal launch on the paired iPhone 16 Pro Max, iOS 27.3 (24C5037i), both exit 0; launch only, no taps or owner-ledger entries. This is prior-build evidence, not an install of this round's build. Optional owner check: run Record expense once from the Shortcuts app only for an expense the owner actually intends to record.
 
 ## Verification commands
 
-All logs/result bundles use `/tmp/wealthy-c2b2-r3-*`. Baseline runs used cwd=/tmp/wealthy-c2b2-baseline; other runs used the repository root. Exact invocations are listed below; simulator IDs are test destinations, physical-device ID is intentionally omitted.
+Repository root unless stated otherwise. Logs and xcresult bundles are under /tmp. Commands below are exact invocations; the per-run log/result paths identify evidence.
 
 ```sh
-sh Verification/verify_core.sh > /tmp/wealthy-c2b2-r3-core.log 2>&1
-PYTHONPATH=/Users/harrison/Library/Python/3.14/lib/python/site-packages python3 Verification/verify_shell.py > /tmp/wealthy-c2b2-r3-shell.log 2>&1
-sh Verification/verify_localization.sh > /tmp/wealthy-c2b2-r3-localization.log 2>&1
+sh Verification/verify_core.sh > /tmp/wealthy-c2b2-r4-core.log 2>&1
+PYTHONPATH=/Users/harrison/Library/Python/3.14/lib/python/site-packages python3 Verification/verify_shell.py > /tmp/wealthy-c2b2-r4-shell.log 2>&1
+sh Verification/verify_localization.sh > /tmp/wealthy-c2b2-r4-localization.log 2>&1
 git diff --check
 ```
 
-Core, shell, localization and final diff check: PASS. Targeted/full test commands:
-
-`swipe15`:
+Core, shell and localization: PASS, exit 0. Final diff check: PASS. Targeted and full UI commands:
 
 ```sh
-/Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild -project Wealthy/Wealthy.xcodeproj -scheme WealthyUITests -destination "platform=iOS Simulator,id=870430A8-E557-4CED-8A8E-079801D804B9" -derivedDataPath /tmp/wealthy-c2b2-r3-15 -resultBundlePath /tmp/wealthy-c2b2-r3-swipe15.xcresult -parallel-testing-enabled NO "-only-testing:WealthyUITests/Cycle2aUITests/testHorizontalTabSwipeAndVerticalScroll" test > /tmp/wealthy-c2b2-r3-swipe15.log 2>&1
+xcodebuild -project Wealthy/Wealthy.xcodeproj -scheme WealthyUITests -destination 'platform=iOS Simulator,id=870430A8-E557-4CED-8A8E-079801D804B9' -derivedDataPath /tmp/wealthy-c2b2-r4-15 -resultBundlePath /tmp/wealthy-c2b2-r4-safe15.xcresult -parallel-testing-enabled NO -only-testing:WealthyUITests/Cycle2aUITests/testSafeLineAndAIInformationEvidence test > /tmp/wealthy-c2b2-r4-safe15.log 2>&1
+xcodebuild -project Wealthy/Wealthy.xcodeproj -scheme WealthyUITests -destination 'platform=iOS Simulator,id=DEA8D0DF-8BA2-4F70-B19C-BACAC400EAE0' -derivedDataPath /tmp/wealthy-c2b2-r3-17 -resultBundlePath /tmp/wealthy-c2b2-r4-safe17.xcresult -parallel-testing-enabled NO -only-testing:WealthyUITests/Cycle2aUITests/testSafeLineAndAIInformationEvidence test > /tmp/wealthy-c2b2-r4-safe17.log 2>&1
+xcodebuild -project Wealthy/Wealthy.xcodeproj -scheme WealthyUITests -destination 'platform=iOS Simulator,id=870430A8-E557-4CED-8A8E-079801D804B9' -derivedDataPath /tmp/wealthy-c2b2-r4-15 -resultBundlePath /tmp/wealthy-c2b2-r4-home15.xcresult -parallel-testing-enabled NO -only-testing:WealthyUITests/Cycle2aUITests/testHorizontalTabSwipeAndVerticalScroll -only-testing:WealthyUITests/Cycle2aUITests/testHomeAccessibilityAudit test > /tmp/wealthy-c2b2-r4-home15.log 2>&1
+xcodebuild -project Wealthy/Wealthy.xcodeproj -scheme WealthyUITests -destination 'platform=iOS Simulator,id=DEA8D0DF-8BA2-4F70-B19C-BACAC400EAE0' -derivedDataPath /tmp/wealthy-c2b2-r3-17 -resultBundlePath /tmp/wealthy-c2b2-r4-home17.xcresult -parallel-testing-enabled NO -only-testing:WealthyUITests/Cycle2aUITests/testHorizontalTabSwipeAndVerticalScroll -only-testing:WealthyUITests/Cycle2aUITests/testHomeAccessibilityAudit test > /tmp/wealthy-c2b2-r4-home17.log 2>&1
+xcodebuild -project Wealthy/Wealthy.xcodeproj -scheme WealthyUITests -destination 'platform=iOS Simulator,id=870430A8-E557-4CED-8A8E-079801D804B9' -derivedDataPath /tmp/wealthy-c2b2-r4-15 -resultBundlePath /tmp/wealthy-c2b2-r4-full15.xcresult -parallel-testing-enabled NO test > /tmp/wealthy-c2b2-r4-full15.log 2>&1
+xcodebuild -project Wealthy/Wealthy.xcodeproj -scheme WealthyUITests -destination 'platform=iOS Simulator,id=DEA8D0DF-8BA2-4F70-B19C-BACAC400EAE0' -derivedDataPath /tmp/wealthy-c2b2-r3-17 -resultBundlePath /tmp/wealthy-c2b2-r4-full17.xcresult -parallel-testing-enabled NO test > /tmp/wealthy-c2b2-r4-full17.log 2>&1
 ```
 
-`swipe17`:
+safe15/safe17/full15/full17 exit 65 with the exact Home failures above; home15/home17 exit 0. The 17 Pro run reuses an existing derived-data directory, rebuilding changed source; both full suites use this round's compiled source.
 
 ```sh
-/Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild -project Wealthy/Wealthy.xcodeproj -scheme WealthyUITests -destination "platform=iOS Simulator,id=DEA8D0DF-8BA2-4F70-B19C-BACAC400EAE0" -derivedDataPath /tmp/wealthy-c2b2-r3-17 -resultBundlePath /tmp/wealthy-c2b2-r3-swipe17.xcresult -parallel-testing-enabled NO "-only-testing:WealthyUITests/Cycle2aUITests/testHorizontalTabSwipeAndVerticalScroll" test > /tmp/wealthy-c2b2-r3-swipe17.log 2>&1
-```
-
-`home15`:
-
-```sh
-/Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild -project Wealthy/Wealthy.xcodeproj -scheme WealthyUITests -destination "platform=iOS Simulator,id=870430A8-E557-4CED-8A8E-079801D804B9" -derivedDataPath /tmp/wealthy-c2b2-r3-15 -resultBundlePath /tmp/wealthy-c2b2-r3-home15.xcresult -parallel-testing-enabled NO "-only-testing:WealthyUITests/Cycle2aUITests/testHomeAccessibilityAudit" "-only-testing:WealthyUITests/Cycle2aUITests/testSafeLineAndAIInformationEvidence" test > /tmp/wealthy-c2b2-r3-home15.log 2>&1
-```
-
-`home17`:
-
-```sh
-/Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild -project Wealthy/Wealthy.xcodeproj -scheme WealthyUITests -destination "platform=iOS Simulator,id=DEA8D0DF-8BA2-4F70-B19C-BACAC400EAE0" -derivedDataPath /tmp/wealthy-c2b2-r3-17 -resultBundlePath /tmp/wealthy-c2b2-r3-home17.xcresult -parallel-testing-enabled NO "-only-testing:WealthyUITests/Cycle2aUITests/testHomeAccessibilityAudit" "-only-testing:WealthyUITests/Cycle2aUITests/testSafeLineAndAIInformationEvidence" test > /tmp/wealthy-c2b2-r3-home17.log 2>&1
-```
-
-`home15b`:
-
-```sh
-/Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild -project Wealthy/Wealthy.xcodeproj -scheme WealthyUITests -destination "platform=iOS Simulator,id=870430A8-E557-4CED-8A8E-079801D804B9" -derivedDataPath /tmp/wealthy-c2b2-r3-15 -resultBundlePath /tmp/wealthy-c2b2-r3-home15b.xcresult -parallel-testing-enabled NO "-only-testing:WealthyUITests/Cycle2aUITests/testHomeAccessibilityAudit" "-only-testing:WealthyUITests/Cycle2aUITests/testSafeLineAndAIInformationEvidence" test > /tmp/wealthy-c2b2-r3-home15b.log 2>&1
-```
-
-`home17b`:
-
-```sh
-/Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild -project Wealthy/Wealthy.xcodeproj -scheme WealthyUITests -destination "platform=iOS Simulator,id=DEA8D0DF-8BA2-4F70-B19C-BACAC400EAE0" -derivedDataPath /tmp/wealthy-c2b2-r3-17 -resultBundlePath /tmp/wealthy-c2b2-r3-home17b.xcresult -parallel-testing-enabled NO "-only-testing:WealthyUITests/Cycle2aUITests/testHomeAccessibilityAudit" "-only-testing:WealthyUITests/Cycle2aUITests/testSafeLineAndAIInformationEvidence" test > /tmp/wealthy-c2b2-r3-home17b.log 2>&1
-```
-
-`baseline15`:
-
-```sh
-/Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild -project Wealthy/Wealthy.xcodeproj -scheme WealthyUITests -destination "platform=iOS Simulator,id=870430A8-E557-4CED-8A8E-079801D804B9" -derivedDataPath /tmp/wealthy-c2b2-round2-baseline-build -resultBundlePath /tmp/wealthy-c2b2-r3-baseline15.xcresult -parallel-testing-enabled NO "-only-testing:WealthyUITests/Cycle2aUITests/testHomeAccessibilityAudit" test > /tmp/wealthy-c2b2-r3-baseline15.log 2>&1
-```
-
-`baseline17`:
-
-```sh
-/Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild -project Wealthy/Wealthy.xcodeproj -scheme WealthyUITests -destination "platform=iOS Simulator,id=DEA8D0DF-8BA2-4F70-B19C-BACAC400EAE0" -derivedDataPath /tmp/wealthy-c2b2-r3-baseline17-build -resultBundlePath /tmp/wealthy-c2b2-r3-baseline17.xcresult -parallel-testing-enabled NO "-only-testing:WealthyUITests/Cycle2aUITests/testHomeAccessibilityAudit" test > /tmp/wealthy-c2b2-r3-baseline17.log 2>&1
-```
-
-`quick15`:
-
-```sh
-/Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild -project Wealthy/Wealthy.xcodeproj -scheme WealthyUITests -destination "platform=iOS Simulator,id=870430A8-E557-4CED-8A8E-079801D804B9" -derivedDataPath /tmp/wealthy-c2b2-r3-15 -resultBundlePath /tmp/wealthy-c2b2-r3-quick15.xcresult -parallel-testing-enabled NO "-only-testing:WealthyUITests/Cycle2aUITests/testQuickEntryKeyboardLayoutAndEvidence" "-only-testing:WealthyUITests/Cycle2aUITests/testQuickEntryThreeInteractionsAndUncategorized" "-only-testing:WealthyUITests/Cycle2aUITests/testQuickEntryCategoryDetailsAndInvalidAmount" test > /tmp/wealthy-c2b2-r3-quick15.log 2>&1
-```
-
-`quick17`:
-
-```sh
-/Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild -project Wealthy/Wealthy.xcodeproj -scheme WealthyUITests -destination "platform=iOS Simulator,id=DEA8D0DF-8BA2-4F70-B19C-BACAC400EAE0" -derivedDataPath /tmp/wealthy-c2b2-r3-17 -resultBundlePath /tmp/wealthy-c2b2-r3-quick17.xcresult -parallel-testing-enabled NO "-only-testing:WealthyUITests/Cycle2aUITests/testQuickEntryKeyboardLayoutAndEvidence" "-only-testing:WealthyUITests/Cycle2aUITests/testQuickEntryThreeInteractionsAndUncategorized" "-only-testing:WealthyUITests/Cycle2aUITests/testQuickEntryCategoryDetailsAndInvalidAmount" test > /tmp/wealthy-c2b2-r3-quick17.log 2>&1
-```
-
-`full15`:
-
-```sh
-/Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild -project Wealthy/Wealthy.xcodeproj -scheme WealthyUITests -destination "platform=iOS Simulator,id=870430A8-E557-4CED-8A8E-079801D804B9" -derivedDataPath /tmp/wealthy-c2b2-r3-15 -resultBundlePath /tmp/wealthy-c2b2-r3-full15.xcresult -parallel-testing-enabled NO test > /tmp/wealthy-c2b2-r3-full15.log 2>&1
-```
-
-`full17`:
-
-```sh
-/Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild -project Wealthy/Wealthy.xcodeproj -scheme WealthyUITests -destination "platform=iOS Simulator,id=DEA8D0DF-8BA2-4F70-B19C-BACAC400EAE0" -derivedDataPath /tmp/wealthy-c2b2-r3-17 -resultBundlePath /tmp/wealthy-c2b2-r3-full17.xcresult -parallel-testing-enabled NO test > /tmp/wealthy-c2b2-r3-full17.log 2>&1
-```
-
-`release-sim`:
-
-```sh
-/Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild -project Wealthy/Wealthy.xcodeproj -scheme WealthyUITests -configuration Release -destination "generic/platform=iOS Simulator" -derivedDataPath /tmp/wealthy-c2b2-round2-release-sim build > /tmp/wealthy-c2b2-r3-release-sim.log 2>&1
-```
-
-`release-device`:
-
-```sh
-/Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild -project Wealthy/Wealthy.xcodeproj -scheme WealthyUITests -configuration Release -destination generic/platform=iOS -derivedDataPath /tmp/wealthy-c2b2-round2-release-device -allowProvisioningUpdates build > /tmp/wealthy-c2b2-r3-release-device.log 2>&1
-```
-
-```sh
-git worktree add --detach /tmp/wealthy-c2b2-baseline fc74376
-# Baseline-only instrumentation: print Home/tab frames and accessibility tree;
-# testHomeAccessibilityAudit calls audit("home") and audit("home", flags: ["--dark"]).
-# No product code, assertions or audit filter changed in the temporary worktree.
-git worktree remove --force /tmp/wealthy-c2b2-baseline
+xcodebuild -project Wealthy/Wealthy.xcodeproj -scheme WealthyUITests -configuration Release -destination 'generic/platform=iOS Simulator' -derivedDataPath /tmp/wealthy-c2b2-round2-release-sim build > /tmp/wealthy-c2b2-r4-release-sim.log 2>&1
+xcodebuild -project Wealthy/Wealthy.xcodeproj -scheme WealthyUITests -configuration Release -destination generic/platform=iOS -derivedDataPath /tmp/wealthy-c2b2-round2-release-device -allowProvisioningUpdates build > /tmp/wealthy-c2b2-r4-release-device.log 2>&1
 codesign --verify --deep --strict --verbose=2 /tmp/wealthy-c2b2-round2-release-device/Build/Products/Release-iphoneos/Wealthy.app
-xcrun devicectl device install app --device <paired-iPhone-ID> /tmp/wealthy-c2b2-round2-release-device/Build/Products/Release-iphoneos/Wealthy.app
-xcrun devicectl device process launch --device <paired-iPhone-ID> com.harrison.Wealthy
 ```
 
-Device logs: /tmp/wealthy-c2b2-r3-device-install.log and ...-device-launch.log; both subprocesses returned 0. No device identifiers or private container paths are copied into repository evidence.
+All exit 0; build logs end BUILD SUCCEEDED. Codesign output: valid on disk; satisfies its Designated Requirement. No device install/launch command was executed this round.
 
-Metadata inspection:
+Metadata inspection command:
 
 ```sh
 python3 - <<'PYMETA'
@@ -270,24 +191,34 @@ import json, subprocess
 from pathlib import Path
 app = Path('/tmp/wealthy-c2b2-round2-release-device/Build/Products/Release-iphoneos/Wealthy.app')
 d = json.loads((app/'Metadata.appintents/extract.actionsdata').read_text())
-print('Actions:', sorted(d['actions']))
 for name, action in sorted(d['actions'].items()):
-    print(name, action.get('openAppWhenRun'), [(p.get('name'), p.get('isOptional')) for p in action.get('parameters', [])])
-print(d['autoShortcuts'])
-for language in ('en', 'ja', 'es', 'ko'):
-    print(language, subprocess.check_output(['plutil', '-p', str(app/(language+'.lproj')/'AppShortcuts.strings')], text=True))
+    print(name, 'openAppWhenRun=', action.get('openAppWhenRun'), 'parameters=', [(p.get('name'), p.get('isOptional')) for p in action.get('parameters', [])])
+print('autoShortcuts:', d['autoShortcuts'])
+for lang in ('en', 'ja', 'es', 'ko'):
+    print(lang, subprocess.check_output(['plutil', '-p', str(app/(lang+'.lproj')/'AppShortcuts.strings')], text=True))
 PYMETA
 ```
 
-Screenshots: xcresulttool exports for home15b/home17b and quick15/quick17; sips conversion commands and capture test names are in INDEX.md. Every image was opened with view_image.
+Observed action output:
+
+```text
+OpenQuickAddIntent openAppWhenRun= True parameters= []
+RecordExpenseIntent openAppWhenRun= False parameters= [('amount', False), ('category', True)]
+```
+
+Auto-shortcut keys are Record an expense in ${applicationName} and Quick add in ${applicationName}; localized plutil output is transcribed in the language table above. Screenshot export/conversion commands are recorded in INDEX.md.
 
 ## Errors and warnings
 
-Initial sandbox-only simctl failed to connect to CoreSimulator; authorized host execution succeeded. First attachment export failed because xcresulttool could not expand a temporary TestReport; authorized execution exported successfully. These environmental errors are not test passes or app failures. Xcode emitted debugger-version/UIAccessibility loader messages and the test runner's no-AppIntents-framework metadata warning; shipping-app metadata is present. No audit conditions were relaxed.
+- Home audit failures are real acceptance failures, not ignored. The existing narrow SwiftUI.AccessibilityNode Dynamic Type exception remains the only filter.
+- Simulator access initially failed inside the restricted sandbox (CoreSimulatorService connection invalid / operation not permitted); authorized host execution succeeded. No unsafe workaround was used.
+- Xcode emits debugger-version lookup and duplicate UIAccessibility loader warnings. The test-runner metadata warning is separate from the shipping app's verified App Intents metadata.
+- On 17 Pro, XCTest repeatedly logged App animations complete notification not received, will attempt to continue. testChildSupportDefaults passed in 1,591.512 s and testOnboardingEntryTaxNoSpendTarget passed in 1,633.733 s. No timeout settings or test conditions were changed; no causal attribution is made.
+- A progress-only polling script initially had a Python parenthesis error; it was corrected. It did not run, modify or replace any test assertion/command.
 
 ## Not done / unverified
 
-- Acceptance remains PARTIAL: expanded-safe-line Home contrast failures on both simulators. The decided plain Form remains; no independent layout redesign or new exclusion was attempted.
-- Claude decision needed: specify the next scoped correction for the weekday content under the floating tab bar while retaining the restored Form/hittability. Reproduce with testSafeLineAndAIInformationEvidence, --quick-safe-rule, expand safeScheduled, light/dark. See round3-home-audit.txt and the four Home JPEGs.
-- Physical VoiceOver, physical performance medians/Home-interactive <=2s, manual Shortcuts execution and iOS 26 runtime compatibility were not measured in this round. Simulator metrics do not establish those results.
-- No unrelated fixes, real-data manipulation, dependencies, extensions, targets, capabilities, deployment, commit, push or merge.
+- Acceptance remains PARTIAL: three Home contrast assertions on each simulator, in targeted and full runs. Claude must decide the next scoped Home/empty-state correction. This report does not authorize a merge.
+- No further product/layout changes, audit exclusions, test weakening or unrelated fixes were made after the decided Round 4 navigation change.
+- Physical device installation/launch of the Round 4 build was intentionally not run, as directed. Physical VoiceOver, owner Shortcuts UI execution, physical performance medians/Home-interactive <=2 s, and iOS 26 runtime compatibility are unverified here. Simulator timing is not physical-device acceptance.
+- No real personal/financial data, ReceiptExample content, owner-ledger writes, uninstall, data deletion, dependency/capability change, production deployment or Git mutation.

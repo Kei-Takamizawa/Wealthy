@@ -1,0 +1,47 @@
+Round 4 targeted safe-line evidence, Xcode 27.2 / iOS 27.0 simulators.
+Audit helper unchanged. Home contrast failures remain; scheduled and AI screens have no audit failures.
+
+iPhone 15 Pro
+SAFE_HOME_FRAME flags=[] id=safeAmount frame={{48, 423.66666666666669}, {66.333333333333329, 20.333333333333314}}
+SAFE_HOME_FRAME flags=[] id=safeScheduled frame={{48, 452}, {202, 20.333333333333314}}
+AUDIT_ISSUE screen=home-safe-line type=XCUIAccessibilityAuditType(rawValue: 1) compact=Contrast failed detailed=Contrast failed for SwiftUI.AccessibilityNode element=Attributes: StaticText, 0x10a29b0c0, {{32.0, 801.0}, {103.3, 20.3}}, label: 'A fresh island'
+AUDIT_ISSUE screen=home-safe-line type=XCUIAccessibilityAuditType(rawValue: 1) compact=Contrast failed detailed=Contrast failed for SwiftUI.AccessibilityNode element=Attributes: StaticText, 0x10a29b340, {{32.0, 829.3}, {297.7, 42.3}}, label: 'Add your first entry, or mark a day with no spending.'
+SAFE_SCHEDULED_FRAME flags=[] label=Synthetic Thursday frame={{32, 191.33333333333334}, {147.66666666666666, 20.333333333333314}}
+SAFE_SCHEDULED_FRAME flags=[] label=¥2,000 frame={{32, 215.66666666666666}, {56, 20.333333333333343}}
+SAFE_HOME_FRAME flags=["--dark"] id=safeAmount frame={{48, 423.66666666666669}, {66.333333333333329, 20.333333333333314}}
+SAFE_HOME_FRAME flags=["--dark"] id=safeScheduled frame={{48, 452}, {202, 20.333333333333314}}
+AUDIT_ISSUE screen=home-safe-line type=XCUIAccessibilityAuditType(rawValue: 1) compact=Contrast failed detailed=Contrast failed for SwiftUI.AccessibilityNode element=Attributes: StaticText, 0x10a29b5c0, {{32.0, 801.0}, {103.3, 20.3}}, label: 'A fresh island'
+SAFE_SCHEDULED_FRAME flags=["--dark"] label=Synthetic Thursday frame={{32, 191.33333333333334}, {147.66666666666666, 20.333333333333314}}
+SAFE_SCHEDULED_FRAME flags=["--dark"] label=¥2,000 frame={{32, 215.66666666666666}, {56, 20.333333333333343}}
+Test Case '-[WealthyUITests.Cycle2aUITests testSafeLineAndAIInformationEvidence]' failed (97.187 seconds).
+
+iPhone 17 Pro
+SAFE_HOME_FRAME flags=[] id=safeAmount frame={{48, 426.66666666666669}, {66.333333333333329, 20.333333333333314}}
+SAFE_HOME_FRAME flags=[] id=safeScheduled frame={{48, 455}, {202, 20.333333333333314}}
+AUDIT_ISSUE screen=home-safe-line type=XCUIAccessibilityAuditType(rawValue: 1) compact=Contrast failed detailed=Contrast failed for SwiftUI.AccessibilityNode element=Attributes: StaticText, 0x106f1b200, {{32.0, 804.0}, {103.3, 20.3}}, label: 'A fresh island'
+AUDIT_ISSUE screen=home-safe-line type=XCUIAccessibilityAuditType(rawValue: 1) compact=Contrast failed detailed=Contrast failed for SwiftUI.AccessibilityNode element=Attributes: StaticText, 0x106f1b480, {{32.0, 832.3}, {297.7, 42.3}}, label: 'Add your first entry, or mark a day with no spending.'
+SAFE_SCHEDULED_FRAME flags=[] label=Synthetic Thursday frame={{32, 194.33333333333334}, {147.66666666666666, 20.333333333333314}}
+SAFE_SCHEDULED_FRAME flags=[] label=¥2,000 frame={{32, 218.66666666666666}, {56, 20.333333333333343}}
+SAFE_HOME_FRAME flags=["--dark"] id=safeAmount frame={{48, 426.66666666666669}, {66.333333333333329, 20.333333333333314}}
+SAFE_HOME_FRAME flags=["--dark"] id=safeScheduled frame={{48, 455}, {202, 20.333333333333314}}
+AUDIT_ISSUE screen=home-safe-line type=XCUIAccessibilityAuditType(rawValue: 1) compact=Contrast failed detailed=Contrast failed for SwiftUI.AccessibilityNode element=Attributes: StaticText, 0x106f1b840, {{32.0, 832.3}, {297.7, 42.3}}, label: 'Add your first entry, or mark a day with no spending.'
+SAFE_SCHEDULED_FRAME flags=["--dark"] label=Synthetic Thursday frame={{32, 194.33333333333334}, {147.66666666666666, 20.333333333333314}}
+SAFE_SCHEDULED_FRAME flags=["--dark"] label=¥2,000 frame={{32, 218.66666666666666}, {56, 20.333333333333343}}
+Test Case '-[WealthyUITests.Cycle2aUITests testSafeLineAndAIInformationEvidence]' failed (97.060 seconds).
+
+
+Round 4 regression checks (both tests passed on both simulators):
+iPhone 15 Pro
+Test Case '-[WealthyUITests.Cycle2aUITests testHomeAccessibilityAudit]' passed (28.772 seconds).
+HOME_ROOT_FRAME {{0, 0}, {393, 852}}
+HOME_ROOT_FRAME {{0, 0}, {393, 852}}
+HOME_ROOT_FRAME {{0, 0}, {393, 852}}
+Test Case '-[WealthyUITests.Cycle2aUITests testHorizontalTabSwipeAndVerticalScroll]' passed (31.164 seconds).
+iPhone 17 Pro
+Test Case '-[WealthyUITests.Cycle2aUITests testHomeAccessibilityAudit]' passed (23.010 seconds).
+HOME_ROOT_FRAME {{0, 0}, {402, 874}}
+HOME_ROOT_FRAME {{0, 0}, {402, 874}}
+HOME_ROOT_FRAME {{0, 0}, {402, 874}}
+Test Case '-[WealthyUITests.Cycle2aUITests testHorizontalTabSwipeAndVerticalScroll]' passed (30.490 seconds).
+
+Baseline fc74376 root frames measured in Round 3 (not rerun in Round 4): 15 Pro {{0,0},{393,852}}, 17 Pro {{0,0},{402,874}}. Round 4 root frames match.

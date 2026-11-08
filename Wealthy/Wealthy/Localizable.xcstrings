@@ -5916,6 +5916,35 @@
         }
       }
     },
+    "scheduledThisWeek": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Scheduled this week"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "今週の予定支出"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gastos previstos esta semana"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "이번 주 예정 지출"
+          }
+        }
+      }
+    },
     "afterScheduled": {
       "extractionState": "manual",
       "localizations": {
