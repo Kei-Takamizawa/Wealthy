@@ -129,3 +129,24 @@ Same Task ID, branch and draft PR #13. Read `.ai/LAST_REPORT.md` first. Only the
 5. Required checks (`verify_core.sh`, `verify_shell.py` with fontTools PYTHONPATH, `verify_localization.sh`, `git diff --check`, Simulator Release and signed generic iOS builds). No device run needed this round. Rewrite `.ai/LAST_REPORT.md` completely as the final report for the whole cycle, listing every changed file.
 
 Acceptance for Round 4: the original acceptance list with the safe-line breakdown on its own screen, all audits passing on both simulators with no new exclusions, and full `WealthyUITests` passing on both. Then `Status: DONE`; otherwise `PARTIAL` with exact failures and frames.
+
+## Round 5 (designer decision, 2026-11-08, after Round 4)
+Same Task ID, branch and draft PR #13. Read `.ai/LAST_REPORT.md` first. Only the items below; keep the Round 4 product code (Home container, Quick add buttons, `safeScheduledPage`) unchanged.
+
+**Designer reading of Round 4:** with the safe-line fixture, Home is taller than the screen, so whatever item is last on screen (now the empty-state text) sits partly behind the floating tab bar and fails the contrast audit. This is the standard iOS scroll-under-bar behavior, not a defect in that text: the user scrolls to read it. The decision (designer, owner may override) is to audit every element where the user can read it, without weakening the audit.
+
+1. **Scrolled audit helper (decided), tests only.** Add one helper in `WealthyUITests` for scrollable screens taller than the screen:
+   - Pass 1 at the starting position: run the same audit as now (same audit types; keep the existing `auditWithSwiftUIException` dynamic-type rule exactly). An issue may be deferred only if its element's frame intersects the tab bar frame or the navigation bar frame. Every other issue fails the test as now.
+   - For each deferred element: scroll (small `swipeUp`/`swipeDown` steps, at most 8 positions) until its frame is fully between the navigation bar's `maxY` and the tab bar's `minY`; assert that; run the full audit again at that position with the same rule. The deferred element must have zero issues there. Issues on other elements at that position follow the same rule (fail, or defer if under a bar and re-check).
+   - Fail if any deferred element cannot be brought fully into view, or still has an issue when fully visible.
+   - Attach and print every deferred element with its label, identifier, issue type and both frames (under the bar, then fully visible).
+2. **Use it only for the Home audit in `testSafeLineAndAIInformationEvidence`** (light and dark). All other audits stay exactly as they are.
+3. **Order of runs:** that test on both simulators -> the Home audits and `testHorizontalTabSwipeAndVerticalScroll` on both -> full `WealthyUITests` once per simulator, one simulator at a time (`-parallel-testing-enabled NO`).
+4. **Evidence.** Add `round5-home-audit.txt` with the deferred elements and frames from both simulators; update `INDEX.md`. Screenshots change only if the UI changes (it should not).
+5. Required checks (`verify_core.sh`, `verify_shell.py` with fontTools PYTHONPATH, `verify_localization.sh`, `git diff --check`, Simulator Release and signed generic iOS builds). Rewrite `.ai/LAST_REPORT.md` completely as the final report for the whole cycle, listing every changed file, and state this Round 5 audit decision in it.
+
+Acceptance for Round 5: the original acceptance list, every audit passing on both simulators (Home with the safe line through the scrolled helper above), and full `WealthyUITests` passing on both. Then `Status: DONE`; otherwise `PARTIAL` with exact failures and frames.
+
+## Owner follow-up (2026-11-08)
+
+Continue Round 5. First get testSafeLineAndAIInformationEvidence passing on both simulators; report the failing elements by label and frame, not AX ids. Start the full suites only after it passes on both, or after you decide to finish PARTIAL. Then finish the run order and rewrite .ai/LAST_REPORT.md as the final report.

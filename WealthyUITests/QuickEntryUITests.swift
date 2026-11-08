@@ -203,6 +203,93 @@ extension Cycle2aUITests {
     }
 
     @MainActor
+    func auditScrollableHome(_ screen: String) throws {
+        var pending: [String: (resolve: () -> XCUIElement?, label: String, identifier: String, issue: String, original: CGRect)] = [:]
+        var verified: [String: CGRect] = [:]
+        var evidence: [String] = []
+        defer {
+            let attachment = XCTAttachment(string: evidence.joined(separator: "\n"))
+            attachment.name = "scrolled-audit-\(screen)"
+            attachment.lifetime = .keepAlways
+            add(attachment)
+        }
+        func record(_ message: String) {
+            evidence.append(message)
+            print("SCROLLED_AUDIT \(message)")
+        }
+        func fullyVisible(_ element: XCUIElement) -> Bool {
+            element.exists && !element.frame.isEmpty
+                && element.frame.minY >= app.navigationBars.firstMatch.frame.maxY
+                && element.frame.maxY <= app.tabBars.firstMatch.frame.minY
+        }
+        // Each position uses the full audit; only bar intersections may wait for a visible recheck.
+        for position in 0..<8 {
+            var visibleIssues: Set<String> = []
+            try app.performAccessibilityAudit { issue in
+                print("AUDIT_ISSUE screen=\(screen) type=\(issue.auditType) compact=\(issue.compactDescription) detailed=\(issue.detailedDescription) element=\(issue.element?.debugDescription ?? "<nil>")")
+                guard let element = issue.element, element.exists else { return false }
+                if issue.auditType == .dynamicType,
+                   issue.detailedDescription.contains("SwiftUI.AccessibilityNode") {
+                    record("IGNORED_SWIFTUI_DYNAMIC_TYPE screen=\(screen) label=\(element.label) identifier=\(element.identifier) frame=\(NSCoder.string(for: element.frame))")
+                    return true
+                }
+                let frame = element.frame
+                let navigation = self.app.navigationBars.firstMatch.frame
+                let tab = self.app.tabBars.firstMatch.frame
+                guard !frame.isEmpty, frame.intersects(navigation) || frame.intersects(tab) else {
+                    visibleIssues.insert("\(element.identifier)|\(element.label)")
+                    record("FAIL screen=\(screen) position=\(position) label=\(element.label) identifier=\(element.identifier) type=\(issue.auditType) frame=\(NSCoder.string(for: frame)) navigation=\(NSCoder.string(for: navigation)) tab=\(NSCoder.string(for: tab))")
+                    return false
+                }
+                let key = "\(element.elementType.rawValue)|\(element.identifier)|\(element.label)|\(frame.minX)|\(issue.auditType)"
+                if let visibleFrame = verified[key] {
+                    record("PREVIOUS_RECHECK screen=\(screen) position=\(position) label=\(element.label) identifier=\(element.identifier) type=\(issue.auditType) underBar=\(NSCoder.string(for: frame)) fullyVisible=\(NSCoder.string(for: visibleFrame))")
+                    return true
+                }
+                if pending[key] == nil {
+                    let label = element.label
+                    let identifier = element.identifier
+                    let elementType = element.elementType
+                    // Audit elements bind to transient SwiftUI node IDs; resolve afresh after scrolling.
+                    let resolve: () -> XCUIElement? = {
+                        self.app.descendants(matching: elementType)
+                            .matching(NSPredicate(format: "identifier == %@ AND label == %@", identifier, label))
+                            .allElementsBoundByIndex.first { $0.exists && abs($0.frame.minX - frame.minX) < 1 }
+                    }
+                    pending[key] = (resolve, label, identifier, "\(issue.auditType)", frame)
+                    record("DEFER screen=\(screen) position=\(position) label=\(element.label) identifier=\(element.identifier) type=\(issue.auditType) underBar=\(NSCoder.string(for: frame)) navigation=\(NSCoder.string(for: navigation)) tab=\(NSCoder.string(for: tab))")
+                }
+                return true
+            }
+            // A full audit just ran here. Any visible issue failed above instead of being deferred.
+            for (key, item) in pending {
+                guard let element = item.resolve(), fullyVisible(element) else { continue }
+                let failed = visibleIssues.contains("\(item.identifier)|\(item.label)")
+                record("RECHECK result=\(failed ? "FAIL" : "PASS") screen=\(screen) position=\(position) label=\(item.label) identifier=\(item.identifier) type=\(item.issue) underBar=\(NSCoder.string(for: item.original)) fullyVisible=\(NSCoder.string(for: element.frame)) navigation=\(NSCoder.string(for: app.navigationBars.firstMatch.frame)) tab=\(NSCoder.string(for: app.tabBars.firstMatch.frame))")
+                XCTAssertTrue(fullyVisible(element))
+                if !failed { verified[key] = element.frame }
+                pending.removeValue(forKey: key)
+            }
+            if pending.isEmpty { return }
+            if position < 7, let item = pending.sorted(by: { $0.key < $1.key }).first?.value {
+                let top = app.navigationBars.firstMatch.frame.maxY
+                let bottom = app.tabBars.firstMatch.frame.minY
+                let start = app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0))
+                    .withOffset(CGVector(dx: 0, dy: (top + bottom) / 2))
+                let currentFrame = item.resolve()?.frame ?? item.original
+                let distance: CGFloat = currentFrame.minY < top ? 120 : -120
+                start.press(forDuration: 0.05, thenDragTo: start.withOffset(CGVector(dx: 0, dy: distance)),
+                            withVelocity: .slow, thenHoldForDuration: 0.5)
+            }
+        }
+        for item in pending.values {
+            let current = item.resolve().map { NSCoder.string(for: $0.frame) } ?? "<not present>"
+            record("UNRESOLVED screen=\(screen) label=\(item.label) identifier=\(item.identifier) type=\(item.issue) underBar=\(NSCoder.string(for: item.original)) current=\(current)")
+            XCTFail("Deferred element not fully audited within 8 positions: \(item.label); identifier=\(item.identifier); original=\(item.original); current=\(current)")
+        }
+    }
+
+    @MainActor
     func testSafeLineAndAIInformationEvidence() throws {
         for flags in [[], ["--dark"]] {
             launchQuickEntry(flags + ["--quick-safe-rule"])
@@ -215,7 +302,7 @@ extension Cycle2aUITests {
                 print("SAFE_HOME_FRAME flags=\(flags) id=\(element.identifier) frame=\(NSCoder.string(for: element.frame))")
             }
             capture("c2b2-home-safe-" + (flags.first ?? "light"))
-            try auditWithSwiftUIException("home-safe-line")
+            try auditScrollableHome("home-safe-line-" + (flags.first ?? "light"))
             tap("safeScheduled")
             XCTAssertTrue(app.collectionViews["safeScheduledPage"].waitForExistence(timeout: 5))
             let title = app.staticTexts["Synthetic Thursday"]
