@@ -222,6 +222,10 @@ struct SettingsView: View {
     var body: some View {
         ScrollView { VStack(alignment: .leading, spacing: 20) {
             GroupBox { VStack { LanguagePicker(); CurrencyPicker() } }
+            NavigationLink { AIInformationView() } label: {
+                LabeledContent(session.t("onDeviceAI"), value: session.t(session.readiness))
+                    .fixedSize(horizontal: false, vertical: true).frame(minHeight: 52)
+            }.accessibilityIdentifier("aiInfoLink")
             NavigationLink { LicenseView() } label: { Label(session.t("licenses"), systemImage: "doc.text").frame(minHeight: 52) }
             GroupBox { VStack(alignment: .leading) { Text(session.t("about")); Text("Wealthy").font(.title2); Text(session.t("aboutDetail")) } }
         }.padding(16) }.navigationTitle(session.t("settings")).navigationBarTitleDisplayMode(.inline).onChange(of: session.currency) { session.refresh() }

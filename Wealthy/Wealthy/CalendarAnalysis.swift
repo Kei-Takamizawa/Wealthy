@@ -104,6 +104,7 @@ struct LedgerEntryRow: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             Text(entry.title.isEmpty ? session.t(entry.kind.rawValue) : entry.title)
+            Text(session.entryCategoryName(entry))
             Text(session.dayText(entry.day))
             Text(session.money(entry.amount, code: entry.currencyCode)).monospacedDigit()
         }.accessibilityElement(children: .combine)
@@ -135,7 +136,7 @@ struct AnalysisView: View {
                         let rows = LedgerQueries.categoryBreakdown(in: core.state, period: period, previousPeriod: previous, currencyCode: session.currency, envelopeID: envelopeID)
                         ForEach(rows, id: \.categoryID) { row in
                             VStack(alignment: .leading, spacing: 8) {
-                                Text(row.categoryID.flatMap { id in core.state.categories.first { $0.id == id }.map(session.categoryName) } ?? session.t("none")).font(.headline)
+                                Text(row.categoryID.flatMap { id in core.state.categories.first { $0.id == id }.map(session.categoryName) } ?? session.t("uncategorized")).font(.headline)
                                 Text(session.t("thisMonth") + ": " + session.totalMoney(row.amount))
                                 Text(session.t("previousMonthTotal") + ": " + session.totalMoney(row.previousAmount))
                             }.accessibilityElement(children: .combine).accessibilityIdentifier("analysis-" + (row.categoryID?.uuidString ?? "none"))

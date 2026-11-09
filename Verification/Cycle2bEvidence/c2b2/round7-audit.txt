@@ -1,0 +1,132 @@
+iPhone 15 Pro SCROLLED_AUDIT SETTLE screen=home-safe-line-light position=0 seconds=1.1331180334091187 settled=true frames=2
+iPhone 15 Pro SCROLLED_AUDIT ISSUE screen=home-safe-line-light position=0 retry=false type=XCUIAccessibilityAuditType(rawValue: 1) label=A fresh island frame={{32, 801}, {103.33333333333331, 20.333333333333371}}
+iPhone 15 Pro SCROLLED_AUDIT DEFER screen=home-safe-line-light position=0 label=A fresh island identifier= type=XCUIAccessibilityAuditType(rawValue: 1) underBar={{32, 801}, {103.33333333333331, 20.333333333333371}} navigation={{0, 59}, {393, 54}} tab={{0, 769}, {393, 83}}
+iPhone 15 Pro SCROLLED_AUDIT ISSUE screen=home-safe-line-light position=0 retry=false type=XCUIAccessibilityAuditType(rawValue: 1) label=Add your first entry, or mark a day with no spending. frame={{32, 829.33333333333337}, {297.66666666666663, 42.333333333333258}}
+iPhone 15 Pro SCROLLED_AUDIT DEFER screen=home-safe-line-light position=0 label=Add your first entry, or mark a day with no spending. identifier= type=XCUIAccessibilityAuditType(rawValue: 1) underBar={{32, 829.33333333333337}, {297.66666666666663, 42.333333333333258}} navigation={{0, 59}, {393, 54}} tab={{0, 769}, {393, 83}}
+iPhone 15 Pro SCROLLED_AUDIT IGNORED_SWIFTUI_DYNAMIC_TYPE screen=home-safe-line-light label=M identifier= frame={{47.11904761904762, 718}, {13.333333333333321, 18}}
+iPhone 15 Pro SCROLLED_AUDIT IGNORED_SWIFTUI_DYNAMIC_TYPE screen=home-safe-line-light label=T identifier= frame={{191.66666666666666, 718}, {9.6666666666666856, 18}}
+iPhone 15 Pro SCROLLED_AUDIT IGNORED_SWIFTUI_DYNAMIC_TYPE screen=home-safe-line-light label=Left this month identifier= frame={{161.66666666666666, 542.66666666666663}, {114.66666666666666, 20.333333333333371}}
+iPhone 15 Pro SCROLLED_AUDIT IGNORED_SWIFTUI_DYNAMIC_TYPE screen=home-safe-line-light label=Spent identifier= frame={{32, 542.66666666666663}, {45, 20.333333333333371}}
+iPhone 15 Pro SCROLLED_AUDIT IGNORED_SWIFTUI_DYNAMIC_TYPE screen=home-safe-line-light label=Not a balance identifier= frame={{59.666666666666664, 518.33333333333326}, {105, 20.333333333333371}}
+iPhone 15 Pro SCROLLED_AUDIT IGNORED_SWIFTUI_DYNAMIC_TYPE screen=home-safe-line-light label=¥0 identifier= frame={{109, 542.66666666666663}, {20.666666666666657, 20.333333333333371}}
+iPhone 15 Pro SCROLLED_AUDIT IGNORED_SWIFTUI_DYNAMIC_TYPE screen=home-safe-line-light label=¥310,000 identifier= frame={{284.33333333333331, 542.66666666666663}, {76.666666666666686, 20.333333333333371}}
+iPhone 15 Pro SCROLLED_AUDIT IGNORED_SWIFTUI_DYNAMIC_TYPE screen=home-safe-line-light label=W identifier= frame={{141.42857142857144, 718}, {15, 18}}
+iPhone 15 Pro SCROLLED_AUDIT IGNORED_SWIFTUI_DYNAMIC_TYPE screen=home-safe-line-light label=S identifier= frame={{286.64285714285717, 718}, {10, 18}}
+iPhone 15 Pro SCROLLED_AUDIT IGNORED_SWIFTUI_DYNAMIC_TYPE screen=home-safe-line-light label=T identifier= frame={{96.523809523809518, 718}, {9.6666666666666714, 18}}
+iPhone 15 Pro SCROLLED_AUDIT IGNORED_SWIFTUI_DYNAMIC_TYPE screen=home-safe-line-light label=S identifier= frame={{334.21428571428572, 718}, {10, 18}}
+iPhone 15 Pro SCROLLED_AUDIT IGNORED_SWIFTUI_DYNAMIC_TYPE screen=home-safe-line-light label=F identifier= frame={{239.73809523809521, 718}, {8.6666666666666288, 18}}
+iPhone 15 Pro SCROLLED_AUDIT SETTLE screen=home-safe-line-light position=1 seconds=1.6266050338745117 settled=true frames=2
+iPhone 15 Pro SCROLLED_AUDIT IGNORED_SWIFTUI_DYNAMIC_TYPE screen=home-safe-line-light label=M identifier= frame={{47.11904761904762, 608}, {13.333333333333321, 18}}
+iPhone 15 Pro SCROLLED_AUDIT IGNORED_SWIFTUI_DYNAMIC_TYPE screen=home-safe-line-light label=T identifier= frame={{191.66666666666666, 608}, {9.6666666666666856, 18}}
+iPhone 15 Pro SCROLLED_AUDIT IGNORED_SWIFTUI_DYNAMIC_TYPE screen=home-safe-line-light label=Left this month identifier= frame={{161.66666666666666, 432.66666666666669}, {114.66666666666666, 20.333333333333314}}
+iPhone 15 Pro SCROLLED_AUDIT IGNORED_SWIFTUI_DYNAMIC_TYPE screen=home-safe-line-light label=A fresh island identifier= frame={{32, 691}, {103.33333333333331, 20.333333333333371}}
+iPhone 15 Pro SCROLLED_AUDIT IGNORED_SWIFTUI_DYNAMIC_TYPE screen=home-safe-line-light label=Spent identifier= frame={{32, 432.66666666666669}, {45, 20.333333333333314}}
+iPhone 15 Pro SCROLLED_AUDIT IGNORED_SWIFTUI_DYNAMIC_TYPE screen=home-safe-line-light label=Not a balance identifier= frame={{59.666666666666664, 408.33333333333331}, {105, 20.333333333333371}}
+iPhone 15 Pro SCROLLED_AUDIT IGNORED_SWIFTUI_DYNAMIC_TYPE screen=home-safe-line-light label=¥0 identifier= frame={{109, 432.66666666666669}, {20.666666666666657, 20.333333333333314}}
+iPhone 15 Pro SCROLLED_AUDIT IGNORED_SWIFTUI_DYNAMIC_TYPE screen=home-safe-line-light label=¥310,000 identifier= frame={{284.33333333333331, 432.66666666666669}, {76.666666666666686, 20.333333333333314}}
+iPhone 15 Pro SCROLLED_AUDIT IGNORED_SWIFTUI_DYNAMIC_TYPE screen=home-safe-line-light label=Add your first entry, or mark a day with no spending. identifier= frame={{32, 719.33333333333337}, {297.66666666666663, 42.333333333333258}}
+iPhone 15 Pro SCROLLED_AUDIT IGNORED_SWIFTUI_DYNAMIC_TYPE screen=home-safe-line-light label=W identifier= frame={{141.42857142857144, 608}, {15, 18}}
+iPhone 15 Pro SCROLLED_AUDIT IGNORED_SWIFTUI_DYNAMIC_TYPE screen=home-safe-line-light label=S identifier= frame={{286.64285714285717, 608}, {10, 18}}
+iPhone 15 Pro SCROLLED_AUDIT IGNORED_SWIFTUI_DYNAMIC_TYPE screen=home-safe-line-light label=T identifier= frame={{96.523809523809518, 608}, {9.6666666666666714, 18}}
+iPhone 15 Pro SCROLLED_AUDIT IGNORED_SWIFTUI_DYNAMIC_TYPE screen=home-safe-line-light label=S identifier= frame={{334.21428571428572, 608}, {10, 18}}
+iPhone 15 Pro SCROLLED_AUDIT IGNORED_SWIFTUI_DYNAMIC_TYPE screen=home-safe-line-light label=F identifier= frame={{239.73809523809521, 608}, {8.6666666666666288, 18}}
+iPhone 15 Pro SCROLLED_AUDIT RECHECK result=PASS screen=home-safe-line-light position=1 label=A fresh island identifier= type=XCUIAccessibilityAuditType(rawValue: 1) underBar={{32, 801}, {103.33333333333331, 20.333333333333371}} fullyVisible={{32, 691}, {103.33333333333331, 20.333333333333371}} navigation={{0, 59}, {393, 54}} tab={{0, 769}, {393, 83}}
+iPhone 15 Pro SCROLLED_AUDIT RECHECK result=PASS screen=home-safe-line-light position=1 label=Add your first entry, or mark a day with no spending. identifier= type=XCUIAccessibilityAuditType(rawValue: 1) underBar={{32, 829.33333333333337}, {297.66666666666663, 42.333333333333258}} fullyVisible={{32, 719.33333333333337}, {297.66666666666663, 42.333333333333258}} navigation={{0, 59}, {393, 54}} tab={{0, 769}, {393, 83}}
+iPhone 15 Pro SCROLLED_AUDIT SETTLE screen=home-safe-line---dark position=0 seconds=0.84934401512146 settled=true frames=2
+iPhone 15 Pro SCROLLED_AUDIT ISSUE screen=home-safe-line---dark position=0 retry=false type=XCUIAccessibilityAuditType(rawValue: 1) label=A fresh island frame={{32, 801}, {103.33333333333331, 20.333333333333371}}
+iPhone 15 Pro SCROLLED_AUDIT DEFER screen=home-safe-line---dark position=0 label=A fresh island identifier= type=XCUIAccessibilityAuditType(rawValue: 1) underBar={{32, 801}, {103.33333333333331, 20.333333333333371}} navigation={{0, 59}, {393, 54}} tab={{0, 769}, {393, 83}}
+iPhone 15 Pro SCROLLED_AUDIT IGNORED_SWIFTUI_DYNAMIC_TYPE screen=home-safe-line---dark label=S identifier= frame={{286.64285714285717, 718}, {10, 18}}
+iPhone 15 Pro SCROLLED_AUDIT IGNORED_SWIFTUI_DYNAMIC_TYPE screen=home-safe-line---dark label=T identifier= frame={{191.66666666666666, 718}, {9.6666666666666856, 18}}
+iPhone 15 Pro SCROLLED_AUDIT IGNORED_SWIFTUI_DYNAMIC_TYPE screen=home-safe-line---dark label=F identifier= frame={{239.73809523809521, 718}, {8.6666666666666288, 18}}
+iPhone 15 Pro SCROLLED_AUDIT IGNORED_SWIFTUI_DYNAMIC_TYPE screen=home-safe-line---dark label=¥0 identifier= frame={{109, 542.66666666666663}, {20.666666666666657, 20.333333333333371}}
+iPhone 15 Pro SCROLLED_AUDIT IGNORED_SWIFTUI_DYNAMIC_TYPE screen=home-safe-line---dark label=¥310,000 identifier= frame={{284.33333333333331, 542.66666666666663}, {76.666666666666686, 20.333333333333371}}
+iPhone 15 Pro SCROLLED_AUDIT IGNORED_SWIFTUI_DYNAMIC_TYPE screen=home-safe-line---dark label=Left this month identifier= frame={{161.66666666666666, 542.66666666666663}, {114.66666666666666, 20.333333333333371}}
+iPhone 15 Pro SCROLLED_AUDIT IGNORED_SWIFTUI_DYNAMIC_TYPE screen=home-safe-line---dark label=S identifier= frame={{334.21428571428572, 718}, {10, 18}}
+iPhone 15 Pro SCROLLED_AUDIT IGNORED_SWIFTUI_DYNAMIC_TYPE screen=home-safe-line---dark label=Spent identifier= frame={{32, 542.66666666666663}, {45, 20.333333333333371}}
+iPhone 15 Pro SCROLLED_AUDIT IGNORED_SWIFTUI_DYNAMIC_TYPE screen=home-safe-line---dark label=W identifier= frame={{141.42857142857144, 718}, {15, 18}}
+iPhone 15 Pro SCROLLED_AUDIT IGNORED_SWIFTUI_DYNAMIC_TYPE screen=home-safe-line---dark label=Not a balance identifier= frame={{59.666666666666664, 518.33333333333326}, {105, 20.333333333333371}}
+iPhone 15 Pro SCROLLED_AUDIT IGNORED_SWIFTUI_DYNAMIC_TYPE screen=home-safe-line---dark label=T identifier= frame={{96.523809523809518, 718}, {9.6666666666666714, 18}}
+iPhone 15 Pro SCROLLED_AUDIT IGNORED_SWIFTUI_DYNAMIC_TYPE screen=home-safe-line---dark label=M identifier= frame={{47.11904761904762, 718}, {13.333333333333321, 18}}
+iPhone 15 Pro SCROLLED_AUDIT SETTLE screen=home-safe-line---dark position=1 seconds=1.0006719827651978 settled=true frames=2
+iPhone 15 Pro SCROLLED_AUDIT ISSUE screen=home-safe-line---dark position=1 retry=false type=XCUIAccessibilityAuditType(rawValue: 1) label=<nil> frame=<nil>
+iPhone 15 Pro SCROLLED_AUDIT IGNORED_SWIFTUI_DYNAMIC_TYPE screen=home-safe-line---dark label=S identifier= frame={{286.64285714285717, 608}, {10, 18}}
+iPhone 15 Pro SCROLLED_AUDIT IGNORED_SWIFTUI_DYNAMIC_TYPE screen=home-safe-line---dark label=T identifier= frame={{191.66666666666666, 608}, {9.6666666666666856, 18}}
+iPhone 15 Pro SCROLLED_AUDIT IGNORED_SWIFTUI_DYNAMIC_TYPE screen=home-safe-line---dark label=F identifier= frame={{239.73809523809521, 608}, {8.6666666666666288, 18}}
+iPhone 15 Pro SCROLLED_AUDIT IGNORED_SWIFTUI_DYNAMIC_TYPE screen=home-safe-line---dark label=¥0 identifier= frame={{109, 432.66666666666669}, {20.666666666666657, 20.333333333333314}}
+iPhone 15 Pro SCROLLED_AUDIT IGNORED_SWIFTUI_DYNAMIC_TYPE screen=home-safe-line---dark label=¥310,000 identifier= frame={{284.33333333333331, 432.66666666666669}, {76.666666666666686, 20.333333333333314}}
+iPhone 15 Pro SCROLLED_AUDIT IGNORED_SWIFTUI_DYNAMIC_TYPE screen=home-safe-line---dark label=Left this month identifier= frame={{161.66666666666666, 432.66666666666669}, {114.66666666666666, 20.333333333333314}}
+iPhone 15 Pro SCROLLED_AUDIT IGNORED_SWIFTUI_DYNAMIC_TYPE screen=home-safe-line---dark label=S identifier= frame={{334.21428571428572, 608}, {10, 18}}
+iPhone 15 Pro SCROLLED_AUDIT IGNORED_SWIFTUI_DYNAMIC_TYPE screen=home-safe-line---dark label=Spent identifier= frame={{32, 432.66666666666669}, {45, 20.333333333333314}}
+iPhone 15 Pro SCROLLED_AUDIT IGNORED_SWIFTUI_DYNAMIC_TYPE screen=home-safe-line---dark label=A fresh island identifier= frame={{32, 691}, {103.33333333333331, 20.333333333333371}}
+iPhone 15 Pro SCROLLED_AUDIT IGNORED_SWIFTUI_DYNAMIC_TYPE screen=home-safe-line---dark label=W identifier= frame={{141.42857142857144, 608}, {15, 18}}
+iPhone 15 Pro SCROLLED_AUDIT IGNORED_SWIFTUI_DYNAMIC_TYPE screen=home-safe-line---dark label=Add your first entry, or mark a day with no spending. identifier= frame={{32, 719.33333333333337}, {297.66666666666663, 42.333333333333258}}
+iPhone 15 Pro SCROLLED_AUDIT IGNORED_SWIFTUI_DYNAMIC_TYPE screen=home-safe-line---dark label=Not a balance identifier= frame={{59.666666666666664, 408.33333333333331}, {105, 20.333333333333371}}
+iPhone 15 Pro SCROLLED_AUDIT IGNORED_SWIFTUI_DYNAMIC_TYPE screen=home-safe-line---dark label=T identifier= frame={{96.523809523809518, 608}, {9.6666666666666714, 18}}
+iPhone 15 Pro SCROLLED_AUDIT IGNORED_SWIFTUI_DYNAMIC_TYPE screen=home-safe-line---dark label=M identifier= frame={{47.11904761904762, 608}, {13.333333333333321, 18}}
+iPhone 15 Pro SCROLLED_AUDIT RECHECK result=PASS screen=home-safe-line---dark position=1 label=A fresh island identifier= type=XCUIAccessibilityAuditType(rawValue: 1) underBar={{32, 801}, {103.33333333333331, 20.333333333333371}} fullyVisible={{32, 691}, {103.33333333333331, 20.333333333333371}} navigation={{0, 59}, {393, 54}} tab={{0, 769}, {393, 83}}
+iPhone 17 Pro SCROLLED_AUDIT SETTLE screen=home-safe-line-light position=0 seconds=0.9813790321350098 settled=true frames=2
+iPhone 17 Pro SCROLLED_AUDIT ISSUE screen=home-safe-line-light position=0 retry=false type=XCUIAccessibilityAuditType(rawValue: 1) label=A fresh island frame={{32, 804}, {103.33333333333331, 20.333333333333371}}
+iPhone 17 Pro SCROLLED_AUDIT DEFER screen=home-safe-line-light position=0 label=A fresh island identifier= type=XCUIAccessibilityAuditType(rawValue: 1) underBar={{32, 804}, {103.33333333333331, 20.333333333333371}} navigation={{0, 62}, {402, 54}} tab={{0, 791}, {402, 83}}
+iPhone 17 Pro SCROLLED_AUDIT ISSUE screen=home-safe-line-light position=0 retry=false type=XCUIAccessibilityAuditType(rawValue: 1) label=Add your first entry, or mark a day with no spending. frame={{32, 832.33333333333337}, {297.66666666666663, 42.333333333333258}}
+iPhone 17 Pro SCROLLED_AUDIT DEFER screen=home-safe-line-light position=0 label=Add your first entry, or mark a day with no spending. identifier= type=XCUIAccessibilityAuditType(rawValue: 1) underBar={{32, 832.33333333333337}, {297.66666666666663, 42.333333333333258}} navigation={{0, 62}, {402, 54}} tab={{0, 791}, {402, 83}}
+iPhone 17 Pro SCROLLED_AUDIT IGNORED_SWIFTUI_DYNAMIC_TYPE screen=home-safe-line-light label=F identifier= frame={{245.52380952380955, 721}, {8.6666666666666856, 18}}
+iPhone 17 Pro SCROLLED_AUDIT IGNORED_SWIFTUI_DYNAMIC_TYPE screen=home-safe-line-light label=¥310,000 identifier= frame={{293.33333333333331, 545.66666666666663}, {76.666666666666686, 20.333333333333371}}
+iPhone 17 Pro SCROLLED_AUDIT IGNORED_SWIFTUI_DYNAMIC_TYPE screen=home-safe-line-light label=T identifier= frame={{98.452380952380949, 721}, {9.6666666666666856, 18}}
+iPhone 17 Pro SCROLLED_AUDIT IGNORED_SWIFTUI_DYNAMIC_TYPE screen=home-safe-line-light label=¥0 identifier= frame={{113.5, 545.66666666666663}, {20.666666666666657, 20.333333333333371}}
+iPhone 17 Pro SCROLLED_AUDIT IGNORED_SWIFTUI_DYNAMIC_TYPE screen=home-safe-line-light label=Left this month identifier= frame={{170.66666666666666, 545.66666666666663}, {114.66666666666666, 20.333333333333371}}
+iPhone 17 Pro SCROLLED_AUDIT IGNORED_SWIFTUI_DYNAMIC_TYPE screen=home-safe-line-light label=W identifier= frame={{144.64285714285714, 721}, {15, 18}}
+iPhone 17 Pro SCROLLED_AUDIT IGNORED_SWIFTUI_DYNAMIC_TYPE screen=home-safe-line-light label=T identifier= frame={{196.16666666666666, 721}, {9.6666666666666856, 18}}
+iPhone 17 Pro SCROLLED_AUDIT IGNORED_SWIFTUI_DYNAMIC_TYPE screen=home-safe-line-light label=S identifier= frame={{342.57142857142867, 721}, {10, 18}}
+iPhone 17 Pro SCROLLED_AUDIT IGNORED_SWIFTUI_DYNAMIC_TYPE screen=home-safe-line-light label=Not a balance identifier= frame={{59.666666666666664, 521.33333333333326}, {105, 20.333333333333371}}
+iPhone 17 Pro SCROLLED_AUDIT IGNORED_SWIFTUI_DYNAMIC_TYPE screen=home-safe-line-light label=M identifier= frame={{47.761904761904759, 721}, {13.333333333333336, 18}}
+iPhone 17 Pro SCROLLED_AUDIT IGNORED_SWIFTUI_DYNAMIC_TYPE screen=home-safe-line-light label=S identifier= frame={{293.71428571428578, 721}, {10, 18}}
+iPhone 17 Pro SCROLLED_AUDIT IGNORED_SWIFTUI_DYNAMIC_TYPE screen=home-safe-line-light label=Spent identifier= frame={{32, 545.66666666666663}, {45, 20.333333333333371}}
+iPhone 17 Pro SCROLLED_AUDIT SETTLE screen=home-safe-line-light position=1 seconds=2.94841206073761 settled=true frames=2
+iPhone 17 Pro SCROLLED_AUDIT IGNORED_SWIFTUI_DYNAMIC_TYPE screen=home-safe-line-light label=F identifier= frame={{245.52380952380955, 619.66666666666663}, {8.6666666666666856, 18}}
+iPhone 17 Pro SCROLLED_AUDIT IGNORED_SWIFTUI_DYNAMIC_TYPE screen=home-safe-line-light label=¥310,000 identifier= frame={{293.33333333333331, 444.33333333333331}, {76.666666666666686, 20.333333333333371}}
+iPhone 17 Pro SCROLLED_AUDIT IGNORED_SWIFTUI_DYNAMIC_TYPE screen=home-safe-line-light label=Add your first entry, or mark a day with no spending. identifier= frame={{32, 731}, {297.66666666666663, 42.333333333333371}}
+iPhone 17 Pro SCROLLED_AUDIT IGNORED_SWIFTUI_DYNAMIC_TYPE screen=home-safe-line-light label=T identifier= frame={{98.452380952380949, 619.66666666666663}, {9.6666666666666856, 18}}
+iPhone 17 Pro SCROLLED_AUDIT IGNORED_SWIFTUI_DYNAMIC_TYPE screen=home-safe-line-light label=¥0 identifier= frame={{113.5, 444.33333333333331}, {20.666666666666657, 20.333333333333371}}
+iPhone 17 Pro SCROLLED_AUDIT IGNORED_SWIFTUI_DYNAMIC_TYPE screen=home-safe-line-light label=Left this month identifier= frame={{170.66666666666666, 444.33333333333331}, {114.66666666666666, 20.333333333333371}}
+iPhone 17 Pro SCROLLED_AUDIT IGNORED_SWIFTUI_DYNAMIC_TYPE screen=home-safe-line-light label=W identifier= frame={{144.64285714285714, 619.66666666666663}, {15, 18}}
+iPhone 17 Pro SCROLLED_AUDIT IGNORED_SWIFTUI_DYNAMIC_TYPE screen=home-safe-line-light label=T identifier= frame={{196.16666666666666, 619.66666666666663}, {9.6666666666666856, 18}}
+iPhone 17 Pro SCROLLED_AUDIT IGNORED_SWIFTUI_DYNAMIC_TYPE screen=home-safe-line-light label=A fresh island identifier= frame={{32, 702.66666666666663}, {103.33333333333331, 20.333333333333371}}
+iPhone 17 Pro SCROLLED_AUDIT IGNORED_SWIFTUI_DYNAMIC_TYPE screen=home-safe-line-light label=S identifier= frame={{342.57142857142867, 619.66666666666663}, {10, 18}}
+iPhone 17 Pro SCROLLED_AUDIT IGNORED_SWIFTUI_DYNAMIC_TYPE screen=home-safe-line-light label=Not a balance identifier= frame={{59.666666666666664, 420}, {105, 20.333333333333314}}
+iPhone 17 Pro SCROLLED_AUDIT IGNORED_SWIFTUI_DYNAMIC_TYPE screen=home-safe-line-light label=M identifier= frame={{47.761904761904759, 619.66666666666663}, {13.333333333333336, 18}}
+iPhone 17 Pro SCROLLED_AUDIT IGNORED_SWIFTUI_DYNAMIC_TYPE screen=home-safe-line-light label=S identifier= frame={{293.71428571428578, 619.66666666666663}, {10, 18}}
+iPhone 17 Pro SCROLLED_AUDIT IGNORED_SWIFTUI_DYNAMIC_TYPE screen=home-safe-line-light label=Spent identifier= frame={{32, 444.33333333333331}, {45, 20.333333333333371}}
+iPhone 17 Pro SCROLLED_AUDIT RECHECK result=PASS screen=home-safe-line-light position=1 label=Add your first entry, or mark a day with no spending. identifier= type=XCUIAccessibilityAuditType(rawValue: 1) underBar={{32, 832.33333333333337}, {297.66666666666663, 42.333333333333258}} fullyVisible={{32, 731}, {297.66666666666663, 42.333333333333371}} navigation={{0, 62}, {402, 54}} tab={{0, 791}, {402, 83}}
+iPhone 17 Pro SCROLLED_AUDIT RECHECK result=PASS screen=home-safe-line-light position=1 label=A fresh island identifier= type=XCUIAccessibilityAuditType(rawValue: 1) underBar={{32, 804}, {103.33333333333331, 20.333333333333371}} fullyVisible={{32, 702.66666666666663}, {103.33333333333331, 20.333333333333371}} navigation={{0, 62}, {402, 54}} tab={{0, 791}, {402, 83}}
+iPhone 17 Pro SCROLLED_AUDIT SETTLE screen=home-safe-line---dark position=0 seconds=0.8538609743118286 settled=true frames=2
+iPhone 17 Pro SCROLLED_AUDIT ISSUE screen=home-safe-line---dark position=0 retry=false type=XCUIAccessibilityAuditType(rawValue: 1) label=Add your first entry, or mark a day with no spending. frame={{32, 832.33333333333337}, {297.66666666666663, 42.333333333333258}}
+iPhone 17 Pro SCROLLED_AUDIT DEFER screen=home-safe-line---dark position=0 label=Add your first entry, or mark a day with no spending. identifier= type=XCUIAccessibilityAuditType(rawValue: 1) underBar={{32, 832.33333333333337}, {297.66666666666663, 42.333333333333258}} navigation={{0, 62}, {402, 54}} tab={{0, 791}, {402, 83}}
+iPhone 17 Pro SCROLLED_AUDIT IGNORED_SWIFTUI_DYNAMIC_TYPE screen=home-safe-line---dark label=Left this month identifier= frame={{170.66666666666666, 545.66666666666663}, {114.66666666666666, 20.333333333333371}}
+iPhone 17 Pro SCROLLED_AUDIT IGNORED_SWIFTUI_DYNAMIC_TYPE screen=home-safe-line---dark label=Spent identifier= frame={{32, 545.66666666666663}, {45, 20.333333333333371}}
+iPhone 17 Pro SCROLLED_AUDIT IGNORED_SWIFTUI_DYNAMIC_TYPE screen=home-safe-line---dark label=W identifier= frame={{144.64285714285714, 721}, {15, 18}}
+iPhone 17 Pro SCROLLED_AUDIT IGNORED_SWIFTUI_DYNAMIC_TYPE screen=home-safe-line---dark label=T identifier= frame={{98.452380952380949, 721}, {9.6666666666666856, 18}}
+iPhone 17 Pro SCROLLED_AUDIT IGNORED_SWIFTUI_DYNAMIC_TYPE screen=home-safe-line---dark label=M identifier= frame={{47.761904761904759, 721}, {13.333333333333336, 18}}
+iPhone 17 Pro SCROLLED_AUDIT IGNORED_SWIFTUI_DYNAMIC_TYPE screen=home-safe-line---dark label=F identifier= frame={{245.52380952380955, 721}, {8.6666666666666856, 18}}
+iPhone 17 Pro SCROLLED_AUDIT IGNORED_SWIFTUI_DYNAMIC_TYPE screen=home-safe-line---dark label=¥310,000 identifier= frame={{293.33333333333331, 545.66666666666663}, {76.666666666666686, 20.333333333333371}}
+iPhone 17 Pro SCROLLED_AUDIT IGNORED_SWIFTUI_DYNAMIC_TYPE screen=home-safe-line---dark label=Not a balance identifier= frame={{59.666666666666664, 521.33333333333326}, {105, 20.333333333333371}}
+iPhone 17 Pro SCROLLED_AUDIT IGNORED_SWIFTUI_DYNAMIC_TYPE screen=home-safe-line---dark label=T identifier= frame={{196.16666666666666, 721}, {9.6666666666666856, 18}}
+iPhone 17 Pro SCROLLED_AUDIT IGNORED_SWIFTUI_DYNAMIC_TYPE screen=home-safe-line---dark label=¥0 identifier= frame={{113.5, 545.66666666666663}, {20.666666666666657, 20.333333333333371}}
+iPhone 17 Pro SCROLLED_AUDIT IGNORED_SWIFTUI_DYNAMIC_TYPE screen=home-safe-line---dark label=S identifier= frame={{293.71428571428578, 721}, {10, 18}}
+iPhone 17 Pro SCROLLED_AUDIT IGNORED_SWIFTUI_DYNAMIC_TYPE screen=home-safe-line---dark label=S identifier= frame={{342.57142857142867, 721}, {10, 18}}
+iPhone 17 Pro SCROLLED_AUDIT SETTLE screen=home-safe-line---dark position=1 seconds=1.0287280082702637 settled=true frames=2
+iPhone 17 Pro SCROLLED_AUDIT ISSUE screen=home-safe-line---dark position=1 retry=false type=XCUIAccessibilityAuditType(rawValue: 1) label=<nil> frame=<nil>
+iPhone 17 Pro SCROLLED_AUDIT IGNORED_SWIFTUI_DYNAMIC_TYPE screen=home-safe-line---dark label=A fresh island identifier= frame={{32, 698.66666666666663}, {103.33333333333331, 20.333333333333371}}
+iPhone 17 Pro SCROLLED_AUDIT IGNORED_SWIFTUI_DYNAMIC_TYPE screen=home-safe-line---dark label=Left this month identifier= frame={{170.66666666666666, 440.33333333333331}, {114.66666666666666, 20.333333333333371}}
+iPhone 17 Pro SCROLLED_AUDIT IGNORED_SWIFTUI_DYNAMIC_TYPE screen=home-safe-line---dark label=Spent identifier= frame={{32, 440.33333333333331}, {45, 20.333333333333371}}
+iPhone 17 Pro SCROLLED_AUDIT IGNORED_SWIFTUI_DYNAMIC_TYPE screen=home-safe-line---dark label=W identifier= frame={{144.64285714285714, 615.66666666666663}, {15, 18}}
+iPhone 17 Pro SCROLLED_AUDIT IGNORED_SWIFTUI_DYNAMIC_TYPE screen=home-safe-line---dark label=T identifier= frame={{98.452380952380949, 615.66666666666663}, {9.6666666666666856, 18}}
+iPhone 17 Pro SCROLLED_AUDIT IGNORED_SWIFTUI_DYNAMIC_TYPE screen=home-safe-line---dark label=M identifier= frame={{47.761904761904759, 615.66666666666663}, {13.333333333333336, 18}}
+iPhone 17 Pro SCROLLED_AUDIT IGNORED_SWIFTUI_DYNAMIC_TYPE screen=home-safe-line---dark label=F identifier= frame={{245.52380952380955, 615.66666666666663}, {8.6666666666666856, 18}}
+iPhone 17 Pro SCROLLED_AUDIT IGNORED_SWIFTUI_DYNAMIC_TYPE screen=home-safe-line---dark label=¥310,000 identifier= frame={{293.33333333333331, 440.33333333333331}, {76.666666666666686, 20.333333333333371}}
+iPhone 17 Pro SCROLLED_AUDIT IGNORED_SWIFTUI_DYNAMIC_TYPE screen=home-safe-line---dark label=Not a balance identifier= frame={{59.666666666666664, 416}, {105, 20.333333333333314}}
+iPhone 17 Pro SCROLLED_AUDIT IGNORED_SWIFTUI_DYNAMIC_TYPE screen=home-safe-line---dark label=T identifier= frame={{196.16666666666666, 615.66666666666663}, {9.6666666666666856, 18}}
+iPhone 17 Pro SCROLLED_AUDIT IGNORED_SWIFTUI_DYNAMIC_TYPE screen=home-safe-line---dark label=¥0 identifier= frame={{113.5, 440.33333333333331}, {20.666666666666657, 20.333333333333371}}
+iPhone 17 Pro SCROLLED_AUDIT IGNORED_SWIFTUI_DYNAMIC_TYPE screen=home-safe-line---dark label=S identifier= frame={{293.71428571428578, 615.66666666666663}, {10, 18}}
+iPhone 17 Pro SCROLLED_AUDIT IGNORED_SWIFTUI_DYNAMIC_TYPE screen=home-safe-line---dark label=Add your first entry, or mark a day with no spending. identifier= frame={{32, 727}, {297.66666666666663, 42.333333333333371}}
+iPhone 17 Pro SCROLLED_AUDIT IGNORED_SWIFTUI_DYNAMIC_TYPE screen=home-safe-line---dark label=S identifier= frame={{342.57142857142867, 615.66666666666663}, {10, 18}}
+iPhone 17 Pro SCROLLED_AUDIT RECHECK result=PASS screen=home-safe-line---dark position=1 label=Add your first entry, or mark a day with no spending. identifier= type=XCUIAccessibilityAuditType(rawValue: 1) underBar={{32, 832.33333333333337}, {297.66666666666663, 42.333333333333258}} fullyVisible={{32, 727}, {297.66666666666663, 42.333333333333371}} navigation={{0, 62}, {402, 54}} tab={{0, 791}, {402, 83}}

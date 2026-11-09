@@ -1,7 +1,7 @@
 import SwiftUI
 
 @main struct WealthyApp: App {
-    @State private var session = LedgerSession()
+    @State private var session = LedgerSession.shared
     @Environment(\.scenePhase) private var phase
     var body: some Scene {
         WindowGroup {

@@ -1,62 +1,382 @@
-# Cycle 2b.1 Round 6 Report
+# Cycle 2b.2 Round 7 Report
 
-Task ID: WEALTHY-C2B1-FIXED-CALENDAR
-Status: DONE
+Task ID: WEALTHY-C2B2-QUICK-ENTRY
+Status: PARTIAL
 
-Starting HEAD: `9ea1e8dd0df402a8a94f84b80f41bc9a2962a976`; branch: `codex/wealthy-c2b1-fixed-calendar`. Host: macOS 27.2, Xcode 27.2 (27B52), iOS 27.0 simulators. The existing changes to `.ai/CURRENT_TASK.md`, three `.DS_Store` files and the untracked design PDF were preserved. `5db23f0` is an ancestor of HEAD.
+Execution split: The Sol run completed the Round 6 comparison work, implemented the Round 7 product/test updates, and ran the initial seven-test and Monday checks. After the Sol usage limit, Luna restored and verified item 5 variant (a), reran Monday on iPhone 15 Pro, ran the safe-line audit and item 6 re-audits on both simulators, refreshed and reviewed evidence, then ran the required checks and Release builds. The device runtime disappeared during Luna's subsequent simulator startup; the remaining item 7 steps could not execute.
 
 ## Changed files
 
-- `Wealthy/Wealthy/HomeInfo.swift`
-- `WealthyUITests/WealthyUITests.swift`
-- `Verification/Cycle2aEvidence/native/INDEX.md`
-- `Verification/Cycle2aEvidence/native/native-result-month-achieved-dark.jpg`
-- `Verification/Cycle2aEvidence/native/native-result-month-achieved-light.jpg`
-- `Verification/Cycle2aEvidence/native/native-result-month-few-dark.jpg`
-- `Verification/Cycle2aEvidence/native/native-result-month-few-light.jpg`
-- `Verification/Cycle2aEvidence/native/native-result-month-over-dark.jpg`
-- `Verification/Cycle2aEvidence/native/native-result-month-over-light.jpg`
-- `Verification/Cycle2aEvidence/native/native-result-week-achieved-dark.jpg`
-- `Verification/Cycle2aEvidence/native/native-result-week-achieved-light.jpg`
-- `Verification/Cycle2aEvidence/native/native-result-week-few-dark.jpg`
-- `Verification/Cycle2aEvidence/native/native-result-week-few-light.jpg`
-- `Verification/Cycle2aEvidence/native/native-result-week-over-dark.jpg`
-- `Verification/Cycle2aEvidence/native/native-result-week-over-light.jpg`
-- `.ai/LAST_REPORT.md`
+Every task file changed from `fc74376`, plus Round 7 additions, is listed below. Unrelated `.DS_Store` edits and the untracked design PDF were preserved and are excluded.
+
+- .ai/CURRENT_TASK.md
+- .ai/LAST_REPORT.md
+- README.md
+- Verification/Cycle2bEvidence/c2b2/INDEX.md
+- Verification/Cycle2bEvidence/c2b2/iphone15pro-ai-detail-light.jpg
+- Verification/Cycle2bEvidence/c2b2/iphone15pro-ai-row-light.jpg
+- Verification/Cycle2bEvidence/c2b2/iphone15pro-home-actions-ax3.jpg
+- Verification/Cycle2bEvidence/c2b2/iphone15pro-home-actions-dark-ax3.jpg
+- Verification/Cycle2bEvidence/c2b2/iphone15pro-home-actions-dark.jpg
+- Verification/Cycle2bEvidence/c2b2/iphone15pro-home-actions-light.jpg
+- Verification/Cycle2bEvidence/c2b2/iphone15pro-home-safe-dark.jpg
+- Verification/Cycle2bEvidence/c2b2/iphone15pro-home-safe-light.jpg
+- Verification/Cycle2bEvidence/c2b2/iphone15pro-quick-ax3.jpg
+- Verification/Cycle2bEvidence/c2b2/iphone15pro-quick-dark.jpg
+- Verification/Cycle2bEvidence/c2b2/iphone15pro-quick-light.jpg
+- Verification/Cycle2bEvidence/c2b2/iphone15pro-safe-scheduled-dark.jpg
+- Verification/Cycle2bEvidence/c2b2/iphone15pro-safe-scheduled-light.jpg
+- Verification/Cycle2bEvidence/c2b2/iphone15pro-swipe-failure-1.txt
+- Verification/Cycle2bEvidence/c2b2/iphone15pro-swipe-failure-2.txt
+- Verification/Cycle2bEvidence/c2b2/iphone15pro-swipe-failure-3.txt
+- Verification/Cycle2bEvidence/c2b2/iphone17pro-ai-detail-light.jpg
+- Verification/Cycle2bEvidence/c2b2/iphone17pro-ai-row-light.jpg
+- Verification/Cycle2bEvidence/c2b2/iphone17pro-home-actions-ax3.jpg
+- Verification/Cycle2bEvidence/c2b2/iphone17pro-home-actions-dark-ax3.jpg
+- Verification/Cycle2bEvidence/c2b2/iphone17pro-home-actions-dark.jpg
+- Verification/Cycle2bEvidence/c2b2/iphone17pro-home-actions-light.jpg
+- Verification/Cycle2bEvidence/c2b2/iphone17pro-home-safe-dark.jpg
+- Verification/Cycle2bEvidence/c2b2/iphone17pro-home-safe-light.jpg
+- Verification/Cycle2bEvidence/c2b2/iphone17pro-quick-ax3.jpg
+- Verification/Cycle2bEvidence/c2b2/iphone17pro-quick-dark.jpg
+- Verification/Cycle2bEvidence/c2b2/iphone17pro-quick-light.jpg
+- Verification/Cycle2bEvidence/c2b2/iphone17pro-safe-scheduled-dark.jpg
+- Verification/Cycle2bEvidence/c2b2/iphone17pro-safe-scheduled-light.jpg
+- Verification/Cycle2bEvidence/c2b2/iphone17pro-swipe-failure-1.txt
+- Verification/Cycle2bEvidence/c2b2/iphone17pro-swipe-failure-2.txt
+- Verification/Cycle2bEvidence/c2b2/iphone17pro-swipe-failure-3.txt
+- Verification/Cycle2bEvidence/c2b2/round3-home-audit.txt
+- Verification/Cycle2bEvidence/c2b2/round4-home-audit.txt
+- Verification/Cycle2bEvidence/c2b2/round5-home-audit.txt
+- Verification/Cycle2bEvidence/c2b2/round6-comparison/1-baseline15.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-comparison/1-current15.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-comparison/2-baseline15.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-comparison/2-current15.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-comparison/3-baseline15.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-comparison/3-current15.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-comparison/4-baseline15.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-comparison/4-current15.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-comparison/5-baseline17.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-comparison/5-current17.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-comparison/6-baseline17.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-comparison/6-current17.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-comparison/INDEX.md
+- Verification/Cycle2bEvidence/c2b2/round6-comparison/results.json
+- Verification/Cycle2bEvidence/c2b2/round6-contrast.json
+- Verification/Cycle2bEvidence/c2b2/round6-crops/INDEX.md
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone15pro-000-round6-home-safe-line---dark-position1-XCUIAccessibilityAuditType-rawValue-1--no-element-full.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone15pro-001-round6-home-safe-line---dark-position0-XCUIAccessibilityAuditType-rawValue-1--A-fresh-island-crop.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone15pro-002-round6-home-safe-line---dark-position0-XCUIAccessibilityAuditType-rawValue-1--A-fresh-island-full.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone15pro-003-round6-home-safe-line-light-position0-XCUIAccessibilityAuditType-rawValue-1--Add-your-first-entry-or.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone15pro-004-round6-home-safe-line-light-position0-XCUIAccessibilityAuditType-rawValue-1--Add-your-first-entry-or.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone15pro-005-round6-home-safe-line-light-position0-XCUIAccessibilityAuditType-rawValue-1--A-fresh-island-crop.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone15pro-006-round6-home-safe-line-light-position0-XCUIAccessibilityAuditType-rawValue-1--A-fresh-island-full.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone15pro-final-000-round6-home-safe-line---dark-position1-XCUIAccessibilityAuditType-rawValue-1--no-element-full.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone15pro-final-001-round6-home-safe-line---dark-position0-XCUIAccessibilityAuditType-rawValue-1--A-fresh-island-crop.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone15pro-final-002-round6-home-safe-line---dark-position0-XCUIAccessibilityAuditType-rawValue-1--A-fresh-island-full.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone15pro-final-003-round6-home-safe-line-light-position0-XCUIAccessibilityAuditType-rawValue-1--Add-your-first-entry-or.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone15pro-final-004-round6-home-safe-line-light-position0-XCUIAccessibilityAuditType-rawValue-1--Add-your-first-entry-or.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone15pro-final-005-round6-home-safe-line-light-position0-XCUIAccessibilityAuditType-rawValue-1--A-fresh-island-crop.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone15pro-final-006-round6-home-safe-line-light-position0-XCUIAccessibilityAuditType-rawValue-1--A-fresh-island-full.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone15pro-final-manifest.json
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone15pro-full-000-round6-home-safe-line---dark-position1-XCUIAccessibilityAuditType-rawValue-1--no-element-full.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone15pro-full-001-round6-home-safe-line---dark-position0-XCUIAccessibilityAuditType-rawValue-1--A-fresh-island-crop.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone15pro-full-002-round6-home-safe-line---dark-position0-XCUIAccessibilityAuditType-rawValue-1--A-fresh-island-full.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone15pro-full-003-round6-home-safe-line-light-position0-XCUIAccessibilityAuditType-rawValue-1--Add-your-first-entry-or.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone15pro-full-004-round6-home-safe-line-light-position0-XCUIAccessibilityAuditType-rawValue-1--Add-your-first-entry-or.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone15pro-full-005-round6-home-safe-line-light-position0-XCUIAccessibilityAuditType-rawValue-1--A-fresh-island-crop.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone15pro-full-006-round6-home-safe-line-light-position0-XCUIAccessibilityAuditType-rawValue-1--A-fresh-island-full.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone15pro-full-manifest.json
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone15pro-manifest.json
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone15pro-post-full-000-round6-home-safe-line---dark-position5-XCUIAccessibilityAuditType-rawValue-1---0-crop.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone15pro-post-full-001-round6-home-safe-line---dark-position5-XCUIAccessibilityAuditType-rawValue-1---0-full.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone15pro-post-full-002-round6-home-safe-line---dark-position5-XCUIAccessibilityAuditType-rawValue-1--Spent-crop.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone15pro-post-full-003-round6-home-safe-line---dark-position5-XCUIAccessibilityAuditType-rawValue-1--Spent-full.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone15pro-post-full-004-round6-home-safe-line---dark-position5-XCUIAccessibilityAuditType-rawValue-1---70-000-crop.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone15pro-post-full-005-round6-home-safe-line---dark-position5-XCUIAccessibilityAuditType-rawValue-1---70-000-full.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone15pro-post-full-006-round6-home-safe-line---dark-position5-XCUIAccessibilityAuditType-rawValue-1--Allowance-crop.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone15pro-post-full-007-round6-home-safe-line---dark-position5-XCUIAccessibilityAuditType-rawValue-1--Allowance-full.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone15pro-post-full-008-round6-home-safe-line---dark-position5-XCUIAccessibilityAuditType-rawValue-1--Not-a-balance-crop.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone15pro-post-full-009-round6-home-safe-line---dark-position5-XCUIAccessibilityAuditType-rawValue-1--Not-a-balance-full.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone15pro-post-full-010-round6-home-safe-line---dark-position5-XCUIAccessibilityAuditType-rawValue-131072--I-spent-nothing-t.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone15pro-post-full-011-round6-home-safe-line---dark-position5-XCUIAccessibilityAuditType-rawValue-131072--I-spent-nothing-t.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone15pro-post-full-012-round6-home-safe-line---dark-position4-XCUIAccessibilityAuditType-rawValue-1--I-spent-nothing-today-.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone15pro-post-full-013-round6-home-safe-line---dark-position4-XCUIAccessibilityAuditType-rawValue-1--I-spent-nothing-today-.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone15pro-post-full-014-round6-home-safe-line---dark-position3-XCUIAccessibilityAuditType-rawValue-2--no-element-full.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone15pro-post-full-015-round6-home-safe-line---dark-position3-XCUIAccessibilityAuditType-rawValue-1---0-crop.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone15pro-post-full-016-round6-home-safe-line---dark-position3-XCUIAccessibilityAuditType-rawValue-1---0-full.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone15pro-post-full-017-round6-home-safe-line---dark-position3-XCUIAccessibilityAuditType-rawValue-1--Spent-crop.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone15pro-post-full-018-round6-home-safe-line---dark-position3-XCUIAccessibilityAuditType-rawValue-1--Spent-full.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone15pro-post-full-019-round6-home-safe-line---dark-position3-XCUIAccessibilityAuditType-rawValue-1---70-000-crop.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone15pro-post-full-020-round6-home-safe-line---dark-position3-XCUIAccessibilityAuditType-rawValue-1---70-000-full.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone15pro-post-full-021-round6-home-safe-line---dark-position3-XCUIAccessibilityAuditType-rawValue-1--Allowance-crop.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone15pro-post-full-022-round6-home-safe-line---dark-position3-XCUIAccessibilityAuditType-rawValue-1--Allowance-full.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone15pro-post-full-023-round6-home-safe-line---dark-position3-XCUIAccessibilityAuditType-rawValue-1--Not-a-balance-crop.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone15pro-post-full-024-round6-home-safe-line---dark-position3-XCUIAccessibilityAuditType-rawValue-1--Not-a-balance-full.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone15pro-post-full-025-round6-home-safe-line---dark-position3-XCUIAccessibilityAuditType-rawValue-1--Quick-add-crop.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone15pro-post-full-026-round6-home-safe-line---dark-position3-XCUIAccessibilityAuditType-rawValue-1--Quick-add-full.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone15pro-post-full-027-round6-home-safe-line---dark-position3-XCUIAccessibilityAuditType-rawValue-1--Add-your-first-entry-o.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone15pro-post-full-028-round6-home-safe-line---dark-position3-XCUIAccessibilityAuditType-rawValue-1--Add-your-first-entry-o.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone15pro-post-full-029-round6-home-safe-line---dark-position3-XCUIAccessibilityAuditType-rawValue-1--This-week-crop.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone15pro-post-full-030-round6-home-safe-line---dark-position3-XCUIAccessibilityAuditType-rawValue-1--This-week-full.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone15pro-post-full-031-round6-home-safe-line---dark-position3-XCUIAccessibilityAuditType-rawValue-131072--I-spent-nothing-t.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone15pro-post-full-032-round6-home-safe-line---dark-position3-XCUIAccessibilityAuditType-rawValue-131072--I-spent-nothing-t.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone15pro-post-full-033-round6-home-safe-line---dark-position2-XCUIAccessibilityAuditType-rawValue-1--Not-a-balance-crop.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone15pro-post-full-034-round6-home-safe-line---dark-position2-XCUIAccessibilityAuditType-rawValue-1--Not-a-balance-full.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone15pro-post-full-035-round6-home-safe-line---dark-position2-XCUIAccessibilityAuditType-rawValue-1--Left-this-week-crop.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone15pro-post-full-036-round6-home-safe-line---dark-position2-XCUIAccessibilityAuditType-rawValue-1--Left-this-week-full.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone15pro-post-full-037-round6-home-safe-line---dark-position2-XCUIAccessibilityAuditType-rawValue-1--I-spent-nothing-today-.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone15pro-post-full-038-round6-home-safe-line---dark-position2-XCUIAccessibilityAuditType-rawValue-1--I-spent-nothing-today-.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone15pro-post-full-039-round6-home-safe-line---dark-position1-XCUIAccessibilityAuditType-rawValue-1--Quick-add-crop.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone15pro-post-full-040-round6-home-safe-line---dark-position1-XCUIAccessibilityAuditType-rawValue-1--Quick-add-full.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone15pro-post-full-041-round6-home-safe-line---dark-position0-XCUIAccessibilityAuditType-rawValue-1--A-fresh-island-crop.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone15pro-post-full-042-round6-home-safe-line---dark-position0-XCUIAccessibilityAuditType-rawValue-1--A-fresh-island-full.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone15pro-post-full-043-round6-home-safe-line-light-position0-XCUIAccessibilityAuditType-rawValue-1--Add-your-first-entry-or.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone15pro-post-full-044-round6-home-safe-line-light-position0-XCUIAccessibilityAuditType-rawValue-1--Add-your-first-entry-or.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone15pro-post-full-045-round6-home-safe-line-light-position0-XCUIAccessibilityAuditType-rawValue-1--A-fresh-island-crop.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone15pro-post-full-046-round6-home-safe-line-light-position0-XCUIAccessibilityAuditType-rawValue-1--A-fresh-island-full.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone15pro-post-full-manifest.json
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone15pro-post-safe-000-round6-home-safe-line---dark-position5-XCUIAccessibilityAuditType-rawValue-1---0-crop.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone15pro-post-safe-001-round6-home-safe-line---dark-position5-XCUIAccessibilityAuditType-rawValue-1---0-full.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone15pro-post-safe-002-round6-home-safe-line---dark-position5-XCUIAccessibilityAuditType-rawValue-1--Spent-crop.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone15pro-post-safe-003-round6-home-safe-line---dark-position5-XCUIAccessibilityAuditType-rawValue-1--Spent-full.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone15pro-post-safe-004-round6-home-safe-line---dark-position5-XCUIAccessibilityAuditType-rawValue-1---70-000-crop.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone15pro-post-safe-005-round6-home-safe-line---dark-position5-XCUIAccessibilityAuditType-rawValue-1---70-000-full.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone15pro-post-safe-006-round6-home-safe-line---dark-position5-XCUIAccessibilityAuditType-rawValue-1--Allowance-crop.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone15pro-post-safe-007-round6-home-safe-line---dark-position5-XCUIAccessibilityAuditType-rawValue-1--Allowance-full.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone15pro-post-safe-008-round6-home-safe-line---dark-position5-XCUIAccessibilityAuditType-rawValue-1--Not-a-balance-crop.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone15pro-post-safe-009-round6-home-safe-line---dark-position5-XCUIAccessibilityAuditType-rawValue-1--Not-a-balance-full.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone15pro-post-safe-010-round6-home-safe-line---dark-position5-XCUIAccessibilityAuditType-rawValue-131072--I-spent-nothing-t.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone15pro-post-safe-011-round6-home-safe-line---dark-position5-XCUIAccessibilityAuditType-rawValue-131072--I-spent-nothing-t.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone15pro-post-safe-012-round6-home-safe-line---dark-position4-XCUIAccessibilityAuditType-rawValue-1--I-spent-nothing-today-.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone15pro-post-safe-013-round6-home-safe-line---dark-position4-XCUIAccessibilityAuditType-rawValue-1--I-spent-nothing-today-.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone15pro-post-safe-014-round6-home-safe-line---dark-position3-XCUIAccessibilityAuditType-rawValue-2--no-element-full.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone15pro-post-safe-015-round6-home-safe-line---dark-position3-XCUIAccessibilityAuditType-rawValue-1---0-crop.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone15pro-post-safe-016-round6-home-safe-line---dark-position3-XCUIAccessibilityAuditType-rawValue-1---0-full.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone15pro-post-safe-017-round6-home-safe-line---dark-position3-XCUIAccessibilityAuditType-rawValue-1--Spent-crop.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone15pro-post-safe-018-round6-home-safe-line---dark-position3-XCUIAccessibilityAuditType-rawValue-1--Spent-full.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone15pro-post-safe-019-round6-home-safe-line---dark-position3-XCUIAccessibilityAuditType-rawValue-1---70-000-crop.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone15pro-post-safe-020-round6-home-safe-line---dark-position3-XCUIAccessibilityAuditType-rawValue-1---70-000-full.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone15pro-post-safe-021-round6-home-safe-line---dark-position3-XCUIAccessibilityAuditType-rawValue-1--Allowance-crop.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone15pro-post-safe-022-round6-home-safe-line---dark-position3-XCUIAccessibilityAuditType-rawValue-1--Allowance-full.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone15pro-post-safe-023-round6-home-safe-line---dark-position3-XCUIAccessibilityAuditType-rawValue-1--Not-a-balance-crop.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone15pro-post-safe-024-round6-home-safe-line---dark-position3-XCUIAccessibilityAuditType-rawValue-1--Not-a-balance-full.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone15pro-post-safe-025-round6-home-safe-line---dark-position3-XCUIAccessibilityAuditType-rawValue-1--Left-this-week-crop.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone15pro-post-safe-026-round6-home-safe-line---dark-position3-XCUIAccessibilityAuditType-rawValue-1--Left-this-week-full.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone15pro-post-safe-027-round6-home-safe-line---dark-position3-XCUIAccessibilityAuditType-rawValue-1--Quick-add-crop.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone15pro-post-safe-028-round6-home-safe-line---dark-position3-XCUIAccessibilityAuditType-rawValue-1--Quick-add-full.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone15pro-post-safe-029-round6-home-safe-line---dark-position3-XCUIAccessibilityAuditType-rawValue-1--Add-your-first-entry-o.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone15pro-post-safe-030-round6-home-safe-line---dark-position3-XCUIAccessibilityAuditType-rawValue-1--Add-your-first-entry-o.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone15pro-post-safe-031-round6-home-safe-line---dark-position3-XCUIAccessibilityAuditType-rawValue-1--after-1-scheduled-2-00.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone15pro-post-safe-032-round6-home-safe-line---dark-position3-XCUIAccessibilityAuditType-rawValue-1--after-1-scheduled-2-00.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone15pro-post-safe-033-round6-home-safe-line---dark-position3-XCUIAccessibilityAuditType-rawValue-1--This-week-crop.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone15pro-post-safe-034-round6-home-safe-line---dark-position3-XCUIAccessibilityAuditType-rawValue-1--This-week-full.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone15pro-post-safe-035-round6-home-safe-line---dark-position3-XCUIAccessibilityAuditType-rawValue-131072--I-spent-nothing-t.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone15pro-post-safe-036-round6-home-safe-line---dark-position3-XCUIAccessibilityAuditType-rawValue-131072--I-spent-nothing-t.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone15pro-post-safe-037-round6-home-safe-line---dark-position2-XCUIAccessibilityAuditType-rawValue-1--Not-a-balance-crop.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone15pro-post-safe-038-round6-home-safe-line---dark-position2-XCUIAccessibilityAuditType-rawValue-1--Not-a-balance-full.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone15pro-post-safe-039-round6-home-safe-line---dark-position2-XCUIAccessibilityAuditType-rawValue-1--Left-this-week-crop.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone15pro-post-safe-040-round6-home-safe-line---dark-position2-XCUIAccessibilityAuditType-rawValue-1--Left-this-week-full.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone15pro-post-safe-041-round6-home-safe-line---dark-position2-XCUIAccessibilityAuditType-rawValue-1--I-spent-nothing-today-.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone15pro-post-safe-042-round6-home-safe-line---dark-position2-XCUIAccessibilityAuditType-rawValue-1--I-spent-nothing-today-.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone15pro-post-safe-043-round6-home-safe-line---dark-position1-XCUIAccessibilityAuditType-rawValue-1--Quick-add-crop.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone15pro-post-safe-044-round6-home-safe-line---dark-position1-XCUIAccessibilityAuditType-rawValue-1--Quick-add-full.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone15pro-post-safe-045-round6-home-safe-line---dark-position0-XCUIAccessibilityAuditType-rawValue-1--A-fresh-island-crop.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone15pro-post-safe-046-round6-home-safe-line---dark-position0-XCUIAccessibilityAuditType-rawValue-1--A-fresh-island-full.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone15pro-post-safe-047-round6-home-safe-line-light-position0-XCUIAccessibilityAuditType-rawValue-1--Add-your-first-entry-or.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone15pro-post-safe-048-round6-home-safe-line-light-position0-XCUIAccessibilityAuditType-rawValue-1--Add-your-first-entry-or.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone15pro-post-safe-049-round6-home-safe-line-light-position0-XCUIAccessibilityAuditType-rawValue-1--A-fresh-island-crop.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone15pro-post-safe-050-round6-home-safe-line-light-position0-XCUIAccessibilityAuditType-rawValue-1--A-fresh-island-full.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone15pro-post-safe-manifest.json
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone17pro-000-round6-home-safe-line---dark-position5-XCUIAccessibilityAuditType-rawValue-1--Not-a-balance-crop.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone17pro-001-round6-home-safe-line---dark-position5-XCUIAccessibilityAuditType-rawValue-1--Not-a-balance-full.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone17pro-002-round6-home-safe-line---dark-position5-XCUIAccessibilityAuditType-rawValue-1--Left-this-week-crop.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone17pro-003-round6-home-safe-line---dark-position5-XCUIAccessibilityAuditType-rawValue-1--Left-this-week-full.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone17pro-004-round6-home-safe-line---dark-position5-XCUIAccessibilityAuditType-rawValue-1--Quick-add-crop.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone17pro-005-round6-home-safe-line---dark-position5-XCUIAccessibilityAuditType-rawValue-1--Quick-add-full.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone17pro-006-round6-home-safe-line---dark-position5-XCUIAccessibilityAuditType-rawValue-131072--no-element-full.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone17pro-007-round6-home-safe-line---dark-position5-XCUIAccessibilityAuditType-rawValue-65536--no-element-full.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone17pro-008-round6-home-safe-line---dark-position4-XCUIAccessibilityAuditType-rawValue-1--Quick-add-crop.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone17pro-009-round6-home-safe-line---dark-position4-XCUIAccessibilityAuditType-rawValue-1--Quick-add-full.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone17pro-010-round6-home-safe-line---dark-position3-XCUIAccessibilityAuditType-rawValue-2--no-element-full.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone17pro-011-round6-home-safe-line---dark-position3-XCUIAccessibilityAuditType-rawValue-1--Not-a-balance-crop.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone17pro-012-round6-home-safe-line---dark-position3-XCUIAccessibilityAuditType-rawValue-1--Not-a-balance-full.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone17pro-013-round6-home-safe-line---dark-position3-XCUIAccessibilityAuditType-rawValue-1--Left-this-week-crop.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone17pro-014-round6-home-safe-line---dark-position3-XCUIAccessibilityAuditType-rawValue-1--Left-this-week-full.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone17pro-015-round6-home-safe-line---dark-position3-XCUIAccessibilityAuditType-rawValue-1--Quick-add-crop.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone17pro-016-round6-home-safe-line---dark-position3-XCUIAccessibilityAuditType-rawValue-1--Quick-add-full.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone17pro-017-round6-home-safe-line---dark-position3-XCUIAccessibilityAuditType-rawValue-1--Add-your-first-entry-o.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone17pro-018-round6-home-safe-line---dark-position3-XCUIAccessibilityAuditType-rawValue-1--Add-your-first-entry-o.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone17pro-019-round6-home-safe-line---dark-position3-XCUIAccessibilityAuditType-rawValue-1--Not-a-balance-crop.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone17pro-020-round6-home-safe-line---dark-position3-XCUIAccessibilityAuditType-rawValue-1--Not-a-balance-full.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone17pro-021-round6-home-safe-line---dark-position3-XCUIAccessibilityAuditType-rawValue-131072--I-spent-nothing-t.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone17pro-022-round6-home-safe-line---dark-position3-XCUIAccessibilityAuditType-rawValue-131072--I-spent-nothing-t.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone17pro-023-round6-home-safe-line---dark-position2-XCUIAccessibilityAuditType-rawValue-1--Not-a-balance-crop.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone17pro-024-round6-home-safe-line---dark-position2-XCUIAccessibilityAuditType-rawValue-1--Not-a-balance-full.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone17pro-025-round6-home-safe-line---dark-position2-XCUIAccessibilityAuditType-rawValue-1--Left-this-week-crop.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone17pro-026-round6-home-safe-line---dark-position2-XCUIAccessibilityAuditType-rawValue-1--Left-this-week-full.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone17pro-027-round6-home-safe-line---dark-position2-XCUIAccessibilityAuditType-rawValue-1--Quick-add-crop.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone17pro-028-round6-home-safe-line---dark-position2-XCUIAccessibilityAuditType-rawValue-1--Quick-add-full.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone17pro-029-round6-home-safe-line---dark-position2-XCUIAccessibilityAuditType-rawValue-131072--I-spent-nothing-t.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone17pro-030-round6-home-safe-line---dark-position2-XCUIAccessibilityAuditType-rawValue-131072--I-spent-nothing-t.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone17pro-031-round6-home-safe-line---dark-position1-XCUIAccessibilityAuditType-rawValue-1--Quick-add-crop.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone17pro-032-round6-home-safe-line---dark-position1-XCUIAccessibilityAuditType-rawValue-1--Quick-add-full.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone17pro-033-round6-home-safe-line---dark-position0-XCUIAccessibilityAuditType-rawValue-1--Add-your-first-entry-o.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone17pro-034-round6-home-safe-line---dark-position0-XCUIAccessibilityAuditType-rawValue-1--Add-your-first-entry-o.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone17pro-035-round6-home-safe-line-light-position0-XCUIAccessibilityAuditType-rawValue-1--Add-your-first-entry-or.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone17pro-036-round6-home-safe-line-light-position0-XCUIAccessibilityAuditType-rawValue-1--Add-your-first-entry-or.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone17pro-037-round6-home-safe-line-light-position0-XCUIAccessibilityAuditType-rawValue-1--A-fresh-island-crop.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone17pro-038-round6-home-safe-line-light-position0-XCUIAccessibilityAuditType-rawValue-1--A-fresh-island-full.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone17pro-candidate-000-round6-home-safe-line---dark-position3-XCUIAccessibilityAuditType-rawValue-2--no-element-full.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone17pro-candidate-001-round6-home-safe-line---dark-position3-XCUIAccessibilityAuditType-rawValue-1--Not-a-balance-crop.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone17pro-candidate-002-round6-home-safe-line---dark-position3-XCUIAccessibilityAuditType-rawValue-1--Not-a-balance-full.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone17pro-candidate-003-round6-home-safe-line---dark-position3-XCUIAccessibilityAuditType-rawValue-1--Left-this-week-crop.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone17pro-candidate-004-round6-home-safe-line---dark-position3-XCUIAccessibilityAuditType-rawValue-1--Left-this-week-full.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone17pro-candidate-005-round6-home-safe-line---dark-position3-XCUIAccessibilityAuditType-rawValue-1--Quick-add-crop.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone17pro-candidate-006-round6-home-safe-line---dark-position3-XCUIAccessibilityAuditType-rawValue-1--Quick-add-full.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone17pro-candidate-007-round6-home-safe-line---dark-position3-XCUIAccessibilityAuditType-rawValue-1--Add-your-first-entry-o.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone17pro-candidate-008-round6-home-safe-line---dark-position3-XCUIAccessibilityAuditType-rawValue-1--Add-your-first-entry-o.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone17pro-candidate-009-round6-home-safe-line---dark-position3-XCUIAccessibilityAuditType-rawValue-1--This-week-crop.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone17pro-candidate-010-round6-home-safe-line---dark-position3-XCUIAccessibilityAuditType-rawValue-1--This-week-full.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone17pro-candidate-011-round6-home-safe-line---dark-position3-XCUIAccessibilityAuditType-rawValue-131072--I-spent-nothing-t.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone17pro-candidate-012-round6-home-safe-line---dark-position3-XCUIAccessibilityAuditType-rawValue-131072--I-spent-nothing-t.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone17pro-candidate-013-round6-home-safe-line---dark-position2-XCUIAccessibilityAuditType-rawValue-1--Not-a-balance-crop.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone17pro-candidate-014-round6-home-safe-line---dark-position2-XCUIAccessibilityAuditType-rawValue-1--Not-a-balance-full.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone17pro-candidate-015-round6-home-safe-line---dark-position2-XCUIAccessibilityAuditType-rawValue-1--Left-this-week-crop.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone17pro-candidate-016-round6-home-safe-line---dark-position2-XCUIAccessibilityAuditType-rawValue-1--Left-this-week-full.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone17pro-candidate-017-round6-home-safe-line---dark-position2-XCUIAccessibilityAuditType-rawValue-131072--I-spent-nothing-t.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone17pro-candidate-018-round6-home-safe-line---dark-position2-XCUIAccessibilityAuditType-rawValue-131072--I-spent-nothing-t.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone17pro-candidate-019-round6-home-safe-line---dark-position1-XCUIAccessibilityAuditType-rawValue-1--Quick-add-crop.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone17pro-candidate-020-round6-home-safe-line---dark-position1-XCUIAccessibilityAuditType-rawValue-1--Quick-add-full.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone17pro-candidate-021-round6-home-safe-line---dark-position0-XCUIAccessibilityAuditType-rawValue-1--Add-your-first-entry-o.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone17pro-candidate-022-round6-home-safe-line---dark-position0-XCUIAccessibilityAuditType-rawValue-1--Add-your-first-entry-o.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone17pro-candidate-023-round6-home-safe-line-light-position0-XCUIAccessibilityAuditType-rawValue-1--Add-your-first-entry-or.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone17pro-candidate-024-round6-home-safe-line-light-position0-XCUIAccessibilityAuditType-rawValue-1--Add-your-first-entry-or.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone17pro-candidate-025-round6-home-safe-line-light-position0-XCUIAccessibilityAuditType-rawValue-1--A-fresh-island-crop.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone17pro-candidate-026-round6-home-safe-line-light-position0-XCUIAccessibilityAuditType-rawValue-1--A-fresh-island-full.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone17pro-candidate-manifest.json
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone17pro-manifest.json
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone17pro-post-full-000-round6-home-safe-line---dark-position3-XCUIAccessibilityAuditType-rawValue-2--no-element-full.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone17pro-post-full-001-round6-home-safe-line---dark-position3-XCUIAccessibilityAuditType-rawValue-1--Not-a-balance-crop.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone17pro-post-full-002-round6-home-safe-line---dark-position3-XCUIAccessibilityAuditType-rawValue-1--Not-a-balance-full.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone17pro-post-full-003-round6-home-safe-line---dark-position3-XCUIAccessibilityAuditType-rawValue-1--Left-this-week-crop.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone17pro-post-full-004-round6-home-safe-line---dark-position3-XCUIAccessibilityAuditType-rawValue-1--Left-this-week-full.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone17pro-post-full-005-round6-home-safe-line---dark-position3-XCUIAccessibilityAuditType-rawValue-1--Quick-add-crop.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone17pro-post-full-006-round6-home-safe-line---dark-position3-XCUIAccessibilityAuditType-rawValue-1--Quick-add-full.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone17pro-post-full-007-round6-home-safe-line---dark-position3-XCUIAccessibilityAuditType-rawValue-1--Add-your-first-entry-o.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone17pro-post-full-008-round6-home-safe-line---dark-position3-XCUIAccessibilityAuditType-rawValue-1--Add-your-first-entry-o.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone17pro-post-full-009-round6-home-safe-line---dark-position3-XCUIAccessibilityAuditType-rawValue-1--Not-a-balance-crop.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone17pro-post-full-010-round6-home-safe-line---dark-position3-XCUIAccessibilityAuditType-rawValue-1--Not-a-balance-full.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone17pro-post-full-011-round6-home-safe-line---dark-position3-XCUIAccessibilityAuditType-rawValue-131072--I-spent-nothing-t.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone17pro-post-full-012-round6-home-safe-line---dark-position3-XCUIAccessibilityAuditType-rawValue-131072--I-spent-nothing-t.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone17pro-post-full-013-round6-home-safe-line---dark-position2-XCUIAccessibilityAuditType-rawValue-1--Not-a-balance-crop.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone17pro-post-full-014-round6-home-safe-line---dark-position2-XCUIAccessibilityAuditType-rawValue-1--Not-a-balance-full.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone17pro-post-full-015-round6-home-safe-line---dark-position2-XCUIAccessibilityAuditType-rawValue-1--Left-this-week-crop.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone17pro-post-full-016-round6-home-safe-line---dark-position2-XCUIAccessibilityAuditType-rawValue-1--Left-this-week-full.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone17pro-post-full-017-round6-home-safe-line---dark-position2-XCUIAccessibilityAuditType-rawValue-131072--I-spent-nothing-t.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone17pro-post-full-018-round6-home-safe-line---dark-position2-XCUIAccessibilityAuditType-rawValue-131072--I-spent-nothing-t.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone17pro-post-full-019-round6-home-safe-line---dark-position1-XCUIAccessibilityAuditType-rawValue-1--Quick-add-crop.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone17pro-post-full-020-round6-home-safe-line---dark-position1-XCUIAccessibilityAuditType-rawValue-1--Quick-add-full.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone17pro-post-full-021-round6-home-safe-line---dark-position0-XCUIAccessibilityAuditType-rawValue-1--Add-your-first-entry-o.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone17pro-post-full-022-round6-home-safe-line---dark-position0-XCUIAccessibilityAuditType-rawValue-1--Add-your-first-entry-o.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone17pro-post-full-023-round6-home-safe-line-light-position0-XCUIAccessibilityAuditType-rawValue-1--Add-your-first-entry-or.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone17pro-post-full-024-round6-home-safe-line-light-position0-XCUIAccessibilityAuditType-rawValue-1--Add-your-first-entry-or.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone17pro-post-full-025-round6-home-safe-line-light-position0-XCUIAccessibilityAuditType-rawValue-1--A-fresh-island-crop.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone17pro-post-full-026-round6-home-safe-line-light-position0-XCUIAccessibilityAuditType-rawValue-1--A-fresh-island-full.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone17pro-post-full-manifest.json
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone17pro-post-safe-000-round6-home-safe-line---dark-position3-XCUIAccessibilityAuditType-rawValue-2--no-element-full.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone17pro-post-safe-001-round6-home-safe-line---dark-position3-XCUIAccessibilityAuditType-rawValue-1--Not-a-balance-crop.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone17pro-post-safe-002-round6-home-safe-line---dark-position3-XCUIAccessibilityAuditType-rawValue-1--Not-a-balance-full.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone17pro-post-safe-003-round6-home-safe-line---dark-position3-XCUIAccessibilityAuditType-rawValue-1--Left-this-week-crop.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone17pro-post-safe-004-round6-home-safe-line---dark-position3-XCUIAccessibilityAuditType-rawValue-1--Left-this-week-full.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone17pro-post-safe-005-round6-home-safe-line---dark-position3-XCUIAccessibilityAuditType-rawValue-1--Quick-add-crop.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone17pro-post-safe-006-round6-home-safe-line---dark-position3-XCUIAccessibilityAuditType-rawValue-1--Quick-add-full.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone17pro-post-safe-007-round6-home-safe-line---dark-position3-XCUIAccessibilityAuditType-rawValue-1--Add-your-first-entry-o.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone17pro-post-safe-008-round6-home-safe-line---dark-position3-XCUIAccessibilityAuditType-rawValue-1--Add-your-first-entry-o.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone17pro-post-safe-009-round6-home-safe-line---dark-position3-XCUIAccessibilityAuditType-rawValue-131072--I-spent-nothing-t.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone17pro-post-safe-010-round6-home-safe-line---dark-position3-XCUIAccessibilityAuditType-rawValue-131072--I-spent-nothing-t.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone17pro-post-safe-011-round6-home-safe-line---dark-position2-XCUIAccessibilityAuditType-rawValue-1--Not-a-balance-crop.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone17pro-post-safe-012-round6-home-safe-line---dark-position2-XCUIAccessibilityAuditType-rawValue-1--Not-a-balance-full.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone17pro-post-safe-013-round6-home-safe-line---dark-position2-XCUIAccessibilityAuditType-rawValue-1--Left-this-week-crop.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone17pro-post-safe-014-round6-home-safe-line---dark-position2-XCUIAccessibilityAuditType-rawValue-1--Left-this-week-full.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone17pro-post-safe-015-round6-home-safe-line---dark-position2-XCUIAccessibilityAuditType-rawValue-131072--I-spent-nothing-t.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone17pro-post-safe-016-round6-home-safe-line---dark-position2-XCUIAccessibilityAuditType-rawValue-131072--I-spent-nothing-t.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone17pro-post-safe-017-round6-home-safe-line---dark-position1-XCUIAccessibilityAuditType-rawValue-1--Quick-add-crop.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone17pro-post-safe-018-round6-home-safe-line---dark-position1-XCUIAccessibilityAuditType-rawValue-1--Quick-add-full.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone17pro-post-safe-019-round6-home-safe-line---dark-position0-XCUIAccessibilityAuditType-rawValue-1--Add-your-first-entry-o.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone17pro-post-safe-020-round6-home-safe-line---dark-position0-XCUIAccessibilityAuditType-rawValue-1--Add-your-first-entry-o.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone17pro-post-safe-021-round6-home-safe-line-light-position0-XCUIAccessibilityAuditType-rawValue-1--Add-your-first-entry-or.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone17pro-post-safe-022-round6-home-safe-line-light-position0-XCUIAccessibilityAuditType-rawValue-1--Add-your-first-entry-or.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone17pro-post-safe-023-round6-home-safe-line-light-position0-XCUIAccessibilityAuditType-rawValue-1--A-fresh-island-crop.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone17pro-post-safe-024-round6-home-safe-line-light-position0-XCUIAccessibilityAuditType-rawValue-1--A-fresh-island-full.jpg
+- Verification/Cycle2bEvidence/c2b2/round6-crops/iphone17pro-post-safe-manifest.json
+- Verification/Cycle2bEvidence/c2b2/round6-final-audit.json
+- Verification/Cycle2bEvidence/c2b2/round6-final-audit.md
+- Verification/Cycle2bEvidence/c2b2/round6-final-audit.txt
+- Verification/Cycle2bEvidence/c2b2/round6-home-audit.txt
+- Verification/Cycle2bEvidence/c2b2/round6-runtime-failures.txt
+- Verification/Cycle2bEvidence/c2b2/round7-audit.txt
+- Verification/Cycle2bEvidence/c2b2/round7-crops/INDEX.md
+- Verification/Cycle2bEvidence/c2b2/round7-crops/iphone15pro-dark-position1-nil-bottom.jpg
+- Verification/Cycle2bEvidence/c2b2/round7-crops/iphone15pro-round7-home-safe-line-dark-position0-initial-xcuiaccessibilityaudittype-rawvalue-1-a-fresh-island-full.jpg
+- Verification/Cycle2bEvidence/c2b2/round7-crops/iphone15pro-round7-home-safe-line-dark-position1-initial-xcuiaccessibilityaudittype-rawvalue-1-no-element-full.jpg
+- Verification/Cycle2bEvidence/c2b2/round7-crops/iphone15pro-round7-home-safe-line-light-position0-initial-xcuiaccessibilityaudittype-rawvalue-1-a-fresh-island-full.jpg
+- Verification/Cycle2bEvidence/c2b2/round7-crops/iphone17pro-dark-position1-nil-bottom.jpg
+- Verification/Cycle2bEvidence/c2b2/round7-crops/iphone17pro-round7-home-safe-line-dark-position1-initial-xcuiaccessibilityaudittype-rawvalue-1-no-element-full.jpg
+- Verification/Cycle2bEvidence/c2b2/round7-crops/iphone17pro-round7-home-safe-line-light-position0-initial-xcuiaccessibilityaudittype-rawvalue-1-a-fresh-island-full.jpg
+- Wealthy/Wealthy/AppShortcuts.xcstrings
+- Wealthy/Wealthy/CalendarAnalysis.swift
+- Wealthy/Wealthy/EntryEditor.swift
+- Wealthy/Wealthy/ExpenseIntents.swift
+- Wealthy/Wealthy/GoalsTaxSettings.swift
+- Wealthy/Wealthy/HomeInfo.swift
+- Wealthy/Wealthy/LedgerRoot.swift
+- Wealthy/Wealthy/LedgerSession.swift
+- Wealthy/Wealthy/Localizable.xcstrings
+- Wealthy/Wealthy/QuickAdd.swift
+- Wealthy/Wealthy/RecurringSession.swift
+- Wealthy/Wealthy/WealthyApp.swift
+- WealthyCore/Sources/WealthyCore/SafeLine.swift
+- WealthyCore/Tests/WealthyCoreTests/SafeLineTests.swift
+- WealthyUITests/Cycle2bUITests.swift
+- WealthyUITests/QuickEntryUITests.swift
+- WealthyUITests/WealthyUITests.swift
 
 ## Requirements
 
-1. **Before fix — reproduced.** `testResultDoneInsideSafeArea` ran three times on iPhone 15 Pro. Each run: default FAIL, Done `(164.33, 824.67, 64.33, 34.33)`, window `(0, 0, 393, 852)`, safe-area top `818`, hittable true but bottom `859`; AX3 PASS, Done `(132.67, 732, 127.67, 62)`, hittable true. The test checks containment and a 34-point bottom safe area, which applies to the two specified simulators. Frames are in points.
-2. **Layout and targeted tests — PASS.** Done uses a bottom `safeAreaInset` with standard components; content spacing is 12 points. On the first fix, the 17 Pro audit failed 3/3 at default size for `Within allowance`, `(68.67, 767.17, 128, 20.33)`: the screenshot shows that text partly clipped at the fixed button region. Reduced Result spacing, then reran both tests 3 times on both simulators. On each simulator each audit invocation checks default and AX3 with the existing audit types; no audit exception was added. Final targeted runs passed 3/3 for both tests on both simulators at both sizes. All Done frames were hittable and identical across the three iterations:
+- **Core feature set (cycle acceptance): PARTIAL.** Implemented through the prior rounds and retained. Round 6 baseline comparisons classified the reported interaction failures as reproducing on both `fc74376` and the current tree. In Round 7, the designer-reported seven onboarding/result-sheet cases passed on both iPhone 15 Pro and iPhone 17 Pro using the real date. The date-pinned Monday onboarding test initially failed on iPhone 15 Pro because `addEntry` was below the viewport; after adding a bounded scroll, it passed on iPhone 17 Pro in the Sol run and was rerun successfully on iPhone 15 Pro on Luna. The product guard in `LedgerRoot` only queues ended results with `loggedDays > 0`. The DEBUG UI-test-only `--today YYYY-MM-DD` override follows existing fixture date overrides. The tap diagnostic no longer queries a keyboard when none exists.
+- **Safe line/UI and AI information: PARTIAL.** The Safe line test assertions and screenshot capture ran on both simulators, then the test failed on the nil-element dark-mode Contrast audit issue below. Fresh synthetic screenshots show the safe amount, scheduled item, and AI unavailable information; files are indexed in `Verification/Cycle2bEvidence/c2b2/INDEX.md`. The 6 Quick add captures were visually opened and show Amount, typed `650`, and Save above the keyboard for light, dark and AX3 on both simulators. The 12 refreshed Home, scheduled-item and AI captures were also visually opened. The no-AI single-store path remains implemented through the shared store owner described in the prior cycle report and source; no intent-store redesign was made in this round.
+- **Monday fresh onboarding: PASS on both simulators.** `testFreshMondayOnboardingDoesNotPresentUnusedResult` with `--today 2026-11-09`: iPhone 17 Pro PASS (32.872 s, Sol); iPhone 15 Pro PASS (26.476 s, Luna; `/tmp/wealthy-c2b2-r7-monday15-final.xcresult`). Test confirms no `resultSheet` and `addEntry` hittable after ordinary scrolling.
+- **Seven Round 6 onboarding-path tests: PASS on both simulators.** Sol ran the item-2 test and seven tests in the required device order. The 15 Pro timings: `testAdditionalSetupMatrix` 200.146 s, `testChildEnvelopeAndLicenseFlow` 146.143 s, `testManualTaxAndMetadataSurviveReopening` 71.822 s, `testNoSpendDayFromEmptyLedger` 36.973 s, `testOnboardingEntryTaxNoSpendTarget` 88.635 s, `testPersistedOnboardingRelaunch` 48.409 s, `testQuickEntryWithoutAIFromOnboarding` 31.617 s. The 17 Pro timings: 206.090 s, 165.855 s, 130.580 s, 27.164 s, 82.600 s, 43.676 s, and 32.027 s respectively. These used the real date, not the pinned Monday.
+- **Item 5 no-spend text variants: PARTIAL.** Variant (a) was installed and audited first as directed: `.font(.body)`, `.lineLimit(nil)`, existing `.fixedSize(horizontal: false, vertical: true)` retained, and only `.leading(.loose)` removed. `round7-audit.txt` and the full/cropped audit images are indexed in `round7-crops/INDEX.md`. Neither device emitted a `Text clipped` issue for this label. The only remaining issues from these runs were dark-mode Contrast issues with no reported element. Variant (b), adding the already-present `.fixedSize`, produces source-identical modifiers to (a), so it has no distinct source variant. There is no clipping-specific crop because no clipping issue was emitted. No further variant iteration could run after CoreSimulator became unavailable.
+- **Item 6 repeat audits: PARTIAL.** Re-ran flags at the same scroll positions after the additional settle/re-audit policy on both simulators. Visible named issues were deferred while obscured and passed when fully visible. Reproducible issue table (one row per issue/simulator):
 
-   | Simulator | Size | Done frame | Window | Bottom safe-area top |
-   | --- | --- | --- | --- | --- |
-   | iPhone 15 Pro | default | (164.33, 771.67, 64.33, 34.33) | (0, 0, 393, 852) | 818 |
-   | iPhone 15 Pro | AX3 | (132.67, 744, 127.67, 62) | (0, 0, 393, 852) | 818 |
-   | iPhone 17 Pro | default | (169, 793.67, 64.33, 34.33) | (0, 0, 402, 874) | 840 |
-   | iPhone 17 Pro | AX3 | (137.33, 766, 127.67, 62) | (0, 0, 402, 874) | 840 |
+  | Device/run | Appearance and position | Type/element | Frame / ratio | Crop |
+  | --- | --- | --- | --- | --- |
+  | iPhone 15 Pro, initial audit | Dark, Home position 1 | Contrast; XCTest element is nil | No frame or foreground/background values; ratio not measurable | [full screenshot](Verification/Cycle2bEvidence/c2b2/round7-crops/iphone15pro-round7-home-safe-line-dark-position1-initial-xcuiaccessibilityaudittype-rawvalue-1-no-element-full.jpg), [bottom crop](Verification/Cycle2bEvidence/c2b2/round7-crops/iphone15pro-dark-position1-nil-bottom.jpg) |
+  | iPhone 17 Pro, initial audit | Dark, Home position 1 | Contrast; XCTest element is nil | No frame or foreground/background values; ratio not measurable | [full screenshot](Verification/Cycle2bEvidence/c2b2/round7-crops/iphone17pro-round7-home-safe-line-dark-position1-initial-xcuiaccessibilityaudittype-rawvalue-1-no-element-full.jpg), [bottom crop](Verification/Cycle2bEvidence/c2b2/round7-crops/iphone17pro-dark-position1-nil-bottom.jpg) |
 
-3. **Screenshots — PASS.** Refreshed the 12 existing week/month Result images (three states in light/dark) from the 15 Pro full-suite `testNativeScreenEvidenceLightAndDark` attachments. All are 921 x 2000 JPEGs, 164,159–206,611 bytes; week achieved light and month over dark were visually inspected. Index updated. Synthetic data only.
-4. **Full suites — PASS.** 15 Pro: 62 tests, zero failures, 4213.004 seconds. 17 Pro: 62 tests, zero failures, 4249.823 seconds. The 17 Pro run started after the 15 Pro process exited. Both included the Result audit and safe-area test at default and AX3, the full matrices, and the metric tests. Simulator metrics were not judged against a physical-device target.
-5. **Required checks — PASS.** Core 117 tests / 13 suites; shell 199 keys x four languages plus font checks; localization 199 shipping keys x four languages and 2,420 archived checks. Simulator Release and signed generic iOS Release builds passed; signature verified. Both builds warned that App Intents metadata extraction was skipped because AppIntents.framework is not linked.
+  The crops visually suggest the Quick add row lies beneath the floating tab bar, but the audit supplied no element/frame; this is a screenshot inference, not a measured cause. No named, fully visible contrast issue qualified for the extra two-second retry; the nil-element issue has no auditable frame. The existing bar/status-area deferral policy and narrow SwiftUI Dynamic Type filter were retained; no exclusions were added.
+- **Home audits and swipe: NOT RUN after safe-line step.** Luna's 15 Pro Home audit launch failed before a test began: test runner launch returned `Mach error -308 (server died)`. CoreSimulator then reported no installed runtimes / missing runtime bundle; direct boot failed with “Unable to boot device because we cannot determine the runtime bundle. No such file or directory.” The 17 Pro Home audit and swipe invocation exited before test execution because no matching device was available. Evidence: `/tmp/wealthy-c2b2-r7-home15-final.log` and `/tmp/wealthy-c2b2-r7-home17-final.log`.
+- **Full WealthyUITests: NOT RUN to completion.** Tried sequentially on 15 Pro then 17 Pro with parallel testing disabled; both invocations exited before test execution because CoreSimulator had no available matching runtime/device (`Unable to find a device matching the provided destination specifier`). Exact command form: `xcodebuild -project Wealthy/Wealthy.xcodeproj -scheme WealthyUITests -destination "platform=iOS Simulator,id=<simulator-UDID>" -derivedDataPath /tmp/wealthy-c2b2-r7-<15-or-17> -resultBundlePath /tmp/wealthy-c2b2-r7-full<15-or-17>-final.xcresult -parallel-testing-enabled NO test`. Logs: `/tmp/wealthy-c2b2-r7-full15-final.log`, `/tmp/wealthy-c2b2-r7-full17-final.log`.
+- **Japanese wording:** Existing cycle additions retain the approved localized strings, including `クイック記録`, `未分類`, and `今週あと安心して使える額`; the Round 7 label uses the localized `noSpend` text. No Round 7 wording change was made.
+- **Physical device:** NOT RUN; expressly excluded by Round 7.
 
 ## Verification commands
 
-- `xcodebuild -project Wealthy/Wealthy.xcodeproj -scheme WealthyUITests -destination 'platform=iOS Simulator,id=870430A8-E557-4CED-8A8E-079801D804B9' -derivedDataPath /tmp/wealthy-c2b1-r6-derived15 -resultBundlePath /tmp/wealthy-c2b1-r6-before.xcresult -parallel-testing-enabled NO -test-iterations 3 -only-testing:WealthyUITests/Cycle2aUITests/testResultDoneInsideSafeArea test` — FAIL as expected, default 3/3, AX3 pass 3/3; `/tmp/wealthy-c2b1-r6-before.log`.
-- `xcodebuild -project Wealthy/Wealthy.xcodeproj -scheme WealthyUITests -destination 'platform=iOS Simulator,id=870430A8-E557-4CED-8A8E-079801D804B9' -derivedDataPath /tmp/wealthy-c2b1-r6-derived15 -resultBundlePath /tmp/wealthy-c2b1-r6-finaltarget15.xcresult -parallel-testing-enabled NO -test-iterations 3 -only-testing:WealthyUITests/Cycle2aUITests/testResultDoneInsideSafeArea -only-testing:WealthyUITests/Cycle2aUITests/testResultAccessibilityAudit test` — PASS, six test invocations; `/tmp/wealthy-c2b1-r6-finaltarget15.log`. Repeated with destination `DEA8D0DF-8BA2-4F70-B19C-BACAC400EAE0`, derived data `derived17`, result `finaltarget17.xcresult` — PASS; `/tmp/wealthy-c2b1-r6-finaltarget17.log`.
-- First fix targeted run with the same command on 17 Pro and result `target17.xcresult` — FAIL, audit 3/3, Done assertion 3/3 PASS; `/tmp/wealthy-c2b1-r6-target17.log`. 15 Pro `target15.xcresult` — PASS.
-- `xcodebuild -project Wealthy/Wealthy.xcodeproj -scheme WealthyUITests -destination 'platform=iOS Simulator,id=870430A8-E557-4CED-8A8E-079801D804B9' -derivedDataPath /tmp/wealthy-c2b1-r6-derived15 -resultBundlePath /tmp/wealthy-c2b1-r6-full15.xcresult -parallel-testing-enabled NO test` — PASS, 62 tests, zero failures; `/tmp/wealthy-c2b1-r6-full15.log`. The same command with simulator ID `DEA8D0DF-8BA2-4F70-B19C-BACAC400EAE0` and paths `derived17` / `full17.xcresult` — PASS, 62 tests, zero failures; `/tmp/wealthy-c2b1-r6-full17.log`.
-- `xcrun xcresulttool export attachments --path /tmp/wealthy-c2b1-r6-full15.xcresult --output-path /tmp/wealthy-c2b1-r6-final-evidence15 --test-id 'Cycle2aUITests/testNativeScreenEvidenceLightAndDark()'` — PASS; exported 12 Result images with `sips -Z 2000 -s format jpeg -s formatOptions 80`, and checked dimensions with `sips -g pixelWidth -g pixelHeight`. An earlier export attempt while the suite was running failed because the result bundle Info.plist had not yet been finalized.
-- `sh Verification/verify_core.sh` — PASS; `/tmp/wealthy-c2b1-r6-core.log`.
-- `PYTHONPATH=/Users/harrison/Library/Python/3.14/lib/python/site-packages python3 Verification/verify_shell.py` — PASS; `/tmp/wealthy-c2b1-r6-shell.log`.
-- `sh Verification/verify_localization.sh` — PASS; `/tmp/wealthy-c2b1-r6-localization.log`.
-- `xcodebuild -project Wealthy/Wealthy.xcodeproj -scheme WealthyUITests -configuration Release -destination 'generic/platform=iOS Simulator' -derivedDataPath /tmp/wealthy-c2b1-r6-release-sim build` — PASS; `/tmp/wealthy-c2b1-r6-final-release-sim.log`.
-- `xcodebuild -project Wealthy/Wealthy.xcodeproj -scheme WealthyUITests -configuration Release -destination 'generic/platform=iOS' -derivedDataPath /tmp/wealthy-c2b1-r6-release-device -allowProvisioningUpdates build` — PASS; `/tmp/wealthy-c2b1-r6-final-release-device.log`.
-- `codesign --verify --deep --strict /tmp/wealthy-c2b1-r6-release-device/Build/Products/Release-iphoneos/Wealthy.app` — PASS.
+- `sh Verification/verify_core.sh` — PASS, 123 tests / 14 suites (`/tmp/wealthy-c2b2-r7-core-retry.log`). Initial sandbox invocation was blocked by SwiftPM manifest sandbox permission; rerun with approved elevated execution passed.
+- `PYTHONPATH="/Users/harrison/Library/Python/3.14/lib/python/site-packages" python3 Verification/verify_shell.py` — PASS, 213 keys × 4 languages, placeholders, font and target isolation (`/tmp/wealthy-c2b2-r7-shell.log`).
+- `sh Verification/verify_localization.sh` — PASS, 2,420 checks; 196 keys × 4 languages; zero missing (`/tmp/wealthy-c2b2-r7-localization.log`).
 - `git diff --check` — PASS.
+- `xcodebuild -project Wealthy/Wealthy.xcodeproj -scheme WealthyUITests -configuration Release -destination 'generic/platform=iOS Simulator' -derivedDataPath /tmp/wealthy-c2b2-r7-release-sim build` — PASS.
+- `xcodebuild -project Wealthy/Wealthy.xcodeproj -scheme WealthyUITests -configuration Release -destination generic/platform=iOS -derivedDataPath /tmp/wealthy-c2b2-r7-release-device -allowProvisioningUpdates build` — PASS.
+- `codesign --verify --deep --strict --verbose=2 /tmp/wealthy-c2b2-r7-release-device/Build/Products/Release-iphoneos/Wealthy.app` — PASS; valid on disk and designated requirement.
+- The Safe line audit commands exited with test failures on the nil-element dark contrast issue above; see `/tmp/wealthy-c2b2-r7-safe15-final.log` and `/tmp/wealthy-c2b2-r7-safe17-final.log`. Item 5 emitted no clipped-text issue.
 
 ## Not done / unverified
 
-- The safe-area test uses a 34-point bottom inset for the two specified iPhone Pro simulators; it does not infer the inset for other device models.
-- Physical-device install, UI, VoiceOver and performance were not assessed in this round.
-- No staging, commit, push, merge, branch switch, or unrelated cleanup was performed. The operator owns Git.
+- Status is PARTIAL because the repeated nil-element dark contrast issue remains unresolved, the requested Home audit/swipe and full suites could not launch after CoreSimulator lost both simulator runtimes, and original cycle acceptance is therefore not complete.
+- Contrast ratio cannot be reported for either remaining issue: XCTest provided a nil element and nil frame, so there is no target text/background color pair to measure. Crops are attached above and indexed.
+- Full-suite results after the Round 7 source changes, device installation, native App Intents metadata extraction for this final tree, and any run requiring a simulator after runtime loss remain unverified. No new audit rule, test exclusion, or color change was introduced.
+- Item 7 stopped at the environment failure; exact unblock: restore/install the iOS 27.0 CoreSimulator runtime and make iPhone 15 Pro and iPhone 17 Pro available, then rerun Home light/dark audits and swipe on both, followed by each full suite sequentially.
+- No commit, push, reset, branch switch or merge was performed. Unrelated `.DS_Store` modifications and the untracked design PDF remain untouched.

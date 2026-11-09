@@ -1,0 +1,540 @@
+[
+  {
+    "label": "1-baseline15",
+    "case": "testNoSpendDayFromEmptyLedger",
+    "device": "iPhone 15 Pro",
+    "source": "baseline",
+    "exit": 65,
+    "result": "failed",
+    "duration": "76.732 seconds",
+    "errors": [
+      "XCTAssertTrue failed",
+      "Failed to get matching snapshot: No matches found for first query match sequence: `Descendants matching type Button` -> `Elements matching predicate '\"noSpend\" IN identifiers'`"
+    ],
+    "resultSheetFrames": [
+      "{{0.0, 59.0}, {393.0, 793.0}}"
+    ],
+    "image": "1-baseline15.jpg",
+    "attachment": {
+      "configurationName": "Test Scheme Action",
+      "deviceId": "870430A8-E557-4CED-8A8E-079801D804B9",
+      "deviceName": "Wealthy iPhone 15 Pro",
+      "exportedFileName": "7FFD6317-E76F-44C5-87F1-9DB065AECAEE.png",
+      "isAssociatedWithFailure": false,
+      "suggestedHumanReadableName": "empty-home-en---reduce-motion---reduce-motion_0_CE40803C-6842-407D-9F84-9A9A9831A4C0.png",
+      "timestamp": 1794163678.397
+    },
+    "videoFrameSeconds": null,
+    "cwd": "/tmp/wealthy-c2b2-r6-baseline",
+    "command": [
+      "xcodebuild",
+      "-project",
+      "Wealthy/Wealthy.xcodeproj",
+      "-scheme",
+      "WealthyUITests",
+      "-destination",
+      "platform=iOS Simulator,id=870430A8-E557-4CED-8A8E-079801D804B9",
+      "-derivedDataPath",
+      "/tmp/wealthy-c2b2-r6-compare-base15",
+      "-resultBundlePath",
+      "/tmp/wealthy-c2b2-r6-compare-1-baseline15.xcresult",
+      "-parallel-testing-enabled",
+      "NO",
+      "-only-testing:WealthyUITests/Cycle2aUITests/testNoSpendDayFromEmptyLedger",
+      "test"
+    ]
+  },
+  {
+    "label": "1-current15",
+    "case": "testNoSpendDayFromEmptyLedger",
+    "device": "iPhone 15 Pro",
+    "source": "current",
+    "exit": 65,
+    "result": "failed",
+    "duration": "72.875 seconds",
+    "errors": [
+      "XCTAssertTrue failed",
+      "Failed to get matching snapshot: No matches found for first query match sequence: `Descendants matching type Button` -> `Elements matching predicate '\"noSpend\" IN identifiers'`"
+    ],
+    "resultSheetFrames": [
+      "{{0.0, 59.0}, {393.0, 793.0}}"
+    ],
+    "image": "1-current15.jpg",
+    "attachment": {
+      "configurationName": "Test Scheme Action",
+      "deviceId": "870430A8-E557-4CED-8A8E-079801D804B9",
+      "deviceName": "Wealthy iPhone 15 Pro",
+      "exportedFileName": "0C73813F-2C19-4280-B974-01A7710973FB.png",
+      "isAssociatedWithFailure": false,
+      "suggestedHumanReadableName": "empty-home-en---reduce-motion---reduce-motion_0_AC6C7CAA-8BEA-4F05-BA7B-B309A26CA942.png",
+      "timestamp": 1794163769.544
+    },
+    "videoFrameSeconds": null,
+    "cwd": "repository root",
+    "command": [
+      "xcodebuild",
+      "-project",
+      "Wealthy/Wealthy.xcodeproj",
+      "-scheme",
+      "WealthyUITests",
+      "-destination",
+      "platform=iOS Simulator,id=870430A8-E557-4CED-8A8E-079801D804B9",
+      "-derivedDataPath",
+      "/tmp/wealthy-c2b2-r6-15",
+      "-resultBundlePath",
+      "/tmp/wealthy-c2b2-r6-compare-1-current15.xcresult",
+      "-parallel-testing-enabled",
+      "NO",
+      "-only-testing:WealthyUITests/Cycle2aUITests/testNoSpendDayFromEmptyLedger",
+      "test"
+    ]
+  },
+  {
+    "label": "2-baseline15",
+    "case": "testPersistedOnboardingRelaunch",
+    "device": "iPhone 15 Pro",
+    "source": "baseline",
+    "exit": 65,
+    "result": "failed",
+    "duration": "87.154 seconds",
+    "errors": [
+      "XCTAssertTrue failed",
+      "Failed to get matching snapshot: No matches found for first query match sequence: `Descendants matching type Button` -> `Elements matching predicate '\"Ajustes\" IN identifiers'`"
+    ],
+    "resultSheetFrames": [
+      "{{0.0, 59.0}, {393.0, 793.0}}"
+    ],
+    "image": "2-baseline15.jpg",
+    "attachment": {
+      "configurationName": "Test Scheme Action",
+      "deviceId": "870430A8-E557-4CED-8A8E-079801D804B9",
+      "deviceName": "Wealthy iPhone 15 Pro",
+      "exportedFileName": "252739D6-65B7-4C46-8961-7E894CCCC22C.png",
+      "isAssociatedWithFailure": false,
+      "suggestedHumanReadableName": "persisted-onboarding-home-before_0_2738217F-DB3D-49EE-BB43-3B8A12F9E8D6.png",
+      "timestamp": 1794163862.517
+    },
+    "videoFrameSeconds": null,
+    "cwd": "/tmp/wealthy-c2b2-r6-baseline",
+    "command": [
+      "xcodebuild",
+      "-project",
+      "Wealthy/Wealthy.xcodeproj",
+      "-scheme",
+      "WealthyUITests",
+      "-destination",
+      "platform=iOS Simulator,id=870430A8-E557-4CED-8A8E-079801D804B9",
+      "-derivedDataPath",
+      "/tmp/wealthy-c2b2-r6-compare-base15",
+      "-resultBundlePath",
+      "/tmp/wealthy-c2b2-r6-compare-2-baseline15.xcresult",
+      "-parallel-testing-enabled",
+      "NO",
+      "-only-testing:WealthyUITests/Cycle2aUITests/testPersistedOnboardingRelaunch",
+      "test"
+    ]
+  },
+  {
+    "label": "2-current15",
+    "case": "testPersistedOnboardingRelaunch",
+    "device": "iPhone 15 Pro",
+    "source": "current",
+    "exit": 65,
+    "result": "failed",
+    "duration": "87.724 seconds",
+    "errors": [
+      "XCTAssertTrue failed",
+      "Failed to get matching snapshot: No matches found for first query match sequence: `Descendants matching type Button` -> `Elements matching predicate '\"Ajustes\" IN identifiers'`"
+    ],
+    "resultSheetFrames": [
+      "{{0.0, 59.0}, {393.0, 793.0}}"
+    ],
+    "image": "2-current15.jpg",
+    "attachment": {
+      "configurationName": "Test Scheme Action",
+      "deviceId": "870430A8-E557-4CED-8A8E-079801D804B9",
+      "deviceName": "Wealthy iPhone 15 Pro",
+      "exportedFileName": "DEAAB0FF-6CFD-4025-A1CC-EB8A2E9903FC.png",
+      "isAssociatedWithFailure": false,
+      "suggestedHumanReadableName": "persisted-onboarding-home-before_0_2F1CFA02-328C-4E65-9DAF-4BBC9769A23F.png",
+      "timestamp": 1794163965.191
+    },
+    "videoFrameSeconds": null,
+    "cwd": "repository root",
+    "command": [
+      "xcodebuild",
+      "-project",
+      "Wealthy/Wealthy.xcodeproj",
+      "-scheme",
+      "WealthyUITests",
+      "-destination",
+      "platform=iOS Simulator,id=870430A8-E557-4CED-8A8E-079801D804B9",
+      "-derivedDataPath",
+      "/tmp/wealthy-c2b2-r6-15",
+      "-resultBundlePath",
+      "/tmp/wealthy-c2b2-r6-compare-2-current15.xcresult",
+      "-parallel-testing-enabled",
+      "NO",
+      "-only-testing:WealthyUITests/Cycle2aUITests/testPersistedOnboardingRelaunch",
+      "test"
+    ]
+  },
+  {
+    "label": "3-baseline15",
+    "case": "testOnboardingEntryTaxNoSpendTarget",
+    "device": "iPhone 15 Pro",
+    "source": "baseline",
+    "exit": 65,
+    "result": "failed",
+    "duration": "39.535 seconds",
+    "errors": [
+      "Failed to get matching snapshot: No matches found for first query match sequence: `Descendants matching type Keyboard`"
+    ],
+    "resultSheetFrames": [
+      "{{0.0, 59.0}, {393.0, 793.0}}"
+    ],
+    "image": "3-baseline15.jpg",
+    "attachment": {
+      "configurationName": "Test Scheme Action",
+      "deviceId": "870430A8-E557-4CED-8A8E-079801D804B9",
+      "deviceName": "Wealthy iPhone 15 Pro",
+      "exportedFileName": "02BEF1EC-8599-44B9-8A5B-A5442059D9B1.png",
+      "isAssociatedWithFailure": false,
+      "suggestedHumanReadableName": "empty-home-en--_0_933C3EEF-877B-462D-A880-0D9F975A1C99.png",
+      "timestamp": 1794164062.362
+    },
+    "videoFrameSeconds": null,
+    "cwd": "/tmp/wealthy-c2b2-r6-baseline",
+    "command": [
+      "xcodebuild",
+      "-project",
+      "Wealthy/Wealthy.xcodeproj",
+      "-scheme",
+      "WealthyUITests",
+      "-destination",
+      "platform=iOS Simulator,id=870430A8-E557-4CED-8A8E-079801D804B9",
+      "-derivedDataPath",
+      "/tmp/wealthy-c2b2-r6-compare-base15",
+      "-resultBundlePath",
+      "/tmp/wealthy-c2b2-r6-compare-3-baseline15.xcresult",
+      "-parallel-testing-enabled",
+      "NO",
+      "-only-testing:WealthyUITests/Cycle2aUITests/testOnboardingEntryTaxNoSpendTarget",
+      "test"
+    ]
+  },
+  {
+    "label": "3-current15",
+    "case": "testOnboardingEntryTaxNoSpendTarget",
+    "device": "iPhone 15 Pro",
+    "source": "current",
+    "exit": 65,
+    "result": "failed",
+    "duration": "39.542 seconds",
+    "errors": [
+      "Failed to get matching snapshot: No matches found for first query match sequence: `Descendants matching type Keyboard`"
+    ],
+    "resultSheetFrames": [
+      "{{0.0, 59.0}, {393.0, 793.0}}"
+    ],
+    "image": "3-current15.jpg",
+    "attachment": {
+      "configurationName": "Test Scheme Action",
+      "deviceId": "870430A8-E557-4CED-8A8E-079801D804B9",
+      "deviceName": "Wealthy iPhone 15 Pro",
+      "exportedFileName": "CB47D9F9-9517-4AE5-8293-D67BEDA06AA3.png",
+      "isAssociatedWithFailure": false,
+      "suggestedHumanReadableName": "empty-home-en--_0_8F1184E3-CF24-467C-84D6-DD45508D94CE.png",
+      "timestamp": 1794164115.712
+    },
+    "videoFrameSeconds": null,
+    "cwd": "repository root",
+    "command": [
+      "xcodebuild",
+      "-project",
+      "Wealthy/Wealthy.xcodeproj",
+      "-scheme",
+      "WealthyUITests",
+      "-destination",
+      "platform=iOS Simulator,id=870430A8-E557-4CED-8A8E-079801D804B9",
+      "-derivedDataPath",
+      "/tmp/wealthy-c2b2-r6-15",
+      "-resultBundlePath",
+      "/tmp/wealthy-c2b2-r6-compare-3-current15.xcresult",
+      "-parallel-testing-enabled",
+      "NO",
+      "-only-testing:WealthyUITests/Cycle2aUITests/testOnboardingEntryTaxNoSpendTarget",
+      "test"
+    ]
+  },
+  {
+    "label": "4-baseline15",
+    "case": "testQuickEntryWithoutAIFromOnboarding",
+    "device": "iPhone 15 Pro",
+    "source": "baseline",
+    "exit": 65,
+    "result": "failed",
+    "duration": "32.174 seconds",
+    "errors": [
+      "Failed to get matching snapshot: No matches found for first query match sequence: `Descendants matching type Keyboard`"
+    ],
+    "resultSheetFrames": [
+      "{{0.0, 59.0}, {393.0, 793.0}}"
+    ],
+    "image": "4-baseline15.jpg",
+    "attachment": {
+      "configurationName": "Test Scheme Action",
+      "deviceId": "870430A8-E557-4CED-8A8E-079801D804B9",
+      "deviceName": "Wealthy iPhone 15 Pro",
+      "exportedFileName": "9845C830-BBE8-4BB6-8213-7D63E5D7088D.mp4",
+      "isAssociatedWithFailure": false,
+      "suggestedHumanReadableName": "Screen Recording 2026-11-09 at 03.55.48 AM.mp4",
+      "timestamp": 1794164148.828
+    },
+    "videoFrameSeconds": 28.151667,
+    "cwd": "/tmp/wealthy-c2b2-r6-baseline",
+    "command": [
+      "xcodebuild",
+      "-project",
+      "Wealthy/Wealthy.xcodeproj",
+      "-scheme",
+      "WealthyUITests",
+      "-destination",
+      "platform=iOS Simulator,id=870430A8-E557-4CED-8A8E-079801D804B9",
+      "-derivedDataPath",
+      "/tmp/wealthy-c2b2-r6-compare-base15",
+      "-resultBundlePath",
+      "/tmp/wealthy-c2b2-r6-compare-4-baseline15.xcresult",
+      "-parallel-testing-enabled",
+      "NO",
+      "-only-testing:WealthyUITests/Cycle2aUITests/testQuickEntryWithoutAIFromOnboarding",
+      "test"
+    ]
+  },
+  {
+    "label": "4-current15",
+    "case": "testQuickEntryWithoutAIFromOnboarding",
+    "device": "iPhone 15 Pro",
+    "source": "current",
+    "exit": 65,
+    "result": "failed",
+    "duration": "31.972 seconds",
+    "errors": [
+      "Failed to get matching snapshot: No matches found for first query match sequence: `Descendants matching type Keyboard`"
+    ],
+    "resultSheetFrames": [
+      "{{0.0, 59.0}, {393.0, 793.0}}"
+    ],
+    "image": "4-current15.jpg",
+    "attachment": {
+      "configurationName": "Test Scheme Action",
+      "deviceId": "870430A8-E557-4CED-8A8E-079801D804B9",
+      "deviceName": "Wealthy iPhone 15 Pro",
+      "exportedFileName": "2F40C705-19B4-4585-B0DF-EF7ADE07DAB5.mp4",
+      "isAssociatedWithFailure": false,
+      "suggestedHumanReadableName": "Screen Recording 2026-11-09 at 03.56.34 AM.mp4",
+      "timestamp": 1794164194.786
+    },
+    "videoFrameSeconds": 27.96,
+    "cwd": "repository root",
+    "command": [
+      "xcodebuild",
+      "-project",
+      "Wealthy/Wealthy.xcodeproj",
+      "-scheme",
+      "WealthyUITests",
+      "-destination",
+      "platform=iOS Simulator,id=870430A8-E557-4CED-8A8E-079801D804B9",
+      "-derivedDataPath",
+      "/tmp/wealthy-c2b2-r6-15",
+      "-resultBundlePath",
+      "/tmp/wealthy-c2b2-r6-compare-4-current15.xcresult",
+      "-parallel-testing-enabled",
+      "NO",
+      "-only-testing:WealthyUITests/Cycle2aUITests/testQuickEntryWithoutAIFromOnboarding",
+      "test"
+    ]
+  },
+  {
+    "label": "5-baseline17",
+    "case": "testAdditionalSetupMatrix",
+    "device": "iPhone 17 Pro",
+    "source": "baseline",
+    "exit": 65,
+    "result": "failed",
+    "duration": "247.543 seconds",
+    "errors": [
+      "XCTAssertTrue failed",
+      "XCTAssertTrue failed",
+      "XCTAssertTrue failed",
+      "XCTAssertTrue failed"
+    ],
+    "resultSheetFrames": [
+      "{{0.0, 62.0}, {402.0, 812.0}}"
+    ],
+    "image": "5-baseline17.jpg",
+    "attachment": {
+      "configurationName": "Test Scheme Action",
+      "deviceId": "DEA8D0DF-8BA2-4F70-B19C-BACAC400EAE0",
+      "deviceName": "Wealthy iPhone 17 Pro",
+      "exportedFileName": "8A948ED6-F261-4ECD-89D2-0F06AB7AA88E.png",
+      "isAssociatedWithFailure": false,
+      "suggestedHumanReadableName": "empty-home-en---dark---dark_0_88118AAC-5F1E-4D03-BDE3-1D8E2D2328CA.png",
+      "timestamp": 1794164280.849
+    },
+    "videoFrameSeconds": null,
+    "cwd": "/tmp/wealthy-c2b2-r6-baseline",
+    "command": [
+      "xcodebuild",
+      "-project",
+      "Wealthy/Wealthy.xcodeproj",
+      "-scheme",
+      "WealthyUITests",
+      "-destination",
+      "platform=iOS Simulator,id=DEA8D0DF-8BA2-4F70-B19C-BACAC400EAE0",
+      "-derivedDataPath",
+      "/tmp/wealthy-c2b2-r6-compare-base17",
+      "-resultBundlePath",
+      "/tmp/wealthy-c2b2-r6-compare-5-baseline17.xcresult",
+      "-parallel-testing-enabled",
+      "NO",
+      "-only-testing:WealthyUITests/Cycle2aUITests/testAdditionalSetupMatrix",
+      "test"
+    ]
+  },
+  {
+    "label": "5-current17",
+    "case": "testAdditionalSetupMatrix",
+    "device": "iPhone 17 Pro",
+    "source": "current",
+    "exit": 65,
+    "result": "failed",
+    "duration": "245.057 seconds",
+    "errors": [
+      "XCTAssertTrue failed",
+      "XCTAssertTrue failed",
+      "XCTAssertTrue failed",
+      "XCTAssertTrue failed"
+    ],
+    "resultSheetFrames": [
+      "{{0.0, 62.0}, {402.0, 812.0}}"
+    ],
+    "image": "5-current17.jpg",
+    "attachment": {
+      "configurationName": "Test Scheme Action",
+      "deviceId": "DEA8D0DF-8BA2-4F70-B19C-BACAC400EAE0",
+      "deviceName": "Wealthy iPhone 17 Pro",
+      "exportedFileName": "E3EFF2BA-AF03-4737-98E2-3C0F3B7F3192.png",
+      "isAssociatedWithFailure": false,
+      "suggestedHumanReadableName": "empty-home-en---dark---dark_0_B49D037A-58E6-4EA8-BE0A-342F8A3FC9CA.png",
+      "timestamp": 1794164544.445
+    },
+    "videoFrameSeconds": null,
+    "cwd": "repository root",
+    "command": [
+      "xcodebuild",
+      "-project",
+      "Wealthy/Wealthy.xcodeproj",
+      "-scheme",
+      "WealthyUITests",
+      "-destination",
+      "platform=iOS Simulator,id=DEA8D0DF-8BA2-4F70-B19C-BACAC400EAE0",
+      "-derivedDataPath",
+      "/tmp/wealthy-c2b2-r6-17",
+      "-resultBundlePath",
+      "/tmp/wealthy-c2b2-r6-compare-5-current17.xcresult",
+      "-parallel-testing-enabled",
+      "NO",
+      "-only-testing:WealthyUITests/Cycle2aUITests/testAdditionalSetupMatrix",
+      "test"
+    ]
+  },
+  {
+    "label": "6-baseline17",
+    "case": "testChildEnvelopeAndLicenseFlow",
+    "device": "iPhone 17 Pro",
+    "source": "baseline",
+    "exit": 65,
+    "result": "failed",
+    "duration": "38.902 seconds",
+    "errors": [
+      "Failed to get matching snapshot: No matches found for first query match sequence: `Descendants matching type Keyboard`"
+    ],
+    "resultSheetFrames": [
+      "{{0.0, 62.0}, {402.0, 812.0}}"
+    ],
+    "image": "6-baseline17.jpg",
+    "attachment": {
+      "configurationName": "Test Scheme Action",
+      "deviceId": "DEA8D0DF-8BA2-4F70-B19C-BACAC400EAE0",
+      "deviceName": "Wealthy iPhone 17 Pro",
+      "exportedFileName": "637C65A0-F0BC-407A-A91C-529CFD4BCF06.png",
+      "isAssociatedWithFailure": false,
+      "suggestedHumanReadableName": "empty-home-en--_0_85C7EB19-3803-43BC-AB61-9E90DF5919C9.png",
+      "timestamp": 1794164804.384
+    },
+    "videoFrameSeconds": null,
+    "cwd": "/tmp/wealthy-c2b2-r6-baseline",
+    "command": [
+      "xcodebuild",
+      "-project",
+      "Wealthy/Wealthy.xcodeproj",
+      "-scheme",
+      "WealthyUITests",
+      "-destination",
+      "platform=iOS Simulator,id=DEA8D0DF-8BA2-4F70-B19C-BACAC400EAE0",
+      "-derivedDataPath",
+      "/tmp/wealthy-c2b2-r6-compare-base17",
+      "-resultBundlePath",
+      "/tmp/wealthy-c2b2-r6-compare-6-baseline17.xcresult",
+      "-parallel-testing-enabled",
+      "NO",
+      "-only-testing:WealthyUITests/Cycle2aUITests/testChildEnvelopeAndLicenseFlow",
+      "test"
+    ]
+  },
+  {
+    "label": "6-current17",
+    "case": "testChildEnvelopeAndLicenseFlow",
+    "device": "iPhone 17 Pro",
+    "source": "current",
+    "exit": 65,
+    "result": "failed",
+    "duration": "38.990 seconds",
+    "errors": [
+      "Failed to get matching snapshot: No matches found for first query match sequence: `Descendants matching type Keyboard`"
+    ],
+    "resultSheetFrames": [
+      "{{0.0, 62.0}, {402.0, 812.0}}"
+    ],
+    "image": "6-current17.jpg",
+    "attachment": {
+      "configurationName": "Test Scheme Action",
+      "deviceId": "DEA8D0DF-8BA2-4F70-B19C-BACAC400EAE0",
+      "deviceName": "Wealthy iPhone 17 Pro",
+      "exportedFileName": "EAC20FE1-5C3F-4415-804C-3E9C9AD894F0.png",
+      "isAssociatedWithFailure": false,
+      "suggestedHumanReadableName": "empty-home-en--_0_6DC7B38D-E280-47A2-AD01-9123BBF37416.png",
+      "timestamp": 1794164857.811
+    },
+    "videoFrameSeconds": null,
+    "cwd": "repository root",
+    "command": [
+      "xcodebuild",
+      "-project",
+      "Wealthy/Wealthy.xcodeproj",
+      "-scheme",
+      "WealthyUITests",
+      "-destination",
+      "platform=iOS Simulator,id=DEA8D0DF-8BA2-4F70-B19C-BACAC400EAE0",
+      "-derivedDataPath",
+      "/tmp/wealthy-c2b2-r6-17",
+      "-resultBundlePath",
+      "/tmp/wealthy-c2b2-r6-compare-6-current17.xcresult",
+      "-parallel-testing-enabled",
+      "NO",
+      "-only-testing:WealthyUITests/Cycle2aUITests/testChildEnvelopeAndLicenseFlow",
+      "test"
+    ]
+  }
+]

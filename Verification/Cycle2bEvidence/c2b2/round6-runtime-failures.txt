@@ -1,0 +1,51 @@
+Round 6 runtime evidence: historical runs and November 9 baseline comparison
+The paragraphs below labelled first/earlier runs are historical. The final whole-cycle report and round6-comparison/results.json provide completed follow-up results.
+
+November 9 comparison: all six individually paired cases failed on both c937c63 and current, with the same prior-week resultSheet present. Twelve sequential commands exited 65. See round6-comparison/INDEX.md for the unchanged code chain, calendar boundary, exact commands, timings and images. This confirms baseline reproducibility of these six cases; no generic helper/onboarding/result policy was changed. The conditional no-spend revert was not triggered.
+
+Round 6 additional runtime failures
+Task: WEALTHY-C2B2-QUICK-ENTRY
+All app records below are synthetic UI-test fixtures.
+
+Targeted 17 Pro, iOS 27.0:
+Case: testQuickEntryKeyboardLayoutAndEvidence (187.414 s).
+QuickEntryUITests.swift:153: Failed to get matching snapshots: Timed out while evaluating UI query.
+Before the error, Xcode logged: App animations complete notification not received, will attempt to continue.
+A read-only simulator screenshot showed the dark Quick add sheet, no keyboard and a blank amount area. The next three-interaction test passed. Cause is unverified; no product change was made for this failure.
+
+Full 15 Pro, iOS 27.0, 2026-11-09 JST:
+Case: testNoSpendDayFromEmptyLedger (74.634 s).
+WealthyUITests.swift:43: XCTAssertTrue failed (noSpend button existence).
+WealthyUITests.swift:44: Failed to get matching snapshot: No matches found for first query match sequence: Descendants matching type Button -> Elements matching identifier noSpend.
+The failure snapshot contains Home at (0,0,393,852), navigation (0,59,393,54), tab bar (0,769,393,83).
+Another modal covers Home: resultSheet ScrollView (0,59,393,793), Sheet Grabber (146.5,55,100,24), Your week, Too few logged days, period 2026-11-02 – 2026-11-08, Done button (164.3,771.7,64.3,34.3).
+The underlying Home day labels start at 2026-11-09. The noSpend row is absent from the returned tree; addEntry is under the modal at (16,805.7,361,64.3).
+Expected: after fresh onboarding, mark a no-spend day on Home.
+Actual: previous-week result modal is still present, and generic upward swipes do not dismiss it.
+
+Case: testOnboardingEntryTaxNoSpendTarget (39.231 s).
+WealthyUITests.swift:44: Failed to get matching snapshot: No matches found for first query match sequence: Descendants matching type Keyboard.
+The failure occurs in tap(addEntry) after onboarding. The helper queries a keyboard frame while constructing its obscured-center assertion message, although there is no matching keyboard. This query error does not itself establish an amount-entry defect.
+
+Commands: the full15 command is recorded in LAST_REPORT.md and /tmp/wealthy-c2b2-r6-status.json. To target the two cases, use the same xcodebuild project, scheme, destination and -parallel-testing-enabled NO with -only-testing:WealthyUITests/Cycle2aUITests/testNoSpendDayFromEmptyLedger and -only-testing:WealthyUITests/Cycle2aUITests/testOnboardingEntryTaxNoSpendTarget.
+The relevant first run crossed from Sunday November 8 to Monday November 9. The association with the weekly result overlay is observed; at that time a baseline reproduction had not run; the subsequent twelve-run baseline comparison above now confirms reproduction on c937c63. No weekly-result, onboarding, generic tap helper, clock or target-rule change was made.
+
+Additional full15 cases:
+- testPersistedOnboardingRelaunch (87.330 s): no matching button Ajustes; failure snapshot shows resultSheet (0,59,393,793), Tu semana, 2026-11-02 – 2026-11-08, Listo button (166,771.7,61,34.3) over Home.
+- testQuickEntryWithoutAIFromOnboarding (32.788 s): WealthyUITests.swift:44 reports no matching Keyboard while tap(addEntry) constructs its obscured-center assertion. The fresh-onboarding-to-Quick-add acceptance case is FAIL in this run. It is not reported as a passing no-AI flow.
+- Full15 Safe-line audit (120.433 s): one dark position-1 contrast failure with element=nil. No label/frame supplied; same issue category as the final targeted run. Other named/visible deferred issues pass recheck.
+This first full-suite outcome is historical; final follow-up outcomes are in LAST_REPORT.md.
+
+Completed full15 result (xcresult summary): 75 cases, 70 PASS / 5 FAIL / 0 skipped, xcodebuild exit 65, no runtimeWarnings in the completed summary. Failed cases: testNoSpendDayFromEmptyLedger, testOnboardingEntryTaxNoSpendTarget, testPersistedOnboardingRelaunch, testQuickEntryWithoutAIFromOnboarding, testSafeLineAndAIInformationEvidence.
+
+Full17 started only after full15 exited. testAdditionalSetupMatrix failed (245.513 s), four assertions at WealthyUITests.swift:66 (onboarding helper waiting for addEntry). The full17 run begins entirely on November 9; the corresponding full15 case ran before midnight and passed. This date association is recorded without claiming a baseline-controlled cause. That first full17 run stopped without a completed result and is not counted as a full pass/fail. Both final follow-up suites use separate result paths.
+The first failing full17 setup snapshot also shows resultSheet (0,62,402,812), Your week, period 2026-11-02 – 2026-11-08, and Done (137.3,766,127.7,62), covering Home (0,0,402,874). The helper swipes scroll this modal; the prior-week title is eventually offscreen.
+
+Final November 9 ordered follow-up (completed, authoritative):
+Safe-line targeted: both FAIL. Ordinary Home light/dark audits and swipe: all three PASS on both simulators.
+Full suites sequential: iPhone 15 Pro 76 cases, 68 PASS / 8 FAIL / 0 skipped, exit 65, wall 4840.603 s; iPhone 17 Pro 76 cases, 68 PASS / 8 FAIL / 0 skipped, exit 65, wall 5360.673 s.
+Both full suites fail the same eight cases: testAdditionalSetupMatrix, testChildEnvelopeAndLicenseFlow, testManualTaxAndMetadataSurviveReopening, testNoSpendDayFromEmptyLedger, testOnboardingEntryTaxNoSpendTarget, testPersistedOnboardingRelaunch, testQuickEntryWithoutAIFromOnboarding, testSafeLineAndAIInformationEvidence.
+The six individually compared cases reproduce on c937c63. testManualTaxAndMetadataSurviveReopening was not baseline-compared: its missing-Keyboard error at WealthyUITests.swift:44 remains unclassified.
+The 17 Pro final focused-selection/editor-swipe case repeatedly logged missing app-animation-completion notifications, but passed in 559.009 s. Both final Quick add keyboard-layout cases passed. No product change was made for these timing/query symptoms.
+Final 15 Pro summary runtimeWarnings is empty. Final 17 Pro summary reports: Detected a metric that was not measured in the first iteration: com.apple.dt.XCTMetric_ApplicationLaunch-ApplicationFirstFramePresentationResponsive.duration. No missing metric is treated as measured evidence.
+Every remaining Safe-line audit issue, ratio and crop/full link is in round6-final-audit.md and .json; raw settle/defer/recheck evidence is in round6-final-audit.txt. Nil-node and occluded-frame targets remain unmeasurable failures.

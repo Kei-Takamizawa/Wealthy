@@ -4,8 +4,11 @@ import WealthyCore
 import FoundationModels
 import os
 import MetricKit
+import AppIntents
 
 @Observable @MainActor final class LedgerSession {
+    /// UI and main-target App Intents retain the same Core and store for this process.
+    static let shared = LedgerSession()
     static var isUITest: Bool {
         #if DEBUG
         ProcessInfo.processInfo.arguments.contains("--cycle2a-test")
@@ -58,19 +61,36 @@ import MetricKit
     var onboarded: Bool { didSet { if Self.persistsPreferences { Self.preferences.set(onboarded, forKey: "v4.onboarded") } } }
     var readiness = "notReady"
     private(set) var available = false
+    var selectedTab = 1
+    var showQuickAdd = false
+    var safeLine: SafeLine?
+    #if DEBUG
+    var intentTestDialog: String?
+    #endif
     var summary: IslandSummary?
     var householdSummary: IslandSummary?
     var recentResults: [TargetStatus] = []
     var envelopeID = EnvelopeValue.householdID
     var today: LedgerDay {
         #if DEBUG || WEALTHY_LAUNCH_MEASUREMENT
+        if Self.isUITest && ProcessInfo.processInfo.arguments.contains("--cycle2b2-seed") { return try! LedgerDay(year: 2026, month: 10, day: 7) }
         if Self.isUITest && ProcessInfo.processInfo.arguments.contains("--cycle2a-performance") { return try! LedgerDay(year: 2026, month: 10, day: 15) }
         if Self.isUITest && (ProcessInfo.processInfo.arguments.contains("--cycle2a-seed") || ProcessInfo.processInfo.arguments.contains("--cycle2b-seed")) { return try! LedgerDay(year: 2026, month: 10, day: ProcessInfo.processInfo.arguments.contains("--cycle2b-results") ? 2 : ProcessInfo.processInfo.arguments.contains(where: { $0.hasPrefix("--month-") }) ? 31 : 11) }
+        #endif
+        #if DEBUG
+        let arguments = ProcessInfo.processInfo.arguments
+        if Self.isUITest, let index = arguments.firstIndex(of: "--today"), index + 1 < arguments.count {
+            let value = arguments[index + 1]
+            let parts = value.split(separator: "-", omittingEmptySubsequences: false)
+            if parts.map(\.count) == [4, 2, 2],
+               let year = Int(parts[0]), let month = Int(parts[1]), let day = Int(parts[2]),
+               let today = try? LedgerDay(year: year, month: month, day: day) { return today }
+        }
         #endif
         return try! LedgerDay(date: Date(), calendar: .current)
     }
     var locale: Locale { Locale(identifier: ["en":"en_US", "ja":"ja_JP", "es":"es_ES", "ko":"ko_KR"][language] ?? "en_US") }
-    init() {
+    private init() {
         firstFrameInterval = loadLog.beginInterval("FirstFrame")
         language = Self.preferences.string(forKey: "v4.language") ?? "en"
         currency = Self.preferences.string(forKey: "v4.currency") ?? "JPY"
@@ -86,9 +106,14 @@ import MetricKit
     }
     func refreshAvailability() {
         #if DEBUG
-        if Self.isUITest, ProcessInfo.processInfo.environment["WEALTHY_CYCLE2A_TEST_AI_AVAILABLE"] == "1" {
-            available = true
-            readiness = "available"
+        let environment = ProcessInfo.processInfo.environment
+        if let forced = environment["WEALTHY_TEST_AI_AVAILABLE"], ["0", "1"].contains(forced) {
+            available = forced == "1"
+            readiness = available ? "available" : "ineligible"
+            return
+        }
+        if environment["WEALTHY_CYCLE2A_TEST_AI_AVAILABLE"] == "1" {
+            available = true; readiness = "available"
             return
         }
         #endif
@@ -149,7 +174,7 @@ import MetricKit
         #endif
     }
     func open() {
-        guard available, core == nil else { return }
+        guard core == nil else { return }
         let interval = loadLog.beginInterval("LedgerOpen")
         defer { loadLog.endInterval("LedgerOpen", interval) }
         do {
@@ -190,6 +215,7 @@ import MetricKit
             #if DEBUG || WEALTHY_LAUNCH_MEASUREMENT
             if isolated && ProcessInfo.processInfo.arguments.contains("--cycle2a-seed") { try seedUITest() }
             if isolated && ProcessInfo.processInfo.arguments.contains("--cycle2b-seed") { try seedCycle2b() }
+            if isolated && ProcessInfo.processInfo.arguments.contains("--cycle2b2-seed") { try seedQuickEntry() }
             #endif
             refresh()
             renderInterval = loadLog.beginInterval("HomeRender")
@@ -229,7 +255,7 @@ import MetricKit
     }
     var commandDate: Date {
         #if DEBUG
-        if Self.isUITest && (ProcessInfo.processInfo.arguments.contains("--cycle2a-seed") || ProcessInfo.processInfo.arguments.contains("--cycle2b-seed")) {
+        if Self.isUITest && (ProcessInfo.processInfo.arguments.contains("--cycle2a-seed") || ProcessInfo.processInfo.arguments.contains("--cycle2b-seed") || ProcessInfo.processInfo.arguments.contains("--cycle2b2-seed")) {
             return (try? today.date(calendar: .current)) ?? Date()
         }
         #endif
@@ -250,6 +276,7 @@ import MetricKit
         defer { loadLog.endInterval("QuerySnapshot", interval) }
         do {
             householdSummary = try LedgerQueries.islandSummary(in: core.state, today: today, envelopeID: EnvelopeValue.householdID, currencyCode: currency)
+            safeLine = try LedgerQueries.safeLine(in: core.state, today: today, currencyCode: currency)
             summary = envelopeID == EnvelopeValue.householdID ? householdSummary : try LedgerQueries.islandSummary(in: core.state, today: today, envelopeID: envelopeID, currencyCode: currency)
             recentResults = try LedgerQueries.recentlyEndedResults(in: core.state, today: today, envelopeID: envelopeID, currencyCode: currency)
         } catch { self.error = t("queryError") }
@@ -270,6 +297,29 @@ import MetricKit
         onboarded = true
     }
     #if DEBUG || WEALTHY_LAUNCH_MEASUREMENT
+    private func seedQuickEntry() throws {
+        onboarded = true
+        if ProcessInfo.processInfo.arguments.contains("--quick-no-target") { return }
+        guard core?.state.targets.isEmpty == true else { return }
+        try run(.setTarget(TargetValue(currencyCode: "JPY", amountMinor: 310000, effectiveMonth: LedgerMonth(day: today))))
+        if ProcessInfo.processInfo.arguments.contains("--quick-due-rule") {
+            try run(.createRule(RuleValue(title: "Synthetic due today", amount: 1000, currencyCode: "JPY",
+                                         schedule: .monthly(day: 7), startDay: today)))
+        }
+        if ProcessInfo.processInfo.arguments.contains("--quick-ranking"), let core {
+            for (key, count, daysAgo) in [("catHobby", 3, 1), ("catTransport", 2, 29), ("catDaily", 2, 0), ("catClothing", 8, 30)] {
+                guard let category = core.state.categories.first(where: { $0.systemKey == key }) else { continue }
+                for _ in 0..<count {
+                    try run(.addEntry(EntryValue(kind: .expense, amount: 1, currencyCode: "JPY", day: today.adding(days: -daysAgo, calendar: .current), categoryID: category.id)))
+                }
+            }
+        }
+        if ProcessInfo.processInfo.arguments.contains("--quick-safe-rule") {
+            try run(.updateSettings(LedgerSettings(includeFixedCostsInTargets: true)))
+            try run(.createRule(RuleValue(title: "Synthetic Thursday", amount: 2000, currencyCode: "JPY", isFixedCost: true,
+                                         schedule: .weekly(weekday: 5), startDay: today.adding(days: 1, calendar: .current))))
+        }
+    }
     private func preparePerformanceStore() throws {
         guard let core else { return }
         let args = ProcessInfo.processInfo.arguments
@@ -306,6 +356,29 @@ import MetricKit
         }
         if args.contains("--child-info"), let child = child() { envelopeID = child.id }
         onboarded = true
+    }
+    #endif
+
+    #if DEBUG
+    func runIntentTestHook() async {
+        let args = ProcessInfo.processInfo.arguments
+        if Self.isUITest, args.contains("--run-intent-open-quick-add") { _ = try? await OpenQuickAddIntent().perform() }
+        guard Self.isUITest, intentTestDialog == nil, let index = args.firstIndex(of: "--run-intent-record-expense"),
+              index + 1 < args.count else { return }
+        let categoryKey = index + 2 < args.count && !args[index + 2].hasPrefix("-") ? args[index + 2] : nil
+        let key = "c2b2.intent." + (Self.testDiskID ?? "memory") + "." + args[index + 1] + "." + (categoryKey ?? "none")
+        if Self.testDiskID != nil, let dialog = Self.preferences.string(forKey: key) { intentTestDialog = dialog; return }
+        do {
+            let intent = RecordExpenseIntent()
+            intent.amount = args[index + 1]
+            if let categoryKey {
+                guard let category = expenseCategories.first(where: { $0.systemKey == categoryKey }) else { throw CoreError.invalidField("categoryID", nil) }
+                intent.category = ExpenseCategoryEntity(id: category.id, name: categoryName(category))
+            }
+            let result = try await intent.perform()
+            intentTestDialog = result.value
+            if Self.testDiskID != nil { Self.preferences.set(intentTestDialog, forKey: key) }
+        } catch { intentTestDialog = message(error) }
     }
     #endif
 

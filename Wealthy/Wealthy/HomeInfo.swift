@@ -51,14 +51,25 @@ struct HomeView: View {
             }
             Section {
                 if session.core?.state.entries.isEmpty == true {
-                    LabeledContent(session.t("emptyDay"), value: session.t("emptyDetail"))
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text(session.t("emptyDay"))
+                        Text(session.t("emptyDetail"))
+                    }.font(.body).foregroundStyle(Color.primary).accessibilityElement(children: .combine)
                 }
-                NavigationLink { EntryEditor(entry: nil) } label: { Label { Text(session.t("addEntry")).fixedSize(horizontal: false, vertical: true) } icon: { Image(systemName: "plus") } }
-                    .buttonStyle(.borderedProminent).accessibilityIdentifier("addEntry")
+                Button { session.showQuickAdd = true } label: {
+                    Label(session.t("quickAdd"), systemImage: "plus")
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                .foregroundStyle(scheme == .dark ? Color.black : Color.white)
+                .tint(V4.primary(scheme))
+                .buttonStyle(.borderedProminent).accessibilityIdentifier("addEntry")
                 Button { session.perform { try session.run(.markNoSpend(session.today, envelopeID: EnvelopeValue.householdID)) } } label: {
                     HStack {
                         Image(systemName: "checkmark.circle")
-                        Text(session.t("noSpend")).fixedSize(horizontal: false, vertical: true)
+                        Text(session.t("noSpend"))
+                            .font(.body)
+                            .lineLimit(nil)
+                            .fixedSize(horizontal: false, vertical: true)
                     }.frame(maxWidth: .infinity, minHeight: 44)
                 }.buttonStyle(.bordered).accessibilityIdentifier("noSpend")
             }
@@ -68,6 +79,11 @@ struct HomeView: View {
         .navigationBarTitleDisplayMode(.inline)
         .accessibilityIdentifier("homePage")
         .toolbar {
+            ToolbarItem(placement: .topBarLeading) {
+                Button { session.showQuickAdd = true } label: {
+                    Label(session.t("quickAdd"), systemImage: "plus")
+                }.accessibilityIdentifier("quickAddToolbar")
+            }
             if let summary = session.householdSummary {
                 ToolbarItem(placement: .topBarTrailing) {
                     Menu {
@@ -81,38 +97,61 @@ struct HomeView: View {
             }
         }
         .task { await session.homePresented() }
+        #if DEBUG
+        .overlay(alignment: .top) {
+            if let dialog = session.intentTestDialog { Text(dialog).accessibilityIdentifier("intentDialog").padding(8).background(.bar) }
+        }
+        #endif
     }
     private func weeklyCard(_ status: TargetStatus) -> some View {
         GroupBox {
             VStack(alignment: .leading, spacing: 8) {
-                if typeSize.isAccessibilitySize {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(session.t("leftThisWeek")).fixedSize(horizontal: false, vertical: true)
-                        Text(status.remaining.map { session.money($0) } ?? session.t("targetUnset")).monospacedDigit()
+                VStack(alignment: .leading, spacing: 8) {
+                    if typeSize.isAccessibilitySize {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(session.t("leftThisWeek")).fixedSize(horizontal: false, vertical: true)
+                            Text(status.remaining.map { session.money($0) } ?? session.t("targetUnset")).monospacedDigit()
+                        }
+                    } else {
+                        LabeledContent(session.t("leftThisWeek"), value: status.remaining.map { session.money($0) } ?? session.t("targetUnset"))
                     }
-                } else {
-                    LabeledContent(session.t("leftThisWeek"), value: status.remaining.map { session.money($0) } ?? session.t("targetUnset"))
+                    Text(session.t("notBalance")).font(.footnote).fixedSize(horizontal: false, vertical: true)
+                    if status.isSet { ProgressView(value: status.displayFill, total: 1).tint(status.isOver ? V4.over(scheme) : V4.ok(scheme)) }
+                    if status.isSet, let allowance = status.allowance {
+                        (typeSize.isAccessibilitySize ? AnyLayout(VStackLayout(alignment: .leading, spacing: 8)) : AnyLayout(HStackLayout())) {
+                            Text(session.t("allowance")); Text(session.money(allowance)).monospacedDigit()
+                            Spacer(minLength: 8)
+                            Text(session.t("spent")); Text(session.money(status.spent)).monospacedDigit()
+                        }.font(.subheadline)
+                    }
+                    (typeSize.isAccessibilitySize ? AnyLayout(VStackLayout(alignment: .leading, spacing: 8)) : AnyLayout(HStackLayout(spacing: 8))) {
+                        Image(systemName: status.isOver ? "moon.fill" : status.isSet ? "checkmark.circle.fill" : "circle.dotted")
+                            .foregroundStyle(status.isOver ? V4.over(scheme) : status.isSet ? V4.ok(scheme) : .secondary)
+                        Text(session.t(status.isOver ? "over" : status.isSet ? "within" : "unset")).fixedSize(horizontal: false, vertical: true)
+                        Spacer()
+                        Text(String(format: session.t("loggedDays"), status.loggedDays)).font(.footnote).fixedSize(horizontal: false, vertical: true)
+                    }
                 }
-                Text(session.t("notBalance")).font(.footnote).fixedSize(horizontal: false, vertical: true)
-                if status.isSet { ProgressView(value: status.displayFill, total: 1).tint(status.isOver ? V4.over(scheme) : V4.ok(scheme)) }
-                if status.isSet, let allowance = status.allowance {
-                    (typeSize.isAccessibilitySize ? AnyLayout(VStackLayout(alignment: .leading, spacing: 8)) : AnyLayout(HStackLayout())) {
-                        Text(session.t("allowance")); Text(session.money(allowance)).monospacedDigit()
-                        Spacer(minLength: 8)
-                        Text(session.t("spent")); Text(session.money(status.spent)).monospacedDigit()
-                    }.font(.subheadline)
-                }
-                (typeSize.isAccessibilitySize ? AnyLayout(VStackLayout(alignment: .leading, spacing: 8)) : AnyLayout(HStackLayout(spacing: 8))) {
-                    Image(systemName: status.isOver ? "moon.fill" : status.isSet ? "checkmark.circle.fill" : "circle.dotted")
-                        .foregroundStyle(status.isOver ? V4.over(scheme) : status.isSet ? V4.ok(scheme) : .secondary)
-                    Text(session.t(status.isOver ? "over" : status.isSet ? "within" : "unset")).fixedSize(horizontal: false, vertical: true)
-                    Spacer()
-                    Text(String(format: session.t("loggedDays"), status.loggedDays)).font(.footnote).fixedSize(horizontal: false, vertical: true)
+                .accessibilityElement(children: .combine)
+                .accessibilityLabel("\(session.t("leftThisWeek")), \(status.remaining.map { session.money($0) } ?? session.t("targetUnset")), \(session.t("notBalance")), \(session.t("allowance")) \(status.allowance.map { session.money($0) } ?? session.t("targetUnset")), \(session.t("spent")) \(session.money(status.spent))")
+                if let safe = session.safeLine, let amount = safe.safeAmount, !safe.scheduled.isEmpty {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(session.t("safeToSpend")).fixedSize(horizontal: false, vertical: true)
+                        Text(session.money(amount) + (amount < 0 ? " " + session.t("over") : ""))
+                            .monospacedDigit().foregroundStyle(amount < 0 ? V4.over(scheme) : Color.primary)
+                            .accessibilityIdentifier("safeAmount")
+                    }
+                    NavigationLink {
+                        SafeScheduledView(scheduled: safe.scheduled)
+                    } label: {
+                        Text(String(format: session.t("afterScheduled"), safe.scheduled.count, session.money(safe.scheduledTotal)))
+                            .fixedSize(horizontal: false, vertical: true)
+                    }.accessibilityIdentifier("safeScheduled")
                 }
             }
         }
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(session.t("leftThisWeek")), \(status.remaining.map { session.money($0) } ?? session.t("targetUnset")), \(session.t("notBalance")), \(session.t("allowance")) \(status.allowance.map { session.money($0) } ?? session.t("targetUnset")), \(session.t("spent")) \(session.money(status.spent))")
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel(session.t("thisWeek") + ", " + session.safeLineText)
     }
     private func monthCard(_ status: TargetStatus) -> some View {
         Section {
@@ -152,6 +191,26 @@ struct HomeView: View {
         }
     }
 }
+struct SafeScheduledView: View {
+    @Environment(LedgerSession.self) private var session
+    let scheduled: [UpcomingOccurrence]
+
+    var body: some View {
+        List {
+            ForEach(scheduled, id: \.ruleID) { item in
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(session.dayText(item.day))
+                    Text(item.title)
+                    Text(session.money(item.amount, code: item.currencyCode)).monospacedDigit()
+                }.padding(.vertical, 4)
+            }
+        }
+        .navigationTitle(session.t("scheduledThisWeek"))
+        .navigationBarTitleDisplayMode(.inline)
+        .accessibilityIdentifier("safeScheduledPage")
+    }
+}
+
 struct InfoView: View {
     @Environment(\.dynamicTypeSize) private var typeSize
     @Environment(\.colorScheme) private var scheme
@@ -180,7 +239,7 @@ struct InfoView: View {
                 if let core = session.core {
                     ForEach(LedgerQueries.entries(in: core.state, filter: LedgerEntryFilter(envelopeID: session.envelopeID, limit: 30))) { entry in
                         NavigationLink { EntryEditor(entry: entry) } label: {
-                            GroupBox { VStack(alignment: .leading, spacing: 8) { Text(entry.title.isEmpty ? session.t(entry.kind.rawValue) : entry.title); Text(entry.day.formatted).font(.footnote); Text(session.money(entry.amount, code: entry.currencyCode)).font(.system(.title3, design: .rounded).monospacedDigit()); if entry.needsReview { Label(session.t("needsReview"), systemImage: "exclamationmark.triangle") } } }
+                            GroupBox { VStack(alignment: .leading, spacing: 8) { Text(entry.title.isEmpty ? session.t(entry.kind.rawValue) : entry.title); Text(session.entryCategoryName(entry)); Text(entry.day.formatted).font(.footnote); Text(session.money(entry.amount, code: entry.currencyCode)).font(.system(.title3, design: .rounded).monospacedDigit()); if entry.needsReview { Label(session.t("needsReview"), systemImage: "exclamationmark.triangle") } } }
                         }
                     }
                 }

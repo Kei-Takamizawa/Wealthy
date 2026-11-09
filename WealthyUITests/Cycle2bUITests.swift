@@ -6,7 +6,7 @@ extension Cycle2aUITests {
         let screens: [(String, [(String, Bool)])] = [
             ("rule-form", [("Category", false), ("Day of month", false)]),
             ("home", [("Not a balance", false), ("Spent", false), ("¥2,900", false),
-                      ("This week", false), ("M", false), ("Add entry", false), ("I spent nothing today", false)])
+                      ("This week", false), ("M", false), ("Quick add", false), ("I spent nothing today", false)])
         ]
         for (screen, targets) in screens {
             var baseline: [String: CGFloat] = [:]

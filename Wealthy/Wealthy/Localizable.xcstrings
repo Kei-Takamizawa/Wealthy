@@ -1219,89 +1219,31 @@
         }
       }
     },
-    "noAI": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Apple Intelligence is required"
-          }
-        },
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Apple Intelligenceが必要です"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Se necesita Apple Intelligence"
-          }
-        },
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Apple Intelligence가 필요합니다"
-          }
-        }
-      }
-    },
-    "noAIDetail": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Use a supported iPhone with Apple Intelligence enabled and its model downloaded. Open Settings, then return and check again."
-          }
-        },
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "対応iPhoneでApple Intelligenceを有効にし、モデルをダウンロードしてください。設定から戻って再確認してください。"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Usa un iPhone compatible, activa Apple Intelligence y descarga su modelo. Vuelve desde Ajustes y compruébalo de nuevo."
-          }
-        },
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "지원되는 iPhone에서 Apple Intelligence를 켜고 모델을 다운로드하세요. 설정에서 돌아와 다시 확인하세요."
-          }
-        }
-      }
-    },
     "notReady": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "The Apple Intelligence model is not ready."
+            "value": "Getting ready"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "Apple Intelligenceのモデルを準備中です。"
+            "value": "準備中です"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "El modelo de Apple Intelligence no está listo."
+            "value": "Preparándose"
           }
         },
         "ko": {
           "stringUnit": {
             "state": "translated",
-            "value": "Apple Intelligence 모델이 준비되지 않았습니다."
+            "value": "준비 중"
           }
         }
       }
@@ -1312,25 +1254,25 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Apple Intelligence is turned off."
+            "value": "Turned off in Settings"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "Apple Intelligenceが無効です。"
+            "value": "設定でオフになっています"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Apple Intelligence está desactivado."
+            "value": "Desactivada en Ajustes"
           }
         },
         "ko": {
           "stringUnit": {
             "state": "translated",
-            "value": "Apple Intelligence가 꺼져 있습니다."
+            "value": "설정에서 꺼짐"
           }
         }
       }
@@ -1341,25 +1283,25 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "This device does not support Apple Intelligence."
+            "value": "Not available on this iPhone"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "この端末はApple Intelligenceに対応していません。"
+            "value": "このiPhoneでは利用できません"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Este dispositivo no admite Apple Intelligence."
+            "value": "No disponible en este iPhone"
           }
         },
         "ko": {
           "stringUnit": {
             "state": "translated",
-            "value": "이 기기는 Apple Intelligence를 지원하지 않습니다."
+            "value": "이 iPhone에서는 사용할 수 없음"
           }
         }
       }
@@ -1370,25 +1312,25 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Apple Intelligence is unavailable."
+            "value": "Not available on this iPhone"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "Apple Intelligenceを利用できません。"
+            "value": "このiPhoneでは利用できません"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Apple Intelligence no está disponible."
+            "value": "No disponible en este iPhone"
           }
         },
         "ko": {
           "stringUnit": {
             "state": "translated",
-            "value": "Apple Intelligence를 사용할 수 없습니다."
+            "value": "이 iPhone에서는 사용할 수 없음"
           }
         }
       }
@@ -1399,25 +1341,25 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Apple Intelligence is ready."
+            "value": "Available"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "Apple Intelligenceを利用できます。"
+            "value": "利用できます"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Apple Intelligence está listo."
+            "value": "Disponible"
           }
         },
         "ko": {
           "stringUnit": {
             "state": "translated",
-            "value": "Apple Intelligence가 준비되었습니다."
+            "value": "사용 가능"
           }
         }
       }
@@ -5767,6 +5709,470 @@
           "stringUnit": {
             "state": "translated",
             "value": "지원되는 통화를 선택해 주세요."
+          }
+        }
+      }
+    },
+    "onDeviceAI": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "On-device AI"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "デバイス上のAI"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "IA en el dispositivo"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "기기 내 AI"
+          }
+        }
+      }
+    },
+    "aiInformationDetail": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "All budgeting features work without on-device AI. Future voice features may use it."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "家計簿のすべての機能は、デバイス上のAIがなくても使えます。今後の音声機能でAIを使う場合があります。"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Todas las funciones de presupuesto funcionan sin IA en el dispositivo. Las futuras funciones de voz podrían usarla."
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "기기 내 AI 없이도 모든 가계부 기능을 사용할 수 있습니다. 향후 음성 기능에서 AI를 사용할 수 있습니다."
+          }
+        }
+      }
+    },
+    "quickAdd": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Quick add"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "クイック記録"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Registro rápido"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "빠른 기록"
+          }
+        }
+      }
+    },
+    "moreDetails": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "More details"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "詳しく記録"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Más detalles"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "자세히 기록"
+          }
+        }
+      }
+    },
+    "uncategorized": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Uncategorized"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "未分類"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sin categoría"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "미분류"
+          }
+        }
+      }
+    },
+    "entryRecorded": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Expense recorded"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "支出を記録しました"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gasto registrado"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "지출을 기록했습니다"
+          }
+        }
+      }
+    },
+    "safeToSpend": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Safe to spend"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "今週あと安心して使える額"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Puedes gastar con tranquilidad"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "이번 주 안심하고 쓸 수 있는 금액"
+          }
+        }
+      }
+    },
+    "scheduledThisWeek": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Scheduled this week"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "今週の予定支出"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gastos previstos esta semana"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "이번 주 예정 지출"
+          }
+        }
+      }
+    },
+    "afterScheduled": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "after %d scheduled (%@)"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "予定%d件（%@）を差し引いた額"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "tras %d gastos previstos (%@)"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "예정 지출 %d건(%@) 반영 후"
+          }
+        }
+      }
+    },
+    "recordExpense": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Record expense"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "支出を記録"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Registrar gasto"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "지출 기록"
+          }
+        }
+      }
+    },
+    "recordExpenseDescription": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Record an expense in your app currency without opening Wealthy."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wealthyを開かずに、アプリの通貨で支出を記録します。"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Registra un gasto en la moneda de la app sin abrir Wealthy."
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wealthy를 열지 않고 앱 통화로 지출을 기록합니다."
+          }
+        }
+      }
+    },
+    "intentAmountDescription": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Amount in the currency selected in Wealthy."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wealthyで選んだ通貨での金額です。"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Importe en la moneda seleccionada en Wealthy."
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wealthy에서 선택한 통화의 금액입니다."
+          }
+        }
+      }
+    },
+    "quickAddDescription": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open Quick add on Home."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ホームでクイック記録を開きます。"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Abre el registro rápido en Inicio."
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "홈에서 빠른 기록을 엽니다."
+          }
+        }
+      }
+    },
+    "recordedExpense": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recorded %@ (%@)."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@（%@）を記録しました。"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Registrado: %@ (%@)."
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@(%@) 기록 완료."
+          }
+        }
+      }
+    },
+    "intentWeekRemaining": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Left this week: %@."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "今週あと使える額：%@。"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Queda esta semana: %@."
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "이번 주 남은 금액: %@."
+          }
+        }
+      }
+    },
+    "Record expense ${amount}": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Record expense ${amount}"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "支出${amount}を記録"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Registrar gasto ${amount}"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "지출 ${amount} 기록"
           }
         }
       }

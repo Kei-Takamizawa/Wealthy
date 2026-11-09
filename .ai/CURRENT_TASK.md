@@ -1,148 +1,188 @@
-# Cycle 2b.1 - WEALTHY-C2B1-FIXED-CALENDAR
+# Cycle 2b.2 - WEALTHY-C2B2-QUICK-ENTRY
 
 ## Goal
-Add the first Cycle 2b screens on top of the existing WealthyCore queries and commands:
-1. Fixed costs (recurring rules): list, add, edit, pause/resume, delete, and automatic catch-up posting with a one-time notice.
-2. Calendar: month view with per-day totals and no-spend marks, and a day detail.
-3. Analysis: category breakdown for the month with the previous-month comparison.
+Make Wealthy usable by people who cannot keep a budget going, on any iPhone that runs iOS 26:
+1. **No AI gate (E3).** The ledger opens and every budgeting feature works whether or not Apple Intelligence is available.
+2. **3-second entry.** One tap opens a number pad; one more tap saves. Saving without a category is allowed. The same action is available outside the app through App Shortcuts (Shortcuts, Spotlight, Action Button, a Control Center "Shortcut" control), with no new app extension.
+3. **Safe line (A3).** On Home, "safe to spend this week" = what is left this week minus fixed costs already scheduled for the rest of the week.
 
 ## Branch
-New branch `codex/wealthy-c2b1-fixed-calendar` from latest `origin/main` (must contain PR #9, `5db23f0`; if not, stop as BLOCKED). The operator opens a NEW draft PR.
+New branch `codex/wealthy-c2b2-quick-entry` from latest `origin/main` (must contain PR #10, merge `fc74376`; if not, stop as BLOCKED). The operator opens a NEW draft PR.
 
 ## Context
-- Owner decisions still in force: standard iOS components only (no custom glass, plates or capsule buttons); tabs `Voice | Home | Info` with tap and swipe; exactly 4 languages (en base, ja, es, ko); all amounts and states from WealthyCore, no arithmetic in views.
-- Design boards (content and wording reference only, not visual spec): `design/v4/固定費.png`, `design/v4/カレンダーと分析.png`. Where a board and WealthyCore differ, WealthyCore wins; list the differences in the report.
-- WealthyCore already provides what this cycle needs: `RuleValue` with `RecurringSchedule` (`monthly(day:)`, `weekly(weekday:)`, `yearly(month:day:)`), commands `createRule` / `updateRule` / `pauseRule` / `deleteRule`, `markNoSpend` / `unmarkNoSpend`, `LedgerCore.postRecurring(through:now:)` (outside undo history by design), and queries `LedgerQueries.dailyTotals`, `categoryBreakdown`, `upcoming`, `entries(filter:)`, `periodSummary`.
+- Owner decisions in force: standard iOS components only; tabs `Voice | Home | Info` (tap and swipe); exactly 4 languages (en base, ja, es, ko); amounts and states come from WealthyCore, no money arithmetic in views; performance judged on the physical iPhone (Home interactive <= 2 s at 10,000 entries).
+- Owner decision 2026-11-06 (design-review doc 10 §8): E3 adopted. The old "iPhone 15 Pro minimum" now applies only to future AI features, not to the app.
+- Today the only use of Apple Intelligence is the gate: `LedgerSession.refreshAvailability()` sets `available`, `LedgerSession.open()` returns early when it is false, and `LedgerRoot` shows `NoAIView` instead of the ledger. Nothing calls a language model.
+- WealthyCore already supports uncategorized entries (`EntryValue.categoryID` is optional; `LedgerQueries.categoryBreakdown` returns a `nil` bucket; `EntryFilter.uncategorized` exists).
+- `LedgerQueries.upcoming(in:nextDays:today:)` lists future rule occurrences. Catch-up (`postRecurring(through: today)`) already posts occurrences dated today or earlier.
+- The owner signs with a free (personal) team. App Intents need no capability or entitlement. Do NOT add app extensions, App Groups, or any new capability or entitlement in this cycle (widgets and dedicated controls are the next cycle).
 
 ## Requirements
 
-### 1. Entry points (no new tabs, no dead entry points)
-- From Info (household and child envelope): rows "Fixed costs", "Calendar", "Analysis" pushed in the existing `NavigationStack`. The tab bar and the three tabs stay as they are.
-- Root-tab swipe must keep working only on the three root pages; pushed screens (these new ones included) must not switch tabs on horizontal drags. Extend the existing gesture tests to cover one new pushed screen.
+### 1. No AI gate (E3)
+- The ledger opens, onboarding runs and all existing features work when `SystemLanguageModel.default.availability` is `.unavailable` for any reason. Remove the early return in `open()` and the `NoAIView` branch in `LedgerRoot`.
+- Keep availability detection. Show it as information only: one row in Info's settings area, "On-device AI" with a plain state ("Available", "Not available on this iPhone", "Turned off in Settings", "Getting ready"), and a detail screen that says all budgeting features work without it and that voice features later may use it. Reuse `NoAIView` for the detail if that is simpler (rename and reword it; no "blocked" wording). The Voice tab stays as it is.
+- DEBUG test switch: `WEALTHY_TEST_AI_AVAILABLE=0` forces unavailable, `=1` forces available (keep accepting the old `WEALTHY_CYCLE2A_TEST_AI_AVAILABLE=1`). Tests must not depend on the simulator's real AI state.
+- README.md: replace the "compatible iPhone with Apple Intelligence" requirement with "iPhone with iOS 26 or later; Apple Intelligence is not required". Keep the README plain and short.
 
-### 2. Fixed costs
-- List of rules for the selected envelope: title, amount (locale currency format), schedule in words (e.g. "Every month on the 25th", "Every Monday", "Every year on 4/1"), next occurrence (from `upcoming`), paused state shown with icon + word.
-- Add/edit form (`Form`): title, expense/income, amount (`MoneyInputField`), category, envelope, schedule type and its day/weekday/month-day, start day, optional end day, fixed-cost flag, tax rate / service mode where the entry editor already offers them. Validation errors come from WealthyCore and are shown inline in plain words.
-- Pause/resume and delete with `confirmationDialog`; delete explains that already-posted entries remain.
-- Catch-up: call `postRecurring(through: today, now:)` after the ledger opens and whenever the app becomes active (scene phase). If entries were posted, show one dismissible notice ("N fixed costs were recorded while the app was closed") with a way to view them (day detail or list). If there were failures, show them in plain words with the rule name. Never block launch on this; it must not count toward first frame. Posting is not an undo step (Core rule); do not add one.
+### 2. Quick add (in the app)
+- Home: the existing "Add entry" action becomes **Quick add**: it opens a sheet with
+  - the amount field (`MoneyInputField`) focused immediately with the number pad up;
+  - up to 4 category buttons: the household's most-used expense categories in the last 30 days (by entry count, ties by sort order), filled up with the presets `catFood`, `catDaily`, `catOthers` when there are fewer; tapping a category button saves at once with that category;
+  - a **Save** button that saves without a category;
+  - **More details**, which opens the full `EntryEditor` with the typed amount carried over.
+  Defaults: expense, today, household envelope, the app currency, not fixed cost, no review flag. Same late-entry rule as the editor (`LedgerQueries.canAddEntry`). The save is a normal Core command (undoable as today).
+- A Save with an empty or invalid amount shows the Core error in plain words and keeps the sheet open.
+- After saving: the sheet closes, Home updates, and a short confirmation is announced to VoiceOver.
+- Layout: the amount field and the Save button must stay visible above the keyboard on iPhone 15 Pro and iPhone 17 Pro, at the default size and at AX3 (use the lesson from Cycle 2b.1 onboarding: test the frames, then check the screenshots).
+- Uncategorized display: wherever an entry's category is shown (day detail, entry lists, analysis), an entry without a category shows the localized word "Uncategorized"; analysis shows the `nil` bucket as one "Uncategorized" row. The full editor's "None" option stays.
 
-### 3. Calendar
-- Month view (`MonthControl` for month switching): each day shows the expense total (compact currency) and a no-spend mark, from `dailyTotals` and Core's no-spend state. Today is marked. Week start follows the setting already in Core.
-- Must work at AX3 without clipping (allow a list-style fallback layout for large text if a grid cannot fit).
-- Day detail: that day's entries (tap opens the existing entry editor), totals, and a toggle for the no-spend mark (`markNoSpend` / `unmarkNoSpend`). Core currently allows a mark on a day that has entries; do not add a UI-side rule, show what Core returns, and show any Core error in plain words.
-- VoiceOver: each day cell reads date, total and no-spend state as one element.
+### 3. App Intents (outside the app, main app target only)
+- `RecordExpenseIntent` ("Record expense"): parameters `amount` (required, in the app currency) and `category` (optional; an `AppEntity` or `AppEnum` over the household's non-archived expense categories, shown with localized names). Runs without opening the app, saves through the SAME code path as Quick add, and returns a spoken/visible dialog such as "Recorded ¥650 (Food). Left this week: ¥12,350." (without a target: no "left" part).
+- `OpenQuickAddIntent` ("Quick add"): opens the app straight to the Quick add sheet on Home (after onboarding; before onboarding it just opens the app).
+- An `AppShortcutsProvider` exposing both, with short phrases in en, ja, es, ko (each phrase must contain the app name as App Intents requires).
+- Store access: one ledger store per process. The intent must not open a second `LedgerStore` while the UI has one open; use one shared owner (for example a process-wide accessor that `LedgerSession` also uses). When the app becomes active after an intent ran, Home shows the new entry (scene-phase reload already exists; verify it).
+- Works with AI unavailable. No new targets, extensions, App Groups, capabilities or entitlements.
+- DEBUG test hook: launch argument `--run-intent-record-expense <amount> [category-system-key]` runs the real `RecordExpenseIntent.perform()` against the isolated UI-test store after the ledger opens, and shows the returned dialog text in a test-only element so the test can read it.
 
-### 4. Analysis
-- Month selector; category breakdown for expenses from `categoryBreakdown` (current vs previous month), sorted by amount; totals from `periodSummary`.
-- A chart is allowed using Swift Charts (system framework, not a new dependency) with an accessible text list that carries the same numbers; the list alone must be complete. Color is never the only carrier of meaning.
-- Empty month: a plain message, no chart.
+### 4. Safe line (A3)
+- WealthyCore: add ONE read-only query, e.g. `LedgerQueries.safeLine(in:today:envelopeID:currencyCode:calendar:) -> SafeLine` with `weekRemaining: Int?`, `scheduled: [UpcomingOccurrence]`, `scheduledTotal: Int`, `safeAmount: Int?`.
+  - `weekRemaining` = the existing week `TargetStatus.remaining` (week from `settings.weekStart`).
+  - `scheduled` = expense occurrences of active (not paused, not ended) rules for that envelope and currency, dated strictly after `today` and on or before the week's last day; include a rule only if it would count toward the target (`!rule.isFixedCost || settings.includeFixedCostsInTargets`). Reuse `upcoming` logic; do not duplicate schedule math.
+  - `safeAmount = weekRemaining - scheduledTotal` (may be negative); `nil` when no target. Use the existing checked arithmetic.
+  - No persistence, data model, target or tax rule change.
+- Home week card: when a target is set and `scheduled` is not empty, show "Safe to spend" with `safeAmount`, and under it "after N scheduled (¥Y)" that expands (standard `DisclosureGroup`) to the scheduled items: date, title, amount. When `scheduled` is empty, show nothing extra. Negative amounts use the existing "over" color and word, never color alone. Keep "Not a balance". Include it in the week card's VoiceOver label.
 
 ### 5. Languages and accessibility
-- All new strings in `Localizable.xcstrings` for en, ja, es, ko; `verify_shell.py` must report zero missing keys.
-- Accessibility audits for the three new screens (no exclusions), on iPhone 15 Pro and iPhone 17 Pro simulators.
+- Every new string in `Localizable.xcstrings` for en, ja, es, ko; `verify_shell.py` must report zero missing keys. Natural Japanese for the target users (for example ja "クイック記録", "未分類", "今週あと安心して使える額" or shorter if it clips; choose wording that fits and report it).
+- Accessibility audits with the existing narrow SwiftUI Dynamic Type filter only (no new exclusions): Quick add sheet, Home with the safe line, the AI information screen.
 
 ## Do not change
-WealthyCore behavior, persistence, data model, tax/target rules (small read-only query helpers allowed only if strictly needed, with tests; prefer none). Fonts, the tab structure, the standard-UI decision. No new dependencies.
+WealthyCore persistence, data model, target and tax rules, existing Core behavior (only the one new read-only query and its tests are allowed). The tab structure, fonts, the standard-UI decision, languages. No new dependencies, targets, extensions, capabilities or entitlements. Deployment target stays as it is.
 
-## Tests (UI tests in `WealthyUITests`, synthetic data)
-- Create, edit, pause/resume and delete a monthly rule; a weekly and a yearly rule show the right schedule text.
-- Catch-up: a seeded rule with past occurrences posts entries on launch, the notice appears once, and relaunch does not post duplicates.
-- Calendar: totals and no-spend marks match seeded data; day detail opens an entry; toggling no-spend works and is reflected in the month.
-- Analysis: breakdown order and previous-month values match seeded data; empty month message.
-- Horizontal drag on a pushed screen does not switch tabs.
-- Accessibility audits: Fixed costs list, Calendar, Analysis (and the rule form if feasible).
+## Tests
+Core (`WealthyCore/Tests`): `safeLine` cases: no target; no rules; rule today (excluded, already posted); rule later this week (included); rule next week (excluded); paused and ended rules; income rule; fixed-cost rule with `includeFixedCostsInTargets` false and true; other envelope; other currency; `weekStart` 1 vs 2 at a week boundary; negative result.
+
+UI (`WealthyUITests`, synthetic data):
+- AI unavailable (`WEALTHY_TEST_AI_AVAILABLE=0`): fresh launch reaches onboarding, finishes it, Home appears, Quick add saves an entry; Info shows the AI row with the unavailable state; the AI detail screen opens.
+- Quick add: from Home, tap Quick add, type `650`, tap Save -> Home shows the expense and the week numbers change by 650; the entry is uncategorized and shows "Uncategorized" in day detail. The test counts its own interactions after Home is visible (must be at most 3: tap, type, tap).
+- Quick add with a category button saves with that category; More details carries the amount into the editor.
+- Quick add keyboard layout (15 Pro and 17 Pro, default and AX3): amount field and Save are hittable, fully above the keyboard, and the field shows the typed digits.
+- Intent hook: `--run-intent-record-expense 650 catFood` adds one expense with Food and the dialog text contains the amount; without a category the entry is uncategorized; relaunch does not duplicate it.
+- Safe line: seeded target and a weekly rule later this week -> Home shows the safe amount and the scheduled item; no rule -> no safe line.
+- Update tests that asserted the old AI gate (`--screen no-ai` etc.) to the new behavior; do not delete coverage.
+- Audits listed in Requirement 5.
 
 ## Acceptance
-- All tests above pass on iPhone 15 Pro and iPhone 17 Pro simulators; existing UI tests and audits still pass.
-- `sh Verification/verify_core.sh` (117 tests unchanged), `python3 Verification/verify_shell.py`, `sh Verification/verify_localization.sh`, `git diff --check` pass.
-- Simulator Release build and signed generic iOS build pass.
-- Screenshots (light, dark, AX3 for Calendar) of Fixed costs list, rule form, catch-up notice, Calendar, Day detail, Analysis, committed under `Verification/Cycle2bEvidence/` with an `INDEX.md` (JPEG q≈80, long edge ≤ 2000 px, each < 1 MB). Synthetic data only.
-- Physical device: install and normal launch of the signed Release build succeeds (no new performance measurement required). If the device rejects the launch because the profile is not trusted, report it as an owner action, not a failure of the task.
+- All tests above pass; the full `WealthyUITests` scheme has zero failures once per simulator (iPhone 15 Pro, iPhone 17 Pro), `-parallel-testing-enabled NO`.
+- `sh Verification/verify_core.sh` (the previous 117 plus the new tests, all pass), `python3 Verification/verify_shell.py` (with the PYTHONPATH that provides fontTools), `sh Verification/verify_localization.sh`, `git diff --check` pass.
+- Simulator Release build and signed generic iOS build pass with the existing team and no new capability.
+- The built app contains `Metadata.appintents` listing both intents and the App Shortcuts phrases in all 4 languages (show the command and the relevant output).
+- Screenshots (JPEG q~80, long edge <= 2000 px, each < 1 MB, synthetic data) under `Verification/Cycle2bEvidence/c2b2/` with an `INDEX.md`: Quick add with keyboard (light, dark, AX3; both simulators), Home with safe line expanded (light, dark), Info AI row and detail with AI unavailable (light). Open every screenshot and confirm in the report that the amount field, typed digits and Save are visible.
+- Physical device: install and normal launch of the signed Release build succeeds. Do not write to the owner's real ledger on the device; list "run Record expense once from the Shortcuts app" as an optional owner check in the report. An untrusted-profile launch error is an owner action, not a failure.
 
 ## Report (`.ai/LAST_REPORT.md`, format in `AGENTS.md`)
-Per requirement with evidence, exact commands, board-vs-Core differences, anything not run and why.
+Per requirement with evidence, exact commands, Japanese wording chosen, anything not run and why, and a short note on how the single-store rule for intents was implemented.
 
-## Round 2 (designer decisions, 2026-11-06, after PR #10 head 5fee716)
-Same Task ID, same branch `codex/wealthy-c2b1-fixed-calendar`, same PR #10. Read `.ai/LAST_REPORT.md` first. Only the items below; do not change anything else that already passes.
+## Round 2 (designer, 2026-11-08, after checkpoint bfff4bb on PR #13)
+Same Task ID, branch `codex/wealthy-c2b2-quick-entry` and draft PR #13. Read `.ai/LAST_REPORT.md` first (it is the 00:36 interim). Only the items below; do not change anything else that already passes.
 
-1. **Rule form audit ("Dynamic Type font sizes are partially unsupported" on Category and Day of month).** Restructure with standard controls only:
-   - Day of month: replace the fixed-width (`frame(width: 100)`) number `TextField` with a standard `Picker` over 1...31 (and 1...12 for the yearly month), using `.pickerStyle(.navigationLink)` so the value list is a pushed list that scales with Dynamic Type. The value shown in the row is the plain number. Core still validates the day (month-end clamping stays a Core rule).
-   - Category (and other pickers in this form if the audit flags them): use the plain `Picker(title, selection:)` initializer without a custom label view, `.pickerStyle(.navigationLink)`.
-   - Remove fixed widths/heights around text in this form; rows may grow vertically.
-   - The audit stays the default `performAccessibilityAudit()` with no exclusions. A diagnostic issue handler is allowed only if it logs the element (label, identifier, frame) and still fails the test for every issue; if the automatic approval reviewer rejects it, skip the handler and report.
-2. **Home "Text clipped" (Not a balance, I spent nothing today).** Make every text on Home wrap at accessibility sizes: no `lineLimit(1)` or fixed heights on these texts or their containers; button labels may wrap to multiple lines (`.fixedSize(horizontal: false, vertical: true)` where needed). The big amount may keep `minimumScaleFactor` if the audit accepts it; otherwise let it wrap. Classify the failure: run `testHomeAccessibilityAudit` once on `origin/main` (5db23f0) in a temporary git worktree under `/tmp/wealthy-c2b1-baseline` with the same simulator Dynamic Type state and report whether it already failed there. Do not commit anything from that worktree; remove it afterwards.
-3. **Full UI suite.** After 1 and 2, run the whole `WealthyUITests` scheme once per simulator (iPhone 15 Pro, iPhone 17 Pro) in single runs, with `-parallel-testing-enabled NO`. Report counts and every failure. The launch/interactive metric tests may be slow; they must run, but their simulator numbers are not judged against the device target.
-4. Keep the screenshots in `Verification/Cycle2bEvidence/` in sync: re-capture only the rule form and Home-affected images if they change.
+1. **`testHorizontalTabSwipeAndVerticalScroll` (both simulators, `WealthyUITests.swift:387` x3).** After the swipe to Home, `homePage` exists and the Home tab is selected, but `homePage.isHittable` is false. Diagnose before changing code:
+   - run the test alone on both simulators;
+   - run it once on `origin/main` (`fc74376`) in a temporary worktree `/tmp/wealthy-c2b2-baseline` to classify regression vs pre-existing (commit nothing from it; remove it afterwards);
+   - at the failure, attach `app.debugDescription` and the frames of `homePage` and of any element covering it.
+   Suspects (designer's guess, unverified): an element added this cycle covering Home (Quick add sheet remnants, the DEBUG intent-dialog element, the safe-line disclosure), or Home's container frame changed by this cycle's empty-state / safe-area fix. Fix the app cause with standard components. Do not weaken the assertion. If the evidence shows the assertion checks the wrong element, report that evidence and the proposed test change in the report before making it.
+2. **Evidence.** Write `Verification/Cycle2bEvidence/c2b2/INDEX.md` for the 14 screenshots, re-capture any that changed, open every image and state in the report that the amount field, typed digits and Save are visible where required.
+3. **Full `WealthyUITests`** once per simulator (iPhone 15 Pro, iPhone 17 Pro), `-parallel-testing-enabled NO`, after item 1 passes in targeted runs; required checks (`verify_core.sh`, `verify_shell.py` with fontTools PYTHONPATH, `verify_localization.sh`, `git diff --check`, Simulator Release and signed generic iOS builds).
+4. **Device.** Install and launch the signed Release build. If the iPhone is locked, report it as an owner action, not a failure.
+5. Rewrite `.ai/LAST_REPORT.md` completely (final, not interim), listing every changed file including the evidence folder.
 
-Acceptance for round 2: rule-form audit and Home audit pass on both simulators with no exclusions; the full suite has zero failures on both simulators; required checks (`verify_core.sh`, `verify_shell.py`, `verify_localization.sh`, `git diff --check`, Simulator Release and signed generic iOS builds) pass. Then set `Status: DONE`. If a failure remains, keep it red, report the exact test, element and message, and set `Status: PARTIAL`.
+Acceptance for Round 2: the original acceptance list plus item 1 passing on both simulators. Then `Status: DONE`; otherwise `PARTIAL` with exact failures.
 
+## Round 3 (designer decision, 2026-11-08, after PR #13 head f86ae68)
+Same Task ID, branch and draft PR #13. Read `.ai/LAST_REPORT.md` first. Only the items below; do not change anything else that already passes.
 
-## Round 2 resume instructions (user, after usage-limit interruption)
+**Designer reading of Round 2 (from your evidence):** the regression comes from the new Home container (GeometryReader + manual frame + `.clipped()` + `safeAreaInset` footer around the `Form`), not from the Form's content. `fc74376` passes with the plain `Form`. Your three trials kept a footer in some form; none restored the original container. So the decision is to restore it and move Quick add out of the footer.
 
-You stopped on a usage limit; the limit has reset. Continue Round 2 from where you stopped (your two full-suite runs ended when you stopped; no xcodebuild is running now) and finish with the full report.
+1. **Home container (decided).** In `HomeView`, restore the container from `fc74376` exactly: `Form { ... }` directly in the body, `.accessibilityIdentifier("homePage")` attached where it was on `fc74376`, same modifiers order; no `GeometryReader`, no manual `.frame`, no `.clipped()`, no `safeAreaInset` footer. Keep this cycle's in-Form content changes (empty-state text, safe line, week-card accessibility).
+2. **Quick add entry points (decided), standard components only:**
+   - (a) the row in the third section where "Add entry" was on `fc74376` becomes a `Button` that opens the Quick add sheet (`.borderedProminent`, identifier `addEntry`, label "Quick add" with the plus icon);
+   - (b) a toolbar button `ToolbarItem(placement: .topBarLeading)` with `Label("Quick add", systemImage: "plus")`, identifier `quickAddToolbar`, that opens the same sheet. The existing trailing result menu stays.
+   - The 3-interaction test uses the toolbar button (tap, type, tap). Add one assertion that the row button also opens the sheet.
+3. **DEBUG intent dialog.** When `intentTestDialog` is nil, nothing may wrap or resize Home: attach the test-only element as an `.overlay(alignment: .top)` that renders only when non-nil (or another way that leaves Home's frames identical to `fc74376` when absent). Report `homePage`'s frame on both simulators and compare it with the `fc74376` frame you measured in Round 2.
+4. **Order of runs:** `testHorizontalTabSwipeAndVerticalScroll` on both simulators -> Home audits (light, dark) on both -> Quick add keyboard/3-interaction tests on both -> full `WealthyUITests` once per simulator (`-parallel-testing-enabled NO`). If the Home audit flags text behind the tab bar, run the same audit on `fc74376` in a temporary worktree (remove it afterwards) and report both results with frames; do not add exclusions.
+5. **Evidence.** Re-capture the Home and Quick add screenshots that changed (the toolbar button is now visible on Home), update `INDEX.md`, open every image and confirm Amount, typed digits and Save are visible.
+6. **Device.** The owner has connected and unlocked the iPhone. Install the signed Release build and launch it once (launch only; do not tap or enter anything in the owner's ledger). Report the result.
+7. Required checks (`verify_core.sh`, `verify_shell.py` with fontTools PYTHONPATH, `verify_localization.sh`, `git diff --check`, Simulator Release and signed generic iOS builds). Rewrite `.ai/LAST_REPORT.md` completely as the final report for the whole cycle, listing every changed file.
 
-Designer notes for the rest of Round 2:
-(a) Test environment first. On main, UI tests pinned Dynamic Type with `.environment(\.dynamicTypeSize, LedgerSession.isUITest ? (--ax3 ? .accessibility3 : .large) : actual)`; this branch now pins only for --ax3 (LegacyUITestTypeSize) and otherwise inherits whatever the simulator is set to, which makes results depend on simulator state. Replace the SwiftUI environment pin with the system launch argument in the tests: launch with `-UIPreferredContentSizeCategoryName UICTContentSizeCategoryL` by default and `UICTContentSizeCategoryAccessibilityXL` (AX3) for AX3 cases, and remove the in-app environment override, so the app follows a real content size category and the audit can vary it. Record the simulator's own content size before and after. Then re-run the rule-form and Home audits before changing UI further; report whether the 'partially unsupported' and 'Text clipped' issues change.
-(b) Rule form: keep navigationLink Pickers for Day/Month/Category only (not form-wide). If the dynamic-type issue remains, check for anything in the row hierarchy that stops text scaling (fixed font sizes, fixedSize(), frame heights, minimumScaleFactor, lineLimit) and report the element's label, identifier, frame and the exact audit description.
-(c) testC2bChildIsolation: update it to assert the Category picker's accessibility value ('Food') instead of its label. This matches the standard control and keeps the assertion as strong.
-(d) Home baseline classification may stay inconclusive; just fix Home so the audit passes under (a).
-(e) Then the full suite on both simulators, single runs, as in the Round 2 text.
+Acceptance for Round 3: the original acceptance list, including the swipe test and all audits passing on both simulators with no new exclusions. Then `Status: DONE`; otherwise `PARTIAL` with exact failures and frames.
 
+## Round 4 (designer decision, 2026-11-08, after PR #13 head 2440c0a)
+Same Task ID, branch and draft PR #13. Read `.ai/LAST_REPORT.md` first. Only the items below; keep everything that passes in Round 3 (Home container, Quick add buttons, swipe test) unchanged.
 
-## Round 2 further designer notes (checkpoint b81e9e2)
+**Designer reading of Round 3:** the only failure is `testSafeLineAndAIInformationEvidence` (contrast). Expanding the in-place `DisclosureGroup` makes Home taller than the screen, so the next section's weekday letters start inside the floating tab bar. The collapsed Home passes. The fix is to stop expanding the breakdown inside Home, not to change the audit.
 
-Continue Round 2 of WEALTHY-C2B1-FIXED-CALENDAR. The checkpoint is committed. Apply these designer notes in order, then finish Round 2 and rewrite .ai/LAST_REPORT.md.
-(f) Both full audits report 'Dynamic Type font sizes are partially unsupported'. A pinned content size (in-app dynamicTypeSize override, or the -UIPreferredContentSizeCategoryName launch argument, which lands in the highest-priority defaults domain) can stop the app from following the audit's own size changes. Launch the audit tests (testC2bAccessibilityAndEvidence, testHomeAccessibilityAudit, and the rule-form audit if separate) with NO content-size launch argument and no in-app override, simulator at default size; keep the size argument only in tests that need a fixed AX3 layout (matrix and screenshot tests). Run only these audit tests once per simulator first and report each result.
-(g) If Category / Day of month in the rule form still fail after (f): replace each Picker(.navigationLink) with a standard NavigationLink whose label is LabeledContent(title) { Text(value) } and whose destination is a List of plain Button rows with a checkmark on the selection. Standard components only, no fixed sizes. Keep identifiers and the value tests read ('Food').
-(h) If Home still fails after (f): report label, frame and font of each flagged element; no Home layout changes beyond Round 2 item 2.
-(i) testIncomeEntry and testChildSupportDefaults assume October fixtures. Make the test data relative to the current month (or use an existing injectable test date) so the expected values hold in any month. Do not change expected numbers to match the screen; do not change WealthyCore.
-(j) testChildEnvelopeAndLicenseFlow and testPersistedOnboardingRelaunch (15 Pro): first check whether (f) fixes them. If not, find the cause and fix within task scope; if the cause is outside the task, keep red and report.
-(k) Then run the full WealthyUITests once per simulator with -parallel-testing-enabled NO. If budget looks short, run the full suites before re-capturing screenshots. Status DONE only if all acceptance items have evidence; otherwise PARTIAL with exact failures.
+1. **Safe line breakdown (decided).** In `weeklyCard`, replace the `DisclosureGroup` with a standard `NavigationLink` row: label = the same `afterScheduled` text, identifier `safeScheduled`. Its destination is a new small read-only screen (in `HomeInfo.swift` or a new file) titled with a new localized string "Scheduled this week" (en/ja/es/ko), a `List` with one row per `safe.scheduled` item showing day, title and amount (same Core values and formatting as now), screen identifier `safeScheduledPage`. No other change to the week card, the safe amount, or `SafeLine.swift`.
+2. **Test.** Update `testSafeLineAndAIInformationEvidence`: on Home (light and dark) check the safe amount and run the Home audit with the safe line visible and collapsed; tap `safeScheduled`, check "Synthetic Thursday" and its amount on `safeScheduledPage`, capture, and run the same audit on that screen. Keep the AI information part and the existing `auditWithSwiftUIException` helper unchanged. No new exclusions.
+3. **Order of runs:** that test on both simulators -> `testHorizontalTabSwipeAndVerticalScroll` and the Home audits on both -> full `WealthyUITests` once per simulator, one simulator at a time (`-parallel-testing-enabled NO`).
+4. **Evidence.** Replace the `home-safe-*` screenshots with the collapsed Home and add `safe-scheduled-*` (light, dark) for both simulators; update `INDEX.md`; open every new image and confirm the safe amount, the row and the scheduled item are fully visible and not behind the tab bar.
+5. Required checks (`verify_core.sh`, `verify_shell.py` with fontTools PYTHONPATH, `verify_localization.sh`, `git diff --check`, Simulator Release and signed generic iOS builds). No device run needed this round. Rewrite `.ai/LAST_REPORT.md` completely as the final report for the whole cycle, listing every changed file.
 
-## Round 3 (designer, 2026-11-06, after PR #10 head a9a13dc; owner-approved scope)
-Same Task ID, branch and PR #10. Read `.ai/LAST_REPORT.md` first. Only the items below; do not change anything else that already passes.
+Acceptance for Round 4: the original acceptance list with the safe-line breakdown on its own screen, all audits passing on both simulators with no new exclusions, and full `WealthyUITests` passing on both. Then `Status: DONE`; otherwise `PARTIAL` with exact failures and frames.
 
-**Owner decision (2026-11-06):** a narrow exception to AGENTS.md "never exclude accessibility audits" is approved for exactly one case: the Dynamic Type finding that Apple DTS describes as a SwiftUI audit false positive ("User will not be able to change the font size of this SwiftUI.AccessibilityNode", Apple Developer Forums thread 828525, June 2026). Nothing else may be excluded.
+## Round 5 (designer decision, 2026-11-08, after Round 4)
+Same Task ID, branch and draft PR #13. Read `.ai/LAST_REPORT.md` first. Only the items below; keep the Round 4 product code (Home container, Quick add buttons, `safeScheduledPage`) unchanged.
 
-1. **Narrow audit filter.** In `testC2bAccessibilityAndEvidence` and `testHomeAccessibilityAudit` (and any other audit that reports this finding), keep the default `performAccessibilityAudit()` (all audit types) and add an issue handler that ignores an issue only when ALL hold: `auditType == .dynamicType`; the issue's detailed description says the element is a `SwiftUI.AccessibilityNode`; the element exists. Every other issue (any other type, or a Dynamic Type issue on a non-SwiftUI element) still fails the test. Put the handler in one shared helper with a comment citing the owner decision and the forum thread. Log each ignored issue (label, identifier, frame) and attach the list to the test result; count them in the report per screen and simulator.
-2. **Compensating Dynamic Type check (required, replaces what the filter ignores).** Add a UI test that launches the rule form and Home once at the default size and once with `-UIPreferredContentSizeCategoryName UICTContentSizeCategoryAccessibilityXL`, and asserts for each element that Round 2 reported (rule form: Category, Day of month; Home: the 15 listed elements, or a representative set that includes every distinct text style among them) that its frame height at AX3 is larger than at the default size, and that it is fully inside the window. If an element does not grow, that is a real failure: keep it red and report it.
-3. **Custom fonts.** Extend `Verification/verify_shell.py` so it fails if any `Font.custom(` / `.custom(` call in `Wealthy/` lacks `relativeTo:` (or confirm none exist and add the check anyway). Report the result.
-4. **Onboarding Next button (iPhone 15 Pro).** Fix `testPersistedOnboardingRelaunch`: make the Next button reachable while the keyboard is up, with standard components only (for example a `ScrollView` with `.scrollDismissesKeyboard(.interactively)`, or the button in a `safeAreaInset(edge: .bottom)` that moves above the keyboard). Do not change onboarding content, wording or flow. Do not weaken the test.
-5. **Full UI suite** once per simulator (iPhone 15 Pro, iPhone 17 Pro), `-parallel-testing-enabled NO`, only after 1-4 pass in targeted runs. Run the full suites before re-capturing any screenshots; re-capture only images that changed (onboarding if affected). Keep logs/xcresults under `/tmp/wealthy-c2b1-r3*`.
+**Designer reading of Round 4:** with the safe-line fixture, Home is taller than the screen, so whatever item is last on screen (now the empty-state text) sits partly behind the floating tab bar and fails the contrast audit. This is the standard iOS scroll-under-bar behavior, not a defect in that text: the user scrolls to read it. The decision (designer, owner may override) is to audit every element where the user can read it, without weakening the audit.
 
-Acceptance for Round 3: full suite zero failures on both simulators with only the item-1 filter; item-2 test passes; required checks (`verify_core.sh` 117, `verify_shell.py`, `verify_localization.sh`, `git diff --check`, Simulator Release and signed generic iOS builds) pass. Then `Status: DONE`. Otherwise `PARTIAL` with the exact test, element and message.
+1. **Scrolled audit helper (decided), tests only.** Add one helper in `WealthyUITests` for scrollable screens taller than the screen:
+   - Pass 1 at the starting position: run the same audit as now (same audit types; keep the existing `auditWithSwiftUIException` dynamic-type rule exactly). An issue may be deferred only if its element's frame intersects the tab bar frame or the navigation bar frame. Every other issue fails the test as now.
+   - For each deferred element: scroll (small `swipeUp`/`swipeDown` steps, at most 8 positions) until its frame is fully between the navigation bar's `maxY` and the tab bar's `minY`; assert that; run the full audit again at that position with the same rule. The deferred element must have zero issues there. Issues on other elements at that position follow the same rule (fail, or defer if under a bar and re-check).
+   - Fail if any deferred element cannot be brought fully into view, or still has an issue when fully visible.
+   - Attach and print every deferred element with its label, identifier, issue type and both frames (under the bar, then fully visible).
+2. **Use it only for the Home audit in `testSafeLineAndAIInformationEvidence`** (light and dark). All other audits stay exactly as they are.
+3. **Order of runs:** that test on both simulators -> the Home audits and `testHorizontalTabSwipeAndVerticalScroll` on both -> full `WealthyUITests` once per simulator, one simulator at a time (`-parallel-testing-enabled NO`).
+4. **Evidence.** Add `round5-home-audit.txt` with the deferred elements and frames from both simulators; update `INDEX.md`. Screenshots change only if the UI changes (it should not).
+5. Required checks (`verify_core.sh`, `verify_shell.py` with fontTools PYTHONPATH, `verify_localization.sh`, `git diff --check`, Simulator Release and signed generic iOS builds). Rewrite `.ai/LAST_REPORT.md` completely as the final report for the whole cycle, listing every changed file, and state this Round 5 audit decision in it.
 
-## Round 4 (designer, 2026-11-07, after PR #10 head 61e22d6)
-Same Task ID, branch and PR #10. Read `.ai/LAST_REPORT.md` first. One item only; do not change anything else that already passes.
+Acceptance for Round 5: the original acceptance list, every audit passing on both simulators (Home with the safe line through the scrolled helper above), and full `WealthyUITests` passing on both. Then `Status: DONE`; otherwise `PARTIAL` with exact failures and frames.
 
-**Review finding (blocker).** In `Verification/Cycle2bEvidence/iphone15pro-onboarding-target-light.jpg` and `-dark.jpg`, while the number pad is up, the monthly target amount field is hidden behind the new bottom bar (Back / Next), so the user cannot see the number they type. On iPhone 17 Pro the field is visible. This came from the Round 3 item 4 change (`safeAreaInset(edge: .bottom)` in `OnboardingView`, `LedgerRoot.swift`).
+## Owner follow-up (2026-11-08)
 
-1. **Test first.** Extend `testPersistedOnboardingRelaunch` (or add one onboarding test) so that, on the target step with the keyboard up and digits typed, it asserts: the amount field is hittable; its whole frame lies above the top of the Back/Next bar and above the keyboard; its value shows the typed digits; Next is hittable. It must fail on iPhone 15 Pro with the current code (report that failure), then pass after the fix.
-2. **Fix with standard components only**, keeping onboarding content, wording and flow. Prefer one of: (a) keep the bottom bar but make the form scroll the focused field above it (for example `ScrollViewReader` + `@FocusState`, scrolling to the field when it gains focus and when the keyboard appears); or (b) remove the bottom bar, put Back/Next back in the form, and add the Next action to a keyboard toolbar (`ToolbarItemGroup(placement: .keyboard)`). Pick the simpler one that passes item 1 on both simulators, also at AX3 (`-UIPreferredContentSizeCategoryName UICTContentSizeCategoryAccessibilityXL`), and say which you chose.
-3. Re-capture the 16 onboarding screenshots (light/dark, both simulators); the target-step images must show the typed amount.
-4. Full `WealthyUITests` once per simulator, `-parallel-testing-enabled NO`; required checks (`verify_core.sh` 117, `verify_shell.py`, `verify_localization.sh`, `git diff --check`, Simulator Release and signed generic iOS builds). Keep logs under `/tmp/wealthy-c2b1-r4*`.
+Continue Round 5. First get testSafeLineAndAIInformationEvidence passing on both simulators; report the failing elements by label and frame, not AX ids. Start the full suites only after it passes on both, or after you decide to finish PARTIAL. Then finish the run order and rewrite .ai/LAST_REPORT.md as the final report.
 
-Acceptance for Round 4: item-1 test passes on both simulators (and at AX3), full suites zero failures on both, required checks pass, screenshots updated. Then `Status: DONE`; otherwise `PARTIAL` with exact failures.
+## Round 6 (designer decision, 2026-11-08, after Round 5)
+Same Task ID, branch and draft PR #13. Read `.ai/LAST_REPORT.md` first. Keep the Round 5 scrolled audit helper and everything that already passes.
 
-## Round 5 (designer decision, 2026-11-07, after PR #10 head c27d734)
-Same Task ID, branch and PR #10. Read `.ai/LAST_REPORT.md` first. Keep `testOnboardingAmountVisibleWithKeyboard` exactly as committed (it is the acceptance test).
+**Designer reading of Round 5:** the helper works: once Home is scrolled, it audits content that no earlier audit reached, because it was below the fold. The new failures are on elements that also exist on `fc74376` (the prominent add button, "I spent nothing today", the empty-state text) and were simply never audited. They are real until shown otherwise, so this round fixes them in the product, not in the test.
 
-**Why the scroll fixes failed (designer's reading, not verified):** on iPhone 15 Pro the target step is short; the amount field is the last row, so the form cannot scroll far enough to lift it above the bar and keyboard. Scrolling tricks cannot create space that the layout does not have. So the fix is to free vertical space while typing.
+1. **Settle before each audit (test).** After every scroll in the helper, wait until the scroll has stopped (the frames of two reads 0.5 s apart are identical) before auditing. Record the settle time. Then re-run `testSafeLineAndAIInformationEvidence` on both simulators and list every remaining issue by type, label, frame, mode and position, with the audit crop image for each (attach and copy into `Verification/Cycle2bEvidence/c2b2/round6-crops/`). For an issue with no element, attach the full screenshot and say which element it is from the image.
+2. **Fix what remains, in product code, standard components only:**
+   - Prominent buttons on Home (`addEntry`): make them use the same tint and label colors as `quickSave` in the Quick add sheet, which passes the audit in both modes. If `quickSave` passes only by luck, give both buttons explicit label colors that reach at least 4.5:1 against their fill in light and dark, and report the measured ratios.
+   - Clipped text (`noSpend` "I spent nothing today", or any other): let the label wrap (no fixed height that cuts text; keep the 44 pt minimum). Check at the default size and at AX3.
+   - Contrast on ordinary text (e.g. the empty-state text): if it still fails after settling, measure the text and background colors from the crop, report them, and fix only if the measured ratio is below 4.5:1 (normal text) or 3:1 (large text).
+   - No new audit exclusions. The owner-approved SwiftUI dynamic-type rule stays exactly as it is.
+3. **Order of runs:** `testSafeLineAndAIInformationEvidence` on both simulators -> the standard Home audits, Quick add tests and `testHorizontalTabSwipeAndVerticalScroll` on both -> full `WealthyUITests` once per simulator, one simulator at a time. Do not start the full suites until the first step passes on both, unless you decide to finish PARTIAL.
+4. **Evidence.** Re-capture only screenshots whose UI changed; update `INDEX.md`; open every changed image and check the buttons and texts are readable in both modes.
+5. Required checks (`verify_core.sh`, `verify_shell.py` with fontTools PYTHONPATH, `verify_localization.sh`, `git diff --check`, Simulator Release and signed generic iOS builds). Rewrite `.ai/LAST_REPORT.md` completely as the final report for the whole cycle, listing every changed file and every contrast ratio you measured.
 
-1. **Fix (decided):** keep the Round 3 bottom bar (Back / Next in `safeAreaInset(edge: .bottom)`). On the target step, while the amount field has focus (`@FocusState`), hide the island illustration in the step header (the title and "3 / 4" stay); show it again when focus ends. Use a standard transition; no new components, wording or flow changes. If the test still fails at the default size or at AX3 after this, additionally add bottom scroll space with `.contentMargins(.bottom, <bar height>, for: .scrollContent)` and scroll the field into view on focus. Report the frames after each step.
-2. Re-capture the 16 onboarding screenshots (light/dark, both simulators); the target-step images must show the typed amount.
-3. Full `WealthyUITests` once per simulator, `-parallel-testing-enabled NO`; required checks (`verify_core.sh` 117, `verify_shell.py` with the PYTHONPATH that provides fontTools, `verify_localization.sh`, `git diff --check`, Simulator Release and signed generic iOS builds). Keep logs under `/tmp/wealthy-c2b1-r5*`.
+Acceptance for Round 6: the original acceptance list, every audit passing on both simulators with no new exclusions, and full `WealthyUITests` passing on both. Then `Status: DONE`; otherwise `PARTIAL` with exact failures, frames and crops.
 
-Acceptance for Round 5: `testOnboardingAmountVisibleWithKeyboard` passes on both simulators at default size and AX3; full suites zero failures on both; required checks pass; screenshots updated. Then `Status: DONE`; otherwise `PARTIAL` with the exact frames and failures.
+## Owner follow-up (2026-11-09)
 
-## Round 6 (designer, 2026-11-07, after PR #10 head 9ea1e8d)
-Same Task ID, branch and PR #10. Read `.ai/LAST_REPORT.md` first. One item only; do not change anything else that already passes.
+Continue Round 6. The 15 Pro full suite shows 4 new failures that passed on c937c63: testNoSpendDayFromEmptyLedger, testPersistedOnboardingRelaunch, testOnboardingEntryTaxNoSpendTarget, testQuickEntryWithoutAIFromOnboarding (WealthyUITests.swift:43-44); the 17 Pro partial run failed testAdditionalSetupMatrix and testChildEnvelopeAndLicenseFlow. First find the cause by comparing with c937c63 (run each failing test on c937c63 and on your tree, one at a time). If the noSpend label change (font, lineLimit) causes them, revert that part and fix the clipping another way or report it; keep the addEntry contrast fix. Do not change other screens. Then run the safe-line test, the Home audits and swipe test on both simulators, then full WealthyUITests one simulator at a time, and rewrite .ai/LAST_REPORT.md as the final whole-cycle report, listing every remaining audit issue with its measured contrast ratio and crop.
 
-**Finding.** On iPhone 15 Pro, `testResultAccessibilityAudit` failed with "Contrast failed for SwiftUI.AccessibilityNode" on the Result screen "Done" button, frame (164.33, 824.67, 64.33, 34.33). The screen is 852 pt tall, so the button's bottom edge (859 pt) is outside the screen and under the home indicator. The designer reads this as a layout problem (the button is not kept inside the safe area), not only a flaky audit. Not verified.
+## Round 7 (designer decision, 2026-11-09, after PR #13 head 2d05247)
+Same Task ID, branch and draft PR #13. Read `.ai/LAST_REPORT.md` (Round 6) first. Only the items below; do not change anything else that already passes.
 
-1. **Test first.** Add an assertion (in `testResultAccessibilityAudit` or a new Result-screen test) that the Done button is hittable and its whole frame lies inside the window and above the bottom safe-area inset (home indicator), at the default size and at AX3 (`-UIPreferredContentSizeCategoryName UICTContentSizeCategoryAccessibilityXL`). Run it 3 times on iPhone 15 Pro before the fix and report each result and frame.
-2. **Fix** with standard components only, no wording or flow change: keep the Done button inside the safe area (for example, put the Result content in a `ScrollView` and the Done button in `safeAreaInset(edge: .bottom)` or in the toolbar). Then run the new assertion and `testResultAccessibilityAudit` 3 times each on both simulators (default and AX3) and report. Do not add any audit exception.
-3. Re-capture Result-screen screenshots only if they exist in `Verification/Cycle2bEvidence/` or `Cycle2aEvidence/` and changed.
-4. Full `WealthyUITests` once per simulator, run one after the other (not at the same time), `-parallel-testing-enabled NO`; required checks (`verify_core.sh` 117, `verify_shell.py` with the fontTools PYTHONPATH, `verify_localization.sh`, `git diff --check`, Simulator Release and signed generic iOS builds). Keep logs under `/tmp/wealthy-c2b1-r6*`.
+**Designer reading of Round 6:** the seven onboarding-path failures come from an existing product bug, not from this cycle's UI. After a fresh onboarding on a Monday to Wednesday, `recentlyEndedResults` returns last week (the onboarding target's effective month covers it) and `LedgerRoot` presents a result sheet for a week the user never used. The remaining safe-line audit failures are all dark mode at mid-scroll positions; one of them ("Left this week", y=27) is under the status bar, which the scrolled helper does not treat as hidden.
 
-Acceptance for Round 6: the new assertion and `testResultAccessibilityAudit` pass 3/3 on both simulators at default and AX3; full suites zero failures on both; required checks pass. Then `Status: DONE`; otherwise `PARTIAL` with exact frames and failures.
+1. **Result sheet for unused periods (product fix, decided).** In `LedgerRoot` (app layer), queue and present an ended-period result only when that period has `loggedDays > 0`. Do not change `LedgerQueries.recentlyEndedResults` or any WealthyCore file. Existing result-presentation tests (for example `--cycle2b-results`) must still show their sheets; if one of their fixtures has no logged day in the ended period, report it instead of changing the rule.
+2. **Deterministic date for UI tests.** Add a DEBUG, UI-test-only launch argument `--today YYYY-MM-DD`, read in `LedgerSession.today` after the existing fixture dates (existing fixtures keep their dates). Add one UI test: fresh onboarding with `--today 2026-11-09` (a Monday) reaches Home with no `resultSheet` and `addEntry` hittable. The seven tests that failed in Round 6 (testAdditionalSetupMatrix, testChildEnvelopeAndLicenseFlow, testManualTaxAndMetadataSurviveReopening, testNoSpendDayFromEmptyLedger, testOnboardingEntryTaxNoSpendTarget, testPersistedOnboardingRelaunch, testQuickEntryWithoutAIFromOnboarding) keep using the real date; they must pass because of item 1, not because of a pinned date.
+3. **Tap-helper diagnostic.** At `WealthyUITests.swift:43-44`, the obscured-element diagnostic must not query a keyboard that does not exist (it produced the misleading "No matches found ... Keyboard" error). Report the covering element instead. Do not change what the helper taps or asserts.
+4. **Scrolled audit, status-bar region.** In the Round 5 scrolled audit helper, treat the area above the navigation bar's bottom edge (status bar included) like the tab-bar area: an issue on an element whose frame is not fully inside the visible content rect is deferred, and that element must pass a full audit once it is fully visible. No other policy change.
+5. **No-spend label clipping.** "Text clipped" on "I spent nothing today" (frame 160.667 x 20.333) remains. Try, in order, with standard modifiers only: (a) remove `.leading(.loose)` and keep `.lineLimit(nil)`; (b) add `.fixedSize(horizontal: false, vertical: true)` to the label text. Keep the 44 pt minimum and the measured contrast. Report which variant the audit accepts, with crops; if none does, keep the variant with no visible clipping and report.
+6. **Remaining dark contrast flags.** For each remaining contrast flag on an element fully inside the visible content rect, re-run the audit at the same scroll position after an extra 2 s settle and report whether it reproduces, with the measured ratio and crop. Do not add exclusions. Do not change colors of text that measures 4.5:1 or more.
+7. **Order of runs:** the item-2 test and the seven tests on iPhone 15 Pro, then iPhone 17 Pro -> safe-line test on both -> Home audits (light, dark) and swipe test on both -> full `WealthyUITests` one simulator at a time (`-parallel-testing-enabled NO`) -> required checks and builds as in Round 3 item 7. No device install this round. Rewrite `.ai/LAST_REPORT.md` as the final whole-cycle report listing every changed file; in the audit table, give one row per distinct issue (element, type, simulator) with its runs, and link the crop index for repeats.
+
+Acceptance for Round 7: the original acceptance list; the item-2 test and the seven tests pass on both simulators on the run date; full suites on both with no new exclusions. Then `Status: DONE`; otherwise `PARTIAL` with the exact remaining issues, ratios and crops.

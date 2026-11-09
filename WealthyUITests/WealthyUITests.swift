@@ -41,8 +41,21 @@ final class Cycle2aUITests: XCTestCase {
         }
         for _ in 0..<12 { if unobscuredCenter() { break }; app.swipeUp() }
         XCTAssertTrue(button.waitForExistence(timeout: 5), app.debugDescription)
-        XCTAssertTrue(unobscuredCenter(), "Button center is not visible above the keyboard: \(button.frame), keyboard: \(app.keyboards.firstMatch.frame)\n\(app.debugDescription)")
+        @MainActor
+        func obstructionDescription() -> String {
+            let keyboard = app.keyboards.firstMatch
+            let center = CGPoint(x: button.frame.midX, y: button.frame.midY)
+            let covering = app.descendants(matching: .any).allElementsBoundByIndex.filter {
+                $0.exists && ($0.identifier == "resultSheet" || $0.elementType == .sheet || $0.elementType == .alert) && $0.frame.contains(center)
+            }.map { "\($0.identifier): \(NSCoder.string(for: $0.frame))" }
+            return "Button center is obscured: \(button.frame), keyboard: \(keyboard.exists ? NSCoder.string(for: keyboard.frame) : "<absent>"), covering: \(covering)\n\(app.debugDescription)"
+        }
+        XCTAssertTrue(unobscuredCenter(), obstructionDescription())
         button.tap()
+    }
+    @MainActor
+    func openFullEditor() {
+        tap("addEntry"); tap("quickDetails")
     }
     @MainActor
     func enter(_ identifier: String, _ text: String) {
@@ -54,7 +67,6 @@ final class Cycle2aUITests: XCTestCase {
     func onboard(_ language: String = "en", flags: [String] = []) throws {
         app.launchArguments = ["--cycle2a-test", "-v4.language", language, "-v4.currency", "JPY", "-v4.onboarded", "NO"] + flags
         launchApp()
-        if app.staticTexts["Apple Intelligence is required"].waitForExistence(timeout: 2) { XCTFail("Real Apple Intelligence availability gate is closed; no bypass used."); throw NSError(domain: "Cycle2aTests", code: 1) }
         XCTAssertTrue(app.buttons["onboardingNext"].waitForExistence(timeout: 20), app.debugDescription)
         capture("onboarding-language-\(language)-\(flags.joined(separator: "-"))"); app.buttons["onboardingNext"].tap(); capture("onboarding-currency-\(language)-\(flags.joined(separator: "-"))"); app.buttons["onboardingNext"].tap()
         enter("onboardingAmount", "40000"); capture("onboarding-target-\(language)-\(flags.joined(separator: "-"))"); tap("onboardingNext"); capture("onboarding-child-\(language)-\(flags.joined(separator: "-"))"); tap("onboardingNext")
@@ -63,9 +75,20 @@ final class Cycle2aUITests: XCTestCase {
         XCTAssertTrue(app.buttons["addEntry"].waitForExistence(timeout: 10), app.debugDescription); capture("empty-home-\(language)-\(flags.joined(separator: "-"))-" + flags.joined(separator: "-"))
     }
     @MainActor
+    func testFreshMondayOnboardingDoesNotPresentUnusedResult() throws {
+        try onboard(flags: ["--today", "2026-11-09"])
+        XCTAssertFalse(app.scrollViews["resultSheet"].exists, app.debugDescription)
+        for _ in 0..<8 {
+            if app.buttons["addEntry"].isHittable { break }
+            app.collectionViews["homePage"].swipeUp()
+        }
+        XCTAssertTrue(app.buttons["addEntry"].isHittable, app.debugDescription)
+    }
+
+    @MainActor
     func testOnboardingEntryTaxNoSpendTarget() throws {
         try onboard()
-        tap("addEntry"); enter("entryAmount", "2400"); capture("entry")
+        openFullEditor(); enter("entryAmount", "2400"); capture("entry")
         app.buttons["entryCategory"].tap(); tap("Food")
         app.buttons["entryService"].tap(); tap("Takeout (8%)")
         XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "¥177")).firstMatch.waitForExistence(timeout: 5), app.debugDescription)
@@ -82,7 +105,7 @@ final class Cycle2aUITests: XCTestCase {
     func testScreenMatrix() throws {
         for language in ["en", "ja", "es", "ko"] {
             for variant in ["light", "dark", "ax3"] {
-                for screen in ["home", "voice", "info", "goals", "edit", "tax", "child-setup", "child-detail", "settings", "result", "month-result", "no-ai"] {
+                for screen in ["home", "voice", "info", "goals", "edit", "tax", "child-setup", "child-detail", "settings", "result", "month-result", "ai-information"] {
                     app.launchArguments = ["--cycle2a-test", "--cycle2a-seed", "-v4.language", language, "-v4.currency", "JPY", "--screen", screen]
                     if variant == "dark" { app.launchArguments.append("--dark") }
                     if variant == "ax3" { app.launchArguments.append("--ax3") }
@@ -125,7 +148,7 @@ final class Cycle2aUITests: XCTestCase {
     @MainActor
     func testManualTaxAndMetadataSurviveReopening() throws {
         try onboard()
-        tap("addEntry"); enter("entryAmount", "2400")
+        openFullEditor(); enter("entryAmount", "2400")
         app.buttons["entryCategory"].tap(); tap("Food")
         app.buttons["entryService"].tap(); tap("Takeout (8%)")
         app.buttons["entryTaxRate"].tap(); tap("10%")
@@ -148,7 +171,7 @@ final class Cycle2aUITests: XCTestCase {
         tap("Targets"); tap("setTargetManually"); enter("overallTarget", "80000"); tap("saveGoals")
         app.navigationBars.buttons.firstMatch.tap()
         for _ in 0..<6 { app.swipeDown() }
-        tap("Child envelope"); app.tabBars.buttons["Island"].tap(); tap("addEntry"); tap("Child envelope"); enter("entryAmount", "3600")
+        tap("Child envelope"); app.tabBars.buttons["Island"].tap(); openFullEditor(); tap("Child envelope"); enter("entryAmount", "3600")
         app.buttons["entryCategory"].tap(); tap("Food"); app.buttons["entryService"].tap(); tap("Takeout (8%)"); tap("saveEntry")
         XCTAssertTrue(app.buttons["addEntry"].waitForExistence(timeout: 10), app.debugDescription)
         tap("Info"); tap("Child envelope"); tap("Consumption tax")
@@ -193,6 +216,7 @@ final class Cycle2aUITests: XCTestCase {
         // Owner decision 2026-11-06: only the SwiftUI audit false positive described
         // at https://developer.apple.com/forums/thread/828525 may be ignored.
         try app.performAccessibilityAudit { issue in
+            print("AUDIT_ISSUE screen=\(screen) type=\(issue.auditType) compact=\(issue.compactDescription) detailed=\(issue.detailedDescription) element=\(issue.element?.debugDescription ?? "<nil>")")
             guard issue.auditType == .dynamicType,
                   issue.detailedDescription.contains("SwiftUI.AccessibilityNode"),
                   let element = issue.element, element.exists else { return false }
@@ -339,7 +363,7 @@ final class Cycle2aUITests: XCTestCase {
     }
     @MainActor
     func testIncomeEntry() throws {
-        launchSeededWorkflow(); tap("addEntry"); enter("entryAmount", "12000")
+        launchSeededWorkflow(); openFullEditor(); enter("entryAmount", "12000")
         app.buttons["Income"].tap(); app.buttons["entryCategory"].tap(); tap("Salary")
         XCTAssertFalse(app.buttons["entryTaxRate"].exists); capture("income-entry")
         tap("saveEntry"); tap("Info"); tap("Consumption tax"); selectSeededTaxMonth()
@@ -347,7 +371,7 @@ final class Cycle2aUITests: XCTestCase {
     }
     @MainActor
     func testChildSupportDefaults() throws {
-        launchSeededWorkflow(); tap("addEntry"); enter("entryAmount", "50000")
+        launchSeededWorkflow(); openFullEditor(); enter("entryAmount", "50000")
         app.buttons["Child envelope"].tap(); app.buttons["entryCategory"].tap(); tap("Child support payment")
         XCTAssertTrue(app.buttons["entryTaxRate"].label.contains("Tax-exempt"), app.debugDescription)
         XCTAssertEqual(app.switches["Fixed cost"].firstMatch.value as? String, "1")
@@ -380,6 +404,18 @@ final class Cycle2aUITests: XCTestCase {
     private func assertRootVisible(_ identifier: String) {
         let root = app.descendants(matching: .any).matching(identifier: identifier).firstMatch
         XCTAssertTrue(root.waitForExistence(timeout: 5), app.debugDescription)
+        if root.exists && !root.isHittable {
+            let diagnostics = "Root: \(identifier), frame: \(NSCoder.string(for: root.frame))\n\(app.debugDescription)"
+            let attachment = XCTAttachment(string: diagnostics)
+            attachment.name = "Non-hittable root: \(identifier)"
+            attachment.lifetime = .keepAlways
+            add(attachment)
+            let screenshot = XCTAttachment(screenshot: app.screenshot())
+            screenshot.name = "Non-hittable root: \(identifier)"
+            screenshot.lifetime = .keepAlways
+            add(screenshot)
+            print(diagnostics)
+        }
         XCTAssertTrue(root.isHittable, "The visible content must match the selected tab: \(identifier)")
     }
 
@@ -428,6 +464,7 @@ final class Cycle2aUITests: XCTestCase {
         let home = app.tabBars.buttons["Island"]
         let info = app.tabBars.buttons["Info"]
         XCTAssertTrue(home.isSelected, app.debugDescription)
+        print("HOME_ROOT_FRAME " + NSCoder.string(for: app.collectionViews["homePage"].frame))
         assertRootVisible("homePage")
         app.swipeUp()
         XCTAssertTrue(home.isSelected, "A vertical Home scroll must not select another tab.")
@@ -445,6 +482,7 @@ final class Cycle2aUITests: XCTestCase {
         XCTAssertTrue(voice.isSelected, "Voice must not wrap to Info.")
         swipeRoot(left: true)
         XCTAssertTrue(home.isSelected, "A left swipe from Voice selects Home.")
+        print("HOME_ROOT_FRAME " + NSCoder.string(for: app.collectionViews["homePage"].frame))
         assertRootVisible("homePage")
         info.tap()
         XCTAssertTrue(info.isSelected, app.debugDescription)
@@ -452,13 +490,14 @@ final class Cycle2aUITests: XCTestCase {
         XCTAssertTrue(info.isSelected, "A vertical Info scroll must not select another tab.")
         swipeRoot(left: false)
         XCTAssertTrue(home.isSelected, "A right swipe from Info selects Home.")
+        print("HOME_ROOT_FRAME " + NSCoder.string(for: app.collectionViews["homePage"].frame))
         assertRootVisible("homePage")
     }
 
     @MainActor
 
     func testEditorControlDragsDoNotSwitchTabs() throws {
-        launchSeededWorkflow(); tap("addEntry")
+        launchSeededWorkflow(); openFullEditor()
         let home = app.tabBars.buttons["Island"]
         XCTAssertTrue(app.textFields["entryAmount"].waitForExistence(timeout: 10), app.debugDescription)
         app.swipeUp()
@@ -488,7 +527,7 @@ final class Cycle2aUITests: XCTestCase {
 
     @MainActor
     func testFocusedSelectionAndEditorSwipeIsolation() throws {
-        launchSeededWorkflow(); tap("addEntry")
+        launchSeededWorkflow(); openFullEditor()
         let note = app.textFields["entryNote"]
         XCTAssertTrue(note.waitForExistence(timeout: 5), app.debugDescription)
         for _ in 0..<4 { if note.isHittable { break }; app.swipeUp() }
