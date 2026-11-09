@@ -2,6 +2,8 @@
 
 All images use synthetic UI-test data and iOS 27.0 simulators (Xcode 27.2). Main evidence screens use English and JPY; baseline-comparison images also include the existing localized onboarding fixtures. JPEG quality approximately 80; long edge at most 2,000 pixels; each file below 1 MB.
 
+Round 7 refreshed the Home-safe-line (light/dark), scheduled-item, and AI-information captures on both simulators. The six Quick add images remain the previously reviewed captures: Amount, typed `650`, and Save are visible above the keyboard in light, dark, and AX3 layouts on both simulators. Round 7 audit screenshots and nil-node bottom crops are indexed in [round7-crops/INDEX.md](round7-crops/INDEX.md). The corrected no-spend label emitted no `Text clipped` issue, so there is no clipping-specific crop.
+
 All 26 main screenshots were opened individually in Round 6. Four Home screenshots were recaptured from Round 6 final-source audits, and eight Home action screenshots were added from Round 6 default/AX3 layout tests. The six unchanged Quick add images and four AI images retain Round 3 provenance; four scheduled-screen images retain Round 4 provenance. In all six Quick add images, Amount, typed `650`, and Save are visible above the number pad. AX3 is Accessibility Extra Large. Lower options can scroll at AX3. Visual review does not waive the audit failures below.
 
 | Screenshot | Device | Appearance / content |

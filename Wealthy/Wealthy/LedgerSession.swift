@@ -77,6 +77,16 @@ import AppIntents
         if Self.isUITest && ProcessInfo.processInfo.arguments.contains("--cycle2a-performance") { return try! LedgerDay(year: 2026, month: 10, day: 15) }
         if Self.isUITest && (ProcessInfo.processInfo.arguments.contains("--cycle2a-seed") || ProcessInfo.processInfo.arguments.contains("--cycle2b-seed")) { return try! LedgerDay(year: 2026, month: 10, day: ProcessInfo.processInfo.arguments.contains("--cycle2b-results") ? 2 : ProcessInfo.processInfo.arguments.contains(where: { $0.hasPrefix("--month-") }) ? 31 : 11) }
         #endif
+        #if DEBUG
+        let arguments = ProcessInfo.processInfo.arguments
+        if Self.isUITest, let index = arguments.firstIndex(of: "--today"), index + 1 < arguments.count {
+            let value = arguments[index + 1]
+            let parts = value.split(separator: "-", omittingEmptySubsequences: false)
+            if parts.map(\.count) == [4, 2, 2],
+               let year = Int(parts[0]), let month = Int(parts[1]), let day = Int(parts[2]),
+               let today = try? LedgerDay(year: year, month: month, day: day) { return today }
+        }
+        #endif
         return try! LedgerDay(date: Date(), calendar: .current)
     }
     var locale: Locale { Locale(identifier: ["en":"en_US", "ja":"ja_JP", "es":"es_ES", "ko":"ko_KR"][language] ?? "en_US") }

@@ -41,7 +41,16 @@ final class Cycle2aUITests: XCTestCase {
         }
         for _ in 0..<12 { if unobscuredCenter() { break }; app.swipeUp() }
         XCTAssertTrue(button.waitForExistence(timeout: 5), app.debugDescription)
-        XCTAssertTrue(unobscuredCenter(), "Button center is not visible above the keyboard: \(button.frame), keyboard: \(app.keyboards.firstMatch.frame)\n\(app.debugDescription)")
+        @MainActor
+        func obstructionDescription() -> String {
+            let keyboard = app.keyboards.firstMatch
+            let center = CGPoint(x: button.frame.midX, y: button.frame.midY)
+            let covering = app.descendants(matching: .any).allElementsBoundByIndex.filter {
+                $0.exists && ($0.identifier == "resultSheet" || $0.elementType == .sheet || $0.elementType == .alert) && $0.frame.contains(center)
+            }.map { "\($0.identifier): \(NSCoder.string(for: $0.frame))" }
+            return "Button center is obscured: \(button.frame), keyboard: \(keyboard.exists ? NSCoder.string(for: keyboard.frame) : "<absent>"), covering: \(covering)\n\(app.debugDescription)"
+        }
+        XCTAssertTrue(unobscuredCenter(), obstructionDescription())
         button.tap()
     }
     @MainActor
@@ -65,6 +74,17 @@ final class Cycle2aUITests: XCTestCase {
         for _ in 0..<8 { if app.buttons["addEntry"].exists { break }; app.swipeUp() }
         XCTAssertTrue(app.buttons["addEntry"].waitForExistence(timeout: 10), app.debugDescription); capture("empty-home-\(language)-\(flags.joined(separator: "-"))-" + flags.joined(separator: "-"))
     }
+    @MainActor
+    func testFreshMondayOnboardingDoesNotPresentUnusedResult() throws {
+        try onboard(flags: ["--today", "2026-11-09"])
+        XCTAssertFalse(app.scrollViews["resultSheet"].exists, app.debugDescription)
+        for _ in 0..<8 {
+            if app.buttons["addEntry"].isHittable { break }
+            app.collectionViews["homePage"].swipeUp()
+        }
+        XCTAssertTrue(app.buttons["addEntry"].isHittable, app.debugDescription)
+    }
+
     @MainActor
     func testOnboardingEntryTaxNoSpendTarget() throws {
         try onboard()

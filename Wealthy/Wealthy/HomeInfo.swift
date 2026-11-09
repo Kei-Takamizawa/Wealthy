@@ -67,7 +67,7 @@ struct HomeView: View {
                     HStack {
                         Image(systemName: "checkmark.circle")
                         Text(session.t("noSpend"))
-                            .font(.body.leading(.loose))
+                            .font(.body)
                             .lineLimit(nil)
                             .fixedSize(horizontal: false, vertical: true)
                     }.frame(maxWidth: .infinity, minHeight: 44)

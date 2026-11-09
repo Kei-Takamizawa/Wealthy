@@ -47,7 +47,7 @@ struct LedgerRoot: View {
             else if presentingRecurring { presented = nil }
         }
         .onChange(of: session.recentResults, initial: true) { _, results in
-            let changed = results.filter { $0.isSet && !lastResults.contains($0) }
+            let changed = results.filter { $0.isSet && $0.loggedDays > 0 && !lastResults.contains($0) }
             lastResults = results
             if !changed.isEmpty { resultQueue = changed; presentNext() }
         }

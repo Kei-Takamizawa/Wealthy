@@ -219,10 +219,11 @@ extension Cycle2aUITests {
         }
         func fullyVisible(_ element: XCUIElement) -> Bool {
             element.exists && !element.frame.isEmpty
+                && element.frame.minX >= app.frame.minX && element.frame.maxX <= app.frame.maxX
                 && element.frame.minY >= app.navigationBars.firstMatch.frame.maxY
                 && element.frame.maxY <= app.tabBars.firstMatch.frame.minY
         }
-        // Each position uses the full audit; only bar intersections may wait for a visible recheck.
+        // Each position uses the full audit; content outside the visible rect requires a visible recheck.
         for position in 0..<8 {
             let settleStart = Date()
             func frames() -> [CGRect] {
@@ -239,7 +240,9 @@ extension Cycle2aUITests {
             record("SETTLE screen=\(screen) position=\(position) seconds=\(Date().timeIntervalSince(settleStart)) settled=\(settled) frames=\(previous.count)")
             XCTAssertTrue(settled && !previous.isEmpty, "Home scrolling must stop before its audit")
             var visibleIssues: Set<String> = []
-            try app.performAccessibilityAudit { issue in
+            var visibleContrast: Set<String> = []
+            var retry = false
+            let handler: (XCUIAccessibilityAuditIssue) -> Bool = { issue in
                 print("AUDIT_ISSUE screen=\(screen) type=\(issue.auditType) compact=\(issue.compactDescription) detailed=\(issue.detailedDescription) element=\(issue.element?.debugDescription ?? "<nil>")")
                 if issue.auditType == .dynamicType,
                    issue.detailedDescription.contains("SwiftUI.AccessibilityNode"),
@@ -248,7 +251,7 @@ extension Cycle2aUITests {
                     return true
                 }
                 let screenshot = self.app.screenshot()
-                let name = "round6-\(screen)-position\(position)-\(issue.auditType)-\(issue.element?.label ?? "no-element")"
+                let name = "round7-\(screen)-position\(position)-\(retry ? "retry" : "initial")-\(issue.auditType)-\(issue.element?.label ?? "no-element")"
                 let full = XCTAttachment(screenshot: screenshot)
                 full.name = name + "-full"
                 full.lifetime = .keepAlways
@@ -265,14 +268,16 @@ extension Cycle2aUITests {
                         self.add(attachment)
                     }
                 }
-                record("ISSUE screen=\(screen) position=\(position) type=\(issue.auditType) label=\(issue.element?.label ?? "<nil>") frame=\(issue.element.map { NSCoder.string(for: $0.frame) } ?? "<nil>")")
+                record("ISSUE screen=\(screen) position=\(position) retry=\(retry) type=\(issue.auditType) label=\(issue.element?.label ?? "<nil>") frame=\(issue.element.map { NSCoder.string(for: $0.frame) } ?? "<nil>")")
                 guard let element = issue.element, element.exists else { return false }
                 let frame = element.frame
                 let navigation = self.app.navigationBars.firstMatch.frame
                 let tab = self.app.tabBars.firstMatch.frame
-                guard !frame.isEmpty, frame.intersects(navigation) || frame.intersects(tab) else {
-                    visibleIssues.insert("\(element.identifier)|\(element.label)")
-                    record("FAIL screen=\(screen) position=\(position) label=\(element.label) identifier=\(element.identifier) type=\(issue.auditType) frame=\(NSCoder.string(for: frame)) navigation=\(NSCoder.string(for: navigation)) tab=\(NSCoder.string(for: tab))")
+                guard !frame.isEmpty, !fullyVisible(element) else {
+                    let issueKey = "\(element.identifier)|\(element.label)"
+                    visibleIssues.insert(issueKey)
+                    if issue.auditType == .contrast { visibleContrast.insert(issueKey) }
+                    record("FAIL screen=\(screen) position=\(position) retry=\(retry) label=\(element.label) identifier=\(element.identifier) type=\(issue.auditType) frame=\(NSCoder.string(for: frame)) navigation=\(NSCoder.string(for: navigation)) tab=\(NSCoder.string(for: tab))")
                     return false
                 }
                 let key = "\(element.elementType.rawValue)|\(element.identifier)|\(element.label)|\(frame.minX)|\(issue.auditType)"
@@ -294,6 +299,18 @@ extension Cycle2aUITests {
                     record("DEFER screen=\(screen) position=\(position) label=\(element.label) identifier=\(element.identifier) type=\(issue.auditType) underBar=\(NSCoder.string(for: frame)) navigation=\(NSCoder.string(for: navigation)) tab=\(NSCoder.string(for: tab))")
                 }
                 return true
+            }
+            try app.performAccessibilityAudit(for: .all, handler)
+            if app.launchArguments.contains("--dark"), !visibleContrast.isEmpty {
+                let initial = visibleContrast
+                Thread.sleep(forTimeInterval: 2)
+                retry = true
+                visibleContrast = []
+                record("EXTRA_SETTLE screen=\(screen) position=\(position) seconds=2")
+                try app.performAccessibilityAudit(for: .all, handler)
+                for key in initial.sorted() {
+                    record("CONTRAST_RETRY screen=\(screen) position=\(position) element=\(key) reproduced=\(visibleContrast.contains(key))")
+                }
             }
             // A full audit just ran here. Any visible issue failed above instead of being deferred.
             for (key, item) in pending {
