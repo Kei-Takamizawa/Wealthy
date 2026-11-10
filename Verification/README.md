@@ -10,7 +10,7 @@ The physical-device suite checks first setup in four languages, entry creation, 
 
 `python3 Verification/prepare_cycle2a_tests.py /private/tmp/wealthy-cycle2a-tests` creates a temporary test project. It keeps the same Wealthy application identifier; it does not create a second app. Run the `Wealthy` scheme on a paired compatible iPhone with Xcode. The workflow and screenshot tests use a DEBUG-only in-memory ledger and keep test preferences separate from normal preferences. The 50,000-record performance test uses a dedicated temporary disk store, also separate from the normal ledger. Do not uninstall the app to rerun these checks: earlier records and images must remain on the device.
 
-Screenshots, completed checks and anything not verified are listed in the [latest report](../.ai/LAST_REPORT.md). The actual Apple Intelligence availability gate remains active during testing. There is no test bypass for it.
+Screenshots, completed checks and anything not verified are listed in the [development records](../.ai/README.md). The actual Apple Intelligence availability gate remains active during testing. There is no test bypass for it.
 
 ## Earlier functionality
 

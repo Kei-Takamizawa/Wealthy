@@ -30,7 +30,7 @@ This updates the same Wealthy app. The redesigned ledger starts empty. Earlier r
 
 Open `Wealthy/Wealthy.xcodeproj` in Xcode and select the `Wealthy` scheme. Configure signing for your compatible iPhone.
 
-See [verification guidance](Verification/README.md) and the [latest development report](.ai/LAST_REPORT.md) for completed checks and remaining limits. Passing builds and tests does not establish that every device or accessibility setting has been verified.
+See [verification guidance](Verification/README.md) and the [development records](.ai/README.md) for completed checks and remaining limits. Passing builds and tests does not establish that every device or accessibility setting has been verified.
 
 ## Licenses
 
