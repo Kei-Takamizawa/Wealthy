@@ -70,7 +70,7 @@ ReceiptExample/
 # Python verification caches.
 __pycache__/
 
-# Claude + Codex loop: task inbox and Codex run logs stay local.
+# Historical local task inbox and agent run logs stay private.
 .ai/inbox/
 .ai/runs/
 
